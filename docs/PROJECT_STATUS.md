@@ -1,67 +1,56 @@
-# HOMESETS — Project Status
+# HOMESETS — Current Project Status
 
-Updated: 2026-11-14
+**Updated:** 2026-11-14. All claims below are based on actual GitHub reads or owner screenshots as specified. No Antigravity run has been observed.
 
-## Current state
-- **Overall:** Planning and governance, not implementation.
-- **Current setup milestone:** G0 — documentation and source-of-truth setup.
-- **Repository:** `abuhmaid28/homesets` (private, `main`).
-- **Flutter app:** NOT CREATED.
-- **Android build:** NOT BUILT.
-- **Tests run on any HOMESETS code:** NONE.
-- **Honor X9e Pro app test:** NOT DONE.
-- **No USB connection:** owner decision; use a transferred APK when there is an app to test.
+## Working model (owner-approved on 2026-11-14)
+- Ahmed = **Product Owner only**; no routine commands, uploads, manual Git chores or per-step approvals.
+- ChatGPT = project lead, planner, architect, governance and independent QA reviewer.
+- Antigravity = long-running autonomous campaigns in verified HOMESETS-only workspace, with independent small internal commits, tests/CI, and **conditional automatic normal PR merges after all required gates pass**.
+- **Explicit change:** manual Honor X9e Pro device test happens **only at final integrated acceptance**, not between P0–P8. Keep automated checks after each implementation slice. Never say device-tested early.
+- [Canonical policy](AGENT_AUTONOMY_POLICY.md), [Decision Register GOV06–GOV11](DECISION_REGISTER.md), [Current roadmap](ROADMAP.md).
 
-## Verified environment evidence (owner-provided terminal screenshots)
-- Flutter 3.47.0 stable; Dart 3.13.0.
-- Android SDK 36.0.0; Android Studio and Git found.
-- All SDK package licenses accepted.
-- `flutter doctor` reported `No issues found!`.
-- Hardware: Windows 10 PC with 8 GB RAM, 150 GB reported free disk; Honor X9e Pro on MagicOS 10 / Android 16.
-
-## Work tracking
-| Stage | Status | Completion evidence |
+## Evidence verified to date
+| Topic | Status | Evidence |
 | --- | --- | --- |
-| G0.1 — Create private GitHub repository | Verified | GitHub metadata |
-| G0.2 — Preserve master and living planning docs | In progress | Repository files must be reviewed |
-| G0.3 — Store exact preferred logo asset | Blocked | Exact owner-selected PNG not yet in repository |
-| Brand identity approval | Open | Owner selects final logo and asset validation |
-| UX flow approval | Not started | Journey maps and screen wireframes |
-| Design system approval | Not started | Tokens, components, themes and RTL checks |
-| Technical architecture approval | Not started | Written choices, dependency/license review |
-| Antigravity setup | Not started | Workspace and rule adherence confirmed |
-| P0 — Hello-world Flutter APK on real phone | Not started | APK build logs + phone result |
-| P1–P8 | Not started | See roadmap |
+| Private GitHub repo | VERIFIED | `abuhmaid28/homesets`, `main` |
+| Initial Docs/Decision Register | VERIFIED PRESENT | GitHub file reads; approved product/design details still gated |
+| Development toolchain | OWNER SCREENSHOT | Windows 10, Flutter 3.47.0, Dart 3.13.0, Android SDK 36.0.0; `flutter doctor` said `No issues found!` |
+| Antigravity project in UI | OWNER SCREENSHOT | `homesets` shown, model picker said `Gemini 3.8 Flash High`, local checkout selected |
+| Local Git origin and files | **UNVERIFIED** | No terminal output from Antigravity for `git remote -v`, branch, status |
+| Actual loaded Antigravity rules / permissions | **UNVERIFIED** | Current UI/Windows setting not inspected |
+| Original owner-selected logo PNG in GitHub | **MISSING** | Reference folder contained only `.gitkeep`; fingerprint stored in Asset Manifest |
+| Final brand, UX, design system | **PENDING APPROVAL** | Pull-Up Motion / Performance Lime preferred only |
+| Flutter app source / APK | **NOT CREATED** | No Flutter tree/build evidence |
+| GitHub CI / required automated checks | **NOT CONFIGURED** | No `.github/workflows` at audit |
+| Branch protection | **UNVERIFIED** | GitHub app query 403 |
+| GitHub native Auto-merge | **NOT ENABLED IN REPO METADATA** | `allow_auto_merge=false`; programmatic ordinary merge is a separate approved operation after checks |
+| Physical phone test | **DEFERRED UNTIL FINAL** | No APK currently; user-approved policy |
 
-## Top risks
-1. Logo reference only in chat, so it can get lost across sessions unless uploaded to GitHub.
-2. Image-generation mockups are not vector masters or proof of 24px readability.
-3. Unverified Antigravity model and tooling details.
-4. 8 GB RAM: avoid heavy emulator; use wireless APK testing.
-5. User's private physical/activity data must not be placed in a public repository.
-6. Fitness progression safety and band-only leg progression need domain tests and review.
+## Stages
+| Stage | Status | Next proof |
+| --- | --- | --- |
+| G0.1 Private repository | VERIFIED | Metadata |
+| G0.2 Source-of-truth files | CREATED; OWNER GATE REVIEW STILL OPEN | Review docs consistency |
+| G0.3 Exact logo asset | BLOCKED | Exact PNG uploaded with SHA-256 verification, not lookalike |
+| G0.4 Antigravity Git linkage/rules | OPEN | Actual local repo+rule check |
+| G1 Product Blueprint | DRAFT | Owner approval of major requirements |
+| G2 Branding | PREFERRED DIRECTION ONLY | Owner approval after technical validation |
+| G3–G5 UX/design system/high fidelity | NOT APPROVED | Design evidence |
+| G6–G7 Architecture & CI/rules | NOT APPROVED / NOT BUILT | Approved design and independent CI gate |
+| P0–P8 Flutter implementation | NOT STARTED | Automated build/test/CI per milestone; normal merge only after passing |
+| Final Honor acceptance | NOT STARTED | Single manual integration test + retest if necessary |
 
-## Next step
-Save the exact selected preferred logo image to `assets/brand/reference/` in GitHub; then complete Brand Identity acceptance without touching production Flutter code.
+## Current campaign
+- [G0-CAMPAIGN-01 Issue #2](https://github.com/abuhmaid28/homesets/issues/2) is a **prepared, not executed** Antigravity foundation verification campaign.
+- Agent must first prove exact repo identity, workspace isolation, active rules and safe permissions; do not blindly create Flutter app or merge code.
+- Next campaign: preserve exact brand PNG once source available to agent and plan G1/G2/G3 design/architecture gates without inventing owner approval.
 
-## Handoff protocol for another chat
-Open this file, `docs/DECISION_REGISTER.md`, and `docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt`. Read all three and the latest GitHub state. Never trust a verbal status alone. State what is verified, what remains open, and the next single user action.
+## Risks / stop conditions
+- Other repos visible on PC; no global unrestricted Turbo access.
+- Without actual CI, **no implementation PR may merge**, even under newly approved automatic merge policy.
+- Fitness logic must honor conservative training safety and recovery; no diagnosis or body shaming.
+- Original Master Prompt is immutable history; GOV07 explicitly supersedes only manual phone-test **timing**.
+- A one-time setup or OS/Git authentication step may require Ahmed; do not ask him to perform routine maintenance.
 
-## Operating-model update (2026-11-14)
-Ahmed is PO-only; ChatGPT maintains plans/decisions/issues, Antigravity performs local file, image asset, Git and coding tasks through explicit briefs. Logo binary upload still pending and should not be delegated to Ahmed as a routine chore. One-time tool setup or phone-level acceptance may need Ahmed's participation.
-
-## G0.4 workspace observation — 2026-11-14
-- Owner screenshot shows an Antigravity project named `homesets` selected with `Local Checkout`.
-- Selected model UI reads `Gemini 3.8 Flash High`.
-- **Unverified:** local path content, `git status`, `origin`, current branch. Do not assume project has been cloned or configured.
-- **Next narrow action:** ask Antigravity to inspect the selected workspace and either safely clone the exact private repository into an empty location or stop and report existing files/credentials/conflict; no Flutter setup or unrelated repo changes.
-
-## 2026-11-14 foundation double-check and autonomy review
-- GitHub repository and nine planning documents re-read; private `main` is the only returned branch; PR list empty; no `.github/workflows`, no Flutter source, no preferred PNG in the reference directory.
-- Latest verified repo baseline at audit: `main` commit `05df4c8a49fd53795602debfd7c426811c382d06` (baseline may move with documentation commits).
-- GitHub branch-protection endpoint returned 403; status remains **unverified**.
-- No local Git remote, actual Antigravity permission policy, or APK test evidence yet.
-- Audit: [FOUNDATION_AUDIT_2026-11-14.md](FOUNDATION_AUDIT_2026-11-14.md).
-- Long-running agent proposal: [AGENT_AUTONOMY_PROPOSAL.md](AGENT_AUTONOMY_PROPOSAL.md). Owner requests long runs and fewer approvals; manual phone testing only at project end conflicts with confirmed D20, still unresolved.
-- Prepared [G0-CAMPAIGN-01 Issue #2](https://github.com/abuhmaid28/homesets/issues/2) for autonomous **foundation-only** workspace verification; **not yet executed**.
-- Pending: verify local remote, active workspace rule, exact preferred PNG upload, and autonomy/merge/phone-testing policy; do not claim ready for production coding.
+## Handoff to any new chat
+Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `docs/ROADMAP.md`, `PROJECT_RULES.md` and the latest live GitHub state. Honor newer explicit decisions; never claim that unobserved agent work happened. Identify current campaign and one concrete next step.
