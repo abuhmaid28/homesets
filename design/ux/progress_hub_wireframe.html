@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Progress Hub (مركز التقدم)</title>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --text-main: #f4f4f5;
+      --text-muted: #9ca3af;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    body {
+      background-color: #0b0c0e;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      min-height: 100vh;
+    }
+    .preview-header {
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      max-width: 400px;
+    }
+    .preview-header h1 {
+      color: var(--accent-lime);
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+    .device-shell {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: var(--bg-dark);
+      border: 4px solid #27272a;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .subtabs {
+      display: flex;
+      padding: 8px 16px;
+      gap: 8px;
+      background: #16181f;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .subtab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+    .subtab-btn.active {
+      background: #27272a;
+      color: var(--accent-lime);
+    }
+    .content-scroll {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    /* Comparison Card */
+    .compare-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .compare-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+    }
+    .compare-slider-box {
+      height: 180px;
+      background: #16181f;
+      border-radius: 14px;
+      border: 1px dashed var(--card-border);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .slider-divider {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: var(--accent-lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slider-handle {
+      width: 24px;
+      height: 24px;
+      background: var(--accent-lime);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #000;
+      font-weight: 900;
+    }
+    .compare-tag {
+      position: absolute;
+      bottom: 8px;
+      background: rgba(0,0,0,0.6);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #ffffff;
+    }
+    /* Weight Trend Section */
+    .weight-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .chart-box {
+      height: 110px;
+      background: #14161c;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: #27272a;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+    }
+    .chart-bar.current {
+      background: var(--accent-lime);
+    }
+    .chart-label {
+      position: absolute;
+      bottom: -20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .nudge-box {
+      background: rgba(204, 255, 0, 0.08);
+      border-right: 3px solid var(--accent-lime);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      color: var(--text-main);
+    }
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      height: 72px;
+      background: #14151a;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .nav-item.active { color: var(--accent-lime); }
+    .nav-icon { width: 24px; height: 24px; }
+  </style>
+</head>
+<body>
+
+  <div class="preview-header">
+    <h1>هوم سيتس | مركز التقدم والمقارنة</h1>
+    <p>تتبع الصور الخاصة، الوزن الأسبوعي، ومعدل بناء العضلات</p>
+  </div>
+
+  <div class="device-shell">
+    <div class="status-bar">
+      <span>3:45 PM</span>
+      <span>📶 🔋 100%</span>
+    </div>
+
+    <!-- Subtabs -->
+    <nav class="subtabs">
+      <button class="subtab-btn active">الصور 📸</button>
+      <button class="subtab-btn">الوزن ⚖️</button>
+      <button class="subtab-btn">القوة 📈</button>
+      <button class="subtab-btn">الوجبات 🥗</button>
+    </nav>
+
+    <div class="content-scroll">
+
+      <!-- Photo Comparison Slider Card -->
+      <section class="compare-card">
+        <h3>
+          <span>مقارنة الصور (أمامي)</span>
+          <span style="font-size:0.8rem; color:var(--accent-lime); cursor:pointer;">التقاط صورة ➕</span>
+        </h3>
+
+        <div class="compare-slider-box">
+          <div style="position: absolute; right: 20px; text-align: center; color: var(--text-muted);">
+            <span>الأسبوع 1</span><br>
+            <strong style="color: #fff;">60.0 كجم</strong>
+          </div>
+          <div class="slider-divider">
+            <div class="slider-handle">↔</div>
+          </div>
+          <div style="position: absolute; left: 20px; text-align: center; color: var(--accent-lime);">
+            <span>الأسبوع 4</span><br>
+            <strong>61.2 كجم</strong>
+          </div>
+          <span class="compare-tag" style="right: 10px;">قبل (14 أكتوبر)</span>
+          <span class="compare-tag" style="left: 10px;">الآن (14 نوفمبر)</span>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">
+          🔒 جميع الصور محفوظة في مساحة التطبيق الخاصة ولا تظهر في ألبوم الهاتف العام
+        </div>
+      </section>
+
+      <!-- Weight Rolling Average Card -->
+      <section class="weight-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">متوسط الوزن الحالي</div>
+            <div style="font-size:1.6rem; font-weight:900; color:#fff;">61.2 <span style="font-size:0.9rem; color:var(--accent-lime);">كجم</span></div>
+          </div>
+          <button style="background:#27272a; border:1px solid var(--card-border); color:#fff; padding:8px 12px; border-radius:10px; font-size:0.8rem; font-weight:700;">تسجيل وزن اليوم ➕</button>
+        </div>
+
+        <!-- Weekly Chart Preview -->
+        <div class="chart-box" style="margin-bottom: 16px;">
+          <div class="chart-bar" style="height: 60%;"><span class="chart-label">أ1</span></div>
+          <div class="chart-bar" style="height: 68%;"><span class="chart-label">أ2</span></div>
+          <div class="chart-bar" style="height: 74%;"><span class="chart-label">أ3</span></div>
+          <div class="chart-bar current" style="height: 82%;"><span class="chart-label">أ4</span></div>
+        </div>
+
+        <div class="nudge-box">
+          💡 <strong>ملاحظة المعدل:</strong> الزيادة في الوزن ماشية بمعدل صحي ومثالي (~0.3 كجم في الأسبوع). استمر على نفس كميات الأكل والتمرين!
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="nav-item">
+        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>اليوم</span>
+      </div>
+      <div class="nav-item active">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>التقدم</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>الإعدادات</span>
+      </div>
+    </nav>
+  </div>
+
+</body>
+</html>

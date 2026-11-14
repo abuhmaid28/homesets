@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Today Screen (اليوم)</title>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --accent-lime-dim: #99cc00;
+      --text-main: #f4f4f5;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --danger: #ef4444;
+      --thumb-zone-border: #3b82f6;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    body {
+      background-color: #0b0c0e;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      min-height: 100vh;
+    }
+    .preview-header {
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      max-width: 400px;
+    }
+    .preview-header h1 {
+      color: var(--accent-lime);
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+    .device-shell {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: var(--bg-dark);
+      border: 4px solid #27272a;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .app-header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-mark {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .brand-home { color: #ffffff; }
+    .brand-sets { color: var(--accent-lime); }
+    .badge-user {
+      font-size: 0.75rem;
+      background: #27272a;
+      padding: 4px 10px;
+      border-radius: 12px;
+      color: var(--text-muted);
+    }
+    .screen-content {
+      flex: 1;
+      padding: 12px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    /* Consistency Card */
+    .consistency-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .ring-container {
+      width: 64px;
+      height: 64px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+    .ring-bg {
+      fill: none;
+      stroke: #27272a;
+      stroke-width: 6;
+    }
+    .ring-progress {
+      fill: none;
+      stroke: var(--accent-lime);
+      stroke-width: 6;
+      stroke-dasharray: 163;
+      stroke-dashoffset: 40; /* 3/4 complete */
+      stroke-linecap: round;
+    }
+    .ring-text {
+      position: absolute;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .consistency-info h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .consistency-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    /* Primary Workout Card */
+    .workout-card {
+      background: linear-gradient(145deg, #1f222a 0%, #17191f 100%);
+      border: 2px solid var(--accent-lime-dim);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 25px -5px rgba(204, 255, 0, 0.08);
+    }
+    .card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-lime);
+      display: flex;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .workout-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .meta-tag {
+      background: #27272a;
+      padding: 4px 10px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .exercise-list-mini {
+      margin-top: 4px;
+      padding-top: 12px;
+      border-top: 1px solid #27272a;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    .exercise-item {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-main);
+    }
+    .exercise-item span:last-child {
+      color: var(--text-muted);
+      direction: ltr;
+    }
+    /* Primary Action Buttons */
+    .btn-start {
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      transition: transform 0.1s ease;
+    }
+    .btn-lite {
+      background: #27272a;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    /* Secondary Nudge Card */
+    .nudge-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .nudge-card span {
+      color: var(--text-muted);
+    }
+    .nudge-action {
+      color: var(--accent-lime);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      height: 72px;
+      background: #14151a;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nav-item.active {
+      color: var(--accent-lime);
+    }
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-header">
+    <h1>هوم سيتس | شاشة اليوم (Today Screen Wireframe)</h1>
+    <p>تصميم تجريبي ثابت — الوضع الافتراضي للبدء في أقل من 3 ضغطات</p>
+  </div>
+
+  <div class="device-shell">
+    <!-- Android Status Bar -->
+    <div class="status-bar">
+      <span>3:35 PM</span>
+      <span>📶 🔋 100%</span>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand-mark">
+        <span class="brand-home">HOME</span><span class="brand-sets">SETS</span>
+      </div>
+      <div class="badge-user">قبل الشغل ⏰</div>
+    </header>
+
+    <!-- Main Scrollable Content -->
+    <main class="screen-content">
+
+      <!-- Weekly Consistency Tracker -->
+      <section class="consistency-card">
+        <div class="ring-container">
+          <svg class="ring-svg" viewBox="0 0 60 60">
+            <circle class="ring-bg" cx="30" cy="30" r="26" />
+            <circle class="ring-progress" cx="30" cy="30" r="26" />
+          </svg>
+          <span class="ring-text">3/4</span>
+        </div>
+        <div class="consistency-info">
+          <h3>استمرارية الأسبوع</h3>
+          <p>فاضلك تمرين واحد وتكمل هدف الأسبوع يا بطل 💪</p>
+        </div>
+      </section>
+
+      <!-- Primary Next Workout Card -->
+      <section class="workout-card">
+        <div class="card-label">
+          <span>التمرين المقترح اليوم</span>
+          <span>دوران تلقائي</span>
+        </div>
+        <h2 class="card-title">سحب وضهر وبايسبس</h2>
+        <div class="workout-meta">
+          <span class="meta-tag">⏱️ 25 دقيقة</span>
+          <span class="meta-tag">🏋️‍♂️ عقلة + أحبال</span>
+          <span class="meta-tag">3 تمارين</span>
+        </div>
+
+        <div class="exercise-list-mini">
+          <div class="exercise-item">
+            <span>1. عقلة قبضة واسعة (Pull-ups)</span>
+            <span>3 مجموعات × 8-10</span>
+          </div>
+          <div class="exercise-item">
+            <span>2. سحب حبل ضهر (Band Bent Row)</span>
+            <span>3 مجموعات × 10-12</span>
+          </div>
+          <div class="exercise-item">
+            <span>3. بايسبس بحبل المقاومة (Band Curl)</span>
+            <span>3 مجموعات × 12-15</span>
+          </div>
+        </div>
+
+        <!-- Primary CTA: 1 Tap from launch to Workout Player -->
+        <button class="btn-start" aria-label="ابدأ التمرين">
+          ▶ ابدأ التمرين (25 دقيقة)
+        </button>
+
+        <!-- Secondary CTA: Lite Mode for Tired Days -->
+        <button class="btn-lite" aria-label="الوضع السريع">
+          ⚡ تمرين سريع (15 دقيقة)
+        </button>
+      </section>
+
+      <!-- Meal Checklist Nudge -->
+      <section class="nudge-card">
+        <div>
+          <span>وجبات اليوم: </span>
+          <strong style="color:var(--text-main);">3 من 5 تم تسجيلها</strong>
+        </div>
+        <div class="nudge-action">عرض الجدول ←</div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Thumb Zone) -->
+    <nav class="bottom-nav">
+      <div class="nav-item active">
+        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>اليوم</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>التقدم</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>الإعدادات</span>
+      </div>
+    </nav>
+  </div>
+
+</body>
+</html>

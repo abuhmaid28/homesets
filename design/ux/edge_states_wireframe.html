@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Edge States & Recovery (الحالات الخاصة)</title>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --text-main: #f4f4f5;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    body {
+      background-color: #0b0c0e;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      min-height: 100vh;
+      gap: 24px;
+    }
+    .preview-header {
+      text-align: center;
+      color: var(--text-muted);
+      max-width: 600px;
+    }
+    .preview-header h1 {
+      color: var(--accent-lime);
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      width: 100%;
+    }
+    .edge-card {
+      background: var(--bg-dark);
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .edge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      width: fit-content;
+    }
+    .edge-badge.warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .edge-badge.danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .edge-badge.info { background: rgba(59, 130, 246, 0.2); color: var(--info); border: 1px solid var(--info); }
+    .edge-badge.success { background: rgba(204, 255, 0, 0.2); color: var(--accent-lime); border: 1px solid var(--accent-lime); }
+
+    .edge-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .edge-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .ui-mockup {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .btn-action {
+      background: var(--accent-lime);
+      color: #000;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-secondary {
+      background: #27272a;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 10px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-header">
+    <h1>هوم سيتس | نماذج الحالات الخاصة والاستثنائية</h1>
+    <p>معالجة انقطاع التمرين، الإحساس بالألم، العودة بعد غياب، وحالات القوائم الفارغة</p>
+  </div>
+
+  <div class="grid-container">
+
+    <!-- State 1: Interrupted Workout Recovery -->
+    <div class="edge-card">
+      <div class="edge-badge warning">⚠️ استئناف بعد الإغلاق المفاجئ</div>
+      <h3 class="edge-title">انقطاع التطبيق أثناء التمرين (Phone Killed Mid-Session)</h3>
+      <p class="edge-desc">لو بطارية الموبايل فصلت أو نظام أندرويد قفل التطبيق، أول ما يفتح هوم سيتس بيلاقي البانر ده في الشاشة الرئيسية لاسترجاع المجموعات المحفوظة.</p>
+
+      <div class="ui-mockup">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="color:var(--warning);">⚡ عندك تمرين غير مكتمل!</strong>
+          <span style="font-size:0.75rem; color:var(--text-muted);">منذ 15 دقيقة</span>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-main);">
+          سحب وضهر وبايسبس (كملت منه 3 من 9 مجموعات).
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-action" style="flex:2;">▶ استئناف التمرين</button>
+          <button class="btn-secondary" style="flex:1;">إلغاء ✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State 2: Emergency Pain Stop & Swap Sheet -->
+    <div class="edge-card">
+      <div class="edge-badge danger">🛑 حماية المفاصل وإيقاف الألم</div>
+      <h3 class="edge-title">الإحساس بألم أثناء أداء التمرين (Pain Stop / Swap)</h3>
+      <p class="edge-desc">لو حس بألم في مفصل الكتف أو الكوع أثناء الضغط، بنعرض شيت فوري ببدائل آمنة أو إنهاء التمرين بدون أي شعور بالذنب.</p>
+
+      <div class="ui-mockup">
+        <div style="color:var(--danger); font-weight:800; font-size:1rem;">⚠️ سلامتك أهم من أي تمرين!</div>
+        <p style="font-size:0.8rem; color:var(--text-muted);">
+          حاسس بوجع في الكتف مع (ضغط عالي بالحبل)؟ نقدر نبدله فوراً بتمرين تاني مش بيضغط على الكتف.
+        </p>
+        <button class="btn-action" style="background:#27272a; color:#fff; border:1px solid var(--accent-lime);">🔄 تبديل إلى: ضغط مائل خفيف</button>
+        <button class="btn-secondary" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); border-color:var(--danger);">🛑 وقف التمرين فوراً وحفظ المجموعات السابقة</button>
+      </div>
+    </div>
+
+    <!-- State 3: 7+ Days Absence Re-entry Card -->
+    <div class="edge-card">
+      <div class="edge-badge success">🤝 عودة بدون إحباط أو لوم</div>
+      <h3 class="edge-title">العودة بعد غياب أسبوع أو أكتر (7+ Days Absence)</h3>
+      <p class="edge-desc">بدل ما نصفّر العداد أو نحسسه بالذنب، بنرحب بيه ونقترح تمرين خفيف (Re-entry) عشان يتجنب الشد العضلي الشديد.</p>
+
+      <div class="ui-mockup">
+        <div style="font-size:1.1rem; font-weight:800; color:var(--accent-lime);">حمد الله على السلامة يا بطل! 👏</div>
+        <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4;">
+          عشان بقالك 10 أيام متمرنتش، جهزنالك تمرين إعادة تنشيط خفيف (-35% مجموعات) لتنشيط الدورة الدموية من غير إجهاد للمفاصل.
+        </p>
+        <button class="btn-action">بدء تمرين إعادة التنشيط (15 دقيقة) ←</button>
+      </div>
+    </div>
+
+    <!-- State 4: Empty Photos State -->
+    <div class="edge-card">
+      <div class="edge-badge info">📸 تشجيع البداية (Empty State)</div>
+      <h3 class="edge-title">معرض الصور في أول أسبوع (No Progress Photos Yet)</h3>
+      <p class="edge-desc">بدل شاشة فاضية كئيبة، بنشجعه يوثق جسمه في اليوم الأول عشان يشوف التغيير الحقيقي بعد شهر.</p>
+
+      <div class="ui-mockup" style="text-align:center; padding:24px 16px;">
+        <span style="font-size:2.5rem;">📸</span>
+        <div style="font-weight:800; margin:8px 0;">لسه مفيش صور متسجلة</div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+          الصور هي دليلك الأقوى على بناء العضلات لما الميزان يتحرك ببطء. التقط أول صورة لليوم الأول!
+        </p>
+        <button class="btn-action">➕ التقاط أول صورة لمستواك الحالي</button>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Onboarding Flow (تهيئة الحساب)</title>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --text-main: #f4f4f5;
+      --text-muted: #9ca3af;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    body {
+      background-color: #0b0c0e;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      min-height: 100vh;
+    }
+    .preview-header {
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      max-width: 400px;
+    }
+    .preview-header h1 {
+      color: var(--accent-lime);
+      font-size: 1.25rem;
+      margin-bottom: 4px;
+    }
+    .device-shell {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: var(--bg-dark);
+      border: 4px solid #27272a;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .stepper-header {
+      padding: 12px 20px;
+      display: flex;
+      gap: 6px;
+    }
+    .step-bar {
+      flex: 1;
+      height: 4px;
+      background: #27272a;
+      border-radius: 2px;
+    }
+    .step-bar.done { background: var(--accent-lime); }
+    .step-bar.active { background: var(--accent-lime); }
+    .content-area {
+      flex: 1;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+    .step-headline h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+    .step-headline p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .input-group {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .input-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .input-value {
+      background: #27272a;
+      color: var(--accent-lime);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+      text-align: center;
+      width: 100px;
+    }
+    .chip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .selection-chip {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .selection-chip.selected {
+      border-color: var(--accent-lime);
+      background: rgba(204, 255, 0, 0.1);
+      color: var(--accent-lime);
+    }
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 16px;
+      border-top: 1px solid var(--card-border);
+    }
+    .btn-next {
+      flex: 2;
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 16px;
+      height: 54px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-back {
+      flex: 1;
+      background: #27272a;
+      color: var(--text-muted);
+      border: none;
+      border-radius: 16px;
+      height: 54px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-header">
+    <h1>هوم سيتس | تهيئة الحساب (Onboarding Wireframe)</h1>
+    <p>شاشات إدخال البيانات الشخصية والأدوات وتحديد الإصابات</p>
+  </div>
+
+  <div class="device-shell">
+    <div class="status-bar">
+      <span>3:30 PM</span>
+      <span>📶 🔋 100%</span>
+    </div>
+
+    <!-- Multi-step Indicator -->
+    <div class="stepper-header">
+      <div class="step-bar done"></div>
+      <div class="step-bar active"></div>
+      <div class="step-bar"></div>
+      <div class="step-bar"></div>
+    </div>
+
+    <div class="content-area">
+      <div>
+        <div class="step-headline">
+          <h2>بياناتك البدنية وقوتك الحالية</h2>
+          <p>عشان محرك التمارين يختارلك الأوزان والتكرارات المناسبة من غير ما تبدأ بتمرين صعب جداً أو سهل بزيادة.</p>
+        </div>
+
+        <div class="form-section">
+          <!-- Height Input -->
+          <div class="input-group">
+            <span class="input-label">الطول (سم)</span>
+            <input type="text" class="input-value" value="190" readonly />
+          </div>
+
+          <!-- Weight Input -->
+          <div class="input-group">
+            <span class="input-label">الوزن الحالي (كجم)</span>
+            <input type="text" class="input-value" value="60.0" readonly />
+          </div>
+
+          <!-- Baseline Pull-ups -->
+          <div class="input-group">
+            <span class="input-label">أقصى تكرارات عقلة تقدر تعملها</span>
+            <input type="text" class="input-value" value="10" readonly />
+          </div>
+
+          <!-- Baseline Push-ups -->
+          <div class="input-group">
+            <span class="input-label">أقصى تكرارات ضغط تقدر تعملها</span>
+            <input type="text" class="input-value" value="10" readonly />
+          </div>
+
+          <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">
+            🔒 بياناتك الشخصية بتتخزن محلياً فقط على جهازك بدون أي خوادم خارجية
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="nav-actions">
+        <button class="btn-back">السابق</button>
+        <button class="btn-next">التالي (الأدوات والوقت) ←</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
