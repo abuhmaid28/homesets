@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Exploration: Today Screen (مقترح تصميم)</title>
+  <style>
+    :root {
+      --bg-dark: #0f1013;
+      --card-bg: #181a20;
+      --card-elevated: #22252e;
+      --card-border: #2d313d;
+      --lime: #ccff00;
+      --lime-glow: rgba(204, 255, 0, 0.18);
+      --text-white: #f4f4f5;
+      --text-gray: #a1a1aa;
+      --text-dim: #71717a;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    body {
+      background-color: #07080a;
+      color: var(--text-white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+      min-height: 100vh;
+    }
+    .disclaimer-banner {
+      background: #1e1b12;
+      border: 1px solid #78350f;
+      color: #fde68a;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      text-align: center;
+      max-width: 440px;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .phone-container {
+      width: 100%;
+      max-width: 390px;
+      height: 844px;
+      background-color: var(--bg-dark);
+      border: 4px solid #27272a;
+      border-radius: 44px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.85);
+      position: relative;
+    }
+    /* Status bar */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 24px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    /* Header */
+    .header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-svg {
+      width: 32px;
+      height: 32px;
+    }
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .logo-text span:first-child { color: #ffffff; }
+    .logo-text span:last-child { color: var(--lime); }
+    .shift-tag {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      color: var(--text-gray);
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    /* Scroll Content */
+    .scroll-body {
+      flex: 1;
+      padding: 14px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    /* Consistency Card */
+    .consistency-banner {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .ring-box {
+      width: 58px;
+      height: 58px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-box svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-num {
+      position: absolute;
+      font-weight: 900;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+    .consistency-text h4 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .consistency-text p {
+      font-size: 0.8rem;
+      color: var(--text-gray);
+    }
+    /* Main Workout Hero Card */
+    .hero-card {
+      background: linear-gradient(160deg, #1c202a 0%, #13151b 100%);
+      border: 2px solid var(--lime);
+      border-radius: 26px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 12px 30px var(--lime-glow);
+    }
+    .hero-eyebrow {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--lime);
+      text-transform: uppercase;
+    }
+    .hero-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .hero-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .hero-chip {
+      background: #252833;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-divider {
+      height: 1px;
+      background: #272a36;
+      margin: 4px 0;
+    }
+    .movements-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .move-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+    .move-name { font-weight: 700; }
+    .move-target { color: var(--text-gray); direction: ltr; font-weight: 600; }
+    /* Primary CTA */
+    .btn-main-start {
+      background: var(--lime);
+      color: #000000;
+      border: none;
+      border-radius: 18px;
+      height: 60px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 6px;
+      box-shadow: 0 8px 24px rgba(204, 255, 0, 0.3);
+    }
+    .btn-quick-lite {
+      background: #22252e;
+      color: var(--text-white);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      height: 48px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    /* Nutrition Card */
+    .nutrition-mini {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nutrition-info strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+    .nutrition-info span {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+    }
+    /* Bottom Nav */
+    .nav-bar {
+      height: 74px;
+      background: #111217;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .nav-tab.active { color: var(--lime); }
+    .nav-icon { width: 22px; height: 22px; }
+  </style>
+</head>
+<body>
+
+  <div class="disclaimer-banner">
+    ⚠️ <strong>مقترح تصميم استكشافي (Design Proposal):</strong><br>
+    هذا النموذج البصري هو استكشاف أولي لاتجاه (Performance Lime) ولا يمثل موافقة نهائية من أحمد (Product Owner).
+  </div>
+
+  <div class="phone-container">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>3:40 PM</span>
+      <span>🔋 100% 📶</span>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-container">
+        <!-- Pull-Up Motion Vector Placeholder (Athletic Silhouette) -->
+        <svg class="logo-svg" viewBox="0 0 100 100" fill="none">
+          <rect width="100" height="100" rx="20" fill="#181a20" />
+          <!-- Horizontal Bar -->
+          <line x1="15" y1="28" x2="85" y2="28" stroke="#ccff00" stroke-width="6" stroke-linecap="round" />
+          <!-- Athletic Back & Arms Silhouette (Vector Proposal) -->
+          <path d="M 28 28 L 34 45 L 42 40 L 46 56 L 50 70 L 54 56 L 58 40 L 66 45 L 72 28 C 68 38 60 48 50 50 C 40 48 32 38 28 28 Z" fill="#ccff00" />
+          <!-- Head/Neck in Pull-Up Top Position -->
+          <circle cx="50" cy="22" r="7" fill="#ccff00" />
+        </svg>
+        <div class="logo-text">
+          <span>HOME</span><span>SETS</span>
+        </div>
+      </div>
+      <div class="shift-tag">قبل الشغل ⏰</div>
+    </div>
+
+    <!-- Scroll Content -->
+    <div class="scroll-body">
+
+      <!-- Consistency Tracker -->
+      <div class="consistency-banner">
+        <div class="ring-box">
+          <svg viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="25" stroke="#252833" stroke-width="6" fill="none" />
+            <circle cx="30" cy="30" r="25" stroke="#ccff00" stroke-width="6" fill="none" stroke-dasharray="157" stroke-dashoffset="40" stroke-linecap="round" />
+          </svg>
+          <span class="ring-num">3/4</span>
+        </div>
+        <div class="consistency-text">
+          <h4>استمرارية الأسبوع الحالي</h4>
+          <p>تمرين النهاردة هيكمل هدف الأسبوع 100% يا بطل!</p>
+        </div>
+      </div>
+
+      <!-- Hero Workout Card -->
+      <div class="hero-card">
+        <div class="hero-eyebrow">
+          <span>تمرين اليوم المقترح</span>
+          <span>دوران آلي</span>
+        </div>
+        <h2 class="hero-title">سحب وضهر وبايسبس</h2>
+
+        <div class="hero-chips">
+          <span class="hero-chip">⏱️ 25 دقيقة</span>
+          <span class="hero-chip">🏋️ عقلة + أحبال</span>
+          <span class="hero-chip">3 تمارين</span>
+        </div>
+
+        <div class="hero-divider"></div>
+
+        <div class="movements-summary">
+          <div class="move-row">
+            <span class="move-name">1. عقلة قبضة واسعة</span>
+            <span class="move-target">3 sets × 8-10</span>
+          </div>
+          <div class="move-row">
+            <span class="move-name">2. سحب حبل ضهر (Band Row)</span>
+            <span class="move-target">3 sets × 10-12</span>
+          </div>
+          <div class="move-row">
+            <span class="move-name">3. بايسبس بحبل المقاومة</span>
+            <span class="move-target">3 sets × 12-15</span>
+          </div>
+        </div>
+
+        <!-- Start Workout Primary CTA (1 Tap to train) -->
+        <button class="btn-main-start" aria-label="ابدأ التمرين الآن">
+          ▶ ابدأ التمرين الآن (25 دقيقة)
+        </button>
+
+        <!-- Lite Mode Secondary CTA -->
+        <button class="btn-quick-lite" aria-label="الوضع السريع الموفر للوقت">
+          ⚡ مرهق؟ تمرينة سريعة (15 دقيقة)
+        </button>
+      </div>
+
+      <!-- Meal Checklist Status -->
+      <div class="nutrition-mini">
+        <div class="nutrition-info">
+          <strong>وجبات اليوم وسناك البروتين</strong>
+          <span>سجلت 3 من 5 وجبات النهاردة</span>
+        </div>
+        <span style="color:var(--lime); font-size:0.85rem; font-weight:800;">تسجيل ←</span>
+      </div>
+
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+      <div class="nav-tab active">
+        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>اليوم</span>
+      </div>
+      <div class="nav-tab">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>التقدم</span>
+      </div>
+      <div class="nav-tab">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>الإعدادات</span>
+      </div>
+    </nav>
+  </div>
+
+</body>
+</html>
