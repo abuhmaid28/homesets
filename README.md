@@ -5,7 +5,8 @@
 
 ## Source of truth — read these in order
 1. [Current verified status](docs/PROJECT_STATUS.md)
-2. [Master Execution Plan — C0–C9](docs/MASTER_EXECUTION_PLAN.md)
+2. [Autonomous Delivery Runbook — sequential campaigns](docs/AUTONOMOUS_DELIVERY_RUNBOOK.md)
+3. [Master Execution Plan — C0–C9](docs/MASTER_EXECUTION_PLAN.md)
 3. [Decision Register — GOV06–GOV11](docs/DECISION_REGISTER.md)
 3. [**Approved Antigravity autonomy / merge policy**](docs/AGENT_AUTONOMY_POLICY.md)
 4. [Current roadmap and gates](docs/ROADMAP.md)
@@ -36,3 +37,5 @@ At present there is **no Flutter application and no established GitHub Actions C
 
 ## Active next assignment
 - [C1-R extended campaign](https://github.com/abuhmaid28/homesets/issues/6) is **prepared but not run**; it expands the fix pass on the same Draft PR #5 into a substantive autonomous responsive design / visual QA sprint.
+
+**Queue note:** Ahmed already sent the short C1 correction prompt. Do not start a competing agent run; extended C1-R Issue #6 begins only after verifying the updated PR #5 head. GitHub does not auto-start local Antigravity.
