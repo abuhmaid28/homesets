@@ -40,3 +40,6 @@
 7. Stop without declaring milestone complete.
 
 **Note:** This document is an agent-readable reference. Whether Antigravity automatically loads it is **unverified**. Verify supported workspace rule filename/path before trusting automation.
+
+## Owner-only approvals / execution delegation (2026-11-14)
+Ahmed is Product Owner, not a routine operator. ChatGPT should perform available GitHub maintenance and review, and delegate local asset/commit/build work to Antigravity by scoped task. No routine file uploads or shell instructions for Ahmed unless unavoidable setup. All scope, safety and evidence gates still apply.
