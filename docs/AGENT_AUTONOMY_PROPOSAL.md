@@ -1,3 +1,7 @@
+> **SUPERSEDED on 2026-11-14.** Ahmed explicitly approved the higher-autonomy **Option B** with *final-only human phone testing*, continuous automated checks and guarded automatic code merges. The active policy is [AGENT_AUTONOMY_POLICY.md](AGENT_AUTONOMY_POLICY.md) and decisions GOV06–GOV11. The material below is retained solely as historical proposal and must not be interpreted as current rules.
+
+---
+
 # HOMESETS — Long-Run Agent Autonomy Protocol (PROPOSED)
 
 Date: 2026-11-14.
