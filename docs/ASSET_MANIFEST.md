@@ -10,6 +10,14 @@ No fitness icon/logo/photo asset in this repository has yet been approved for pr
 | `assets/fonts/` | Arabic/English font files | Must verify license and compatible redistribution | [Open] NOT SELECTED |
 | `assets/exercises/` | Exercise demonstration visuals | Source/license and safety cues must be verified per asset | [Open] NOT SELECTED |
 
+## Exact owner-selected image: local source fingerprint (pending GitHub upload)
+- Original: Ahmed's uploaded `Neon-Lime Pull-Up Fitness Logo(1).png`, 2026-11-14.
+- Download/upload filename: `homesets-pullup-preferred.png` (identical bytes, only renamed).
+- Dimensions: **1254 × 1254** px; PNG RGBA.
+- Size: **2,018,426 bytes**.
+- Expected SHA-256: `95822f54686cc17b7878322dc23607af04a010e073ffd722b91c2bc012d1596b`.
+- **Not yet on GitHub:** after owner upload, verify filename, pixels and checksum match this fingerprint.
+
 ## Required logo verification
 - Preserve source PNG unchanged and record image dimensions/checksum.
 - Create actual pixel renders at 512/192/96/48/24 px.
