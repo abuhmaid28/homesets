@@ -5,7 +5,9 @@
 
 ## Source of truth — read these in order
 1. [Current verified status](docs/PROJECT_STATUS.md)
-2. [Decision Register — GOV06–GOV11](docs/DECISION_REGISTER.md)
+2. [Autonomous Delivery Runbook — sequential campaigns](docs/AUTONOMOUS_DELIVERY_RUNBOOK.md)
+3. [Master Execution Plan — C0–C9](docs/MASTER_EXECUTION_PLAN.md)
+3. [Decision Register — GOV06–GOV11](docs/DECISION_REGISTER.md)
 3. [**Approved Antigravity autonomy / merge policy**](docs/AGENT_AUTONOMY_POLICY.md)
 4. [Current roadmap and gates](docs/ROADMAP.md)
 5. [Project rules](PROJECT_RULES.md) and [always-on workspace AGENTS.md](AGENTS.md)
@@ -32,3 +34,8 @@ Working name **HOMESETS**; preferred Pull-Up Motion neon-lime-on-charcoal logo, 
 
 ## Important technical gate
 At present there is **no Flutter application and no established GitHub Actions CI**. The owner's approval for guarded automatic merges **does not permit a runtime-code merge until the required CI actually exists and passes**. No owner phone test is required at each intermediate milestone; full phone acceptance is required at the end.
+
+## Active next assignment
+- [C1-R extended campaign](https://github.com/abuhmaid28/homesets/issues/6) is **prepared but not run**; it expands the fix pass on the same Draft PR #5 into a substantive autonomous responsive design / visual QA sprint.
+
+**Queue note:** Ahmed already sent the short C1 correction prompt. Do not start a competing agent run; extended C1-R Issue #6 begins only after verifying the updated PR #5 head. GitHub does not auto-start local Antigravity.

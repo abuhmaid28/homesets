@@ -54,3 +54,37 @@
 
 ## Handoff to any new chat
 Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `docs/ROADMAP.md`, `PROJECT_RULES.md` and the latest live GitHub state. Honor newer explicit decisions; never claim that unobserved agent work happened. Identify current campaign and one concrete next step.
+
+## Independent GitHub review after G0-CAMPAIGN-01 (2026-11-14)
+- ChatGPT independently verified [PR #3](https://github.com/abuhmaid28/homesets/pull/3) merged to `main`: head `7a56ed4148794477ed84eb863013eef042917a30`, merge commit `9265e6f6004a21ee222dcdc16518820d88de0d34`; changes limited to three docs, no Flutter runtime.
+- [Issue #2](https://github.com/abuhmaid28/homesets/issues/2) closed.
+- GitHub PR-head combined status shows **zero status checks**; do not cite any successful GitHub Actions run for G0. Documentation-only merge reviewed; no runtime code merge permitted while CI absent.
+- Local Git/Flutter and permission results were recorded by Antigravity, but actual Windows permission enforcement was **not independently tested by ChatGPT**. See [independent review](reviews/INDEPENDENT_G0_REVIEW.md).
+- Exact preferred PNG exists in ChatGPT session storage with SHA-256 `95822f54686cc17b7878322dc23607af04a010e073ffd722b91c2bc012d1596b`; **still missing in the Antigravity local workspace and GitHub**.
+- [C1 design-only autonomous campaign — Issue #4](https://github.com/abuhmaid28/homesets/issues/4) is **prepared, not executed**. It may produce product/UX/design drafts and offline static mockups as one bounded run; no Flutter code, CI claims, or approval of final brand.
+
+## C1 product/UX/design review — 2026-11-14
+- Antigravity pushed [Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5), head `70aaacc2a72278e876163033a7a61b8542fb9c5e` with **17 files / 5 commits**, all documentation and offline static HTML design previews. **NOT merged to main.**
+- ChatGPT independently reviewed GitHub files and added [review #5906101899](https://github.com/abuhmaid28/homesets/pull/5#pullrequestreview-5906101899) as **CHANGES REQUIRED** (comment review, not approval): R01 contrast errors incl dim text not AA; R02 Android 12+/16 backup privacy and cross-file restore atomicity; R03 pain safety and assistance/resistance bands; R04 static HTML and missing real render/screenshot validation, inaccurate substitute logo; R05 stale/unverified package versions; R06 UX scope/sample data inconsistencies.
+- **C1 gate remains OPEN**. Await agent fix pass on **same Draft PR**; get screenshot evidence for one grouped owner visual review; no routine approvals and no Flutter implementation yet.
+- Current official pub.dev evidence (2026-11-14): drift 2.35.4, drift_flutter 0.3.1, flutter_local_notifications 23.0.2 (min Dart 3.12) — **candidates only**, no dependency selected/approved. Links in the PR review.
+- Exact owner-selected `homesets-pullup-preferred.png` source is present in ChatGPT working storage and checksum was rechecked as `95822f54686cc17b7878322dc23607af04a010e073ffd722b91c2bc012d1596b`; however **binary remains absent from HOMESETS GitHub**. Distinguish local ChatGPT asset from Antigravity workspace access.
+
+## 2026-11-14 — End-to-end plan and extended C1 work
+- [Master execution plan](MASTER_EXECUTION_PLAN.md) defines C0–C9, detailed goals, internal tests, necessary PO gates and final-only Honor acceptance; campaign map is recommended execution grouping, not new scope approval.
+- Owner requests genuinely long autonomous work with no routine interruptions; extended [C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) expands correction R01–R06 into responsive UI/design polish, actual visual captures, WCAG/privacy/safety corrections, documentation QA and grouped review.
+- **C1-R not yet executed**. Must stay on existing [Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5), no merge, no Flutter app or new dependency.
+- Current blockers unchanged: exact selected logo binary absent from repo; CI absent; final brand/product/architecture gates unapproved.
+
+## 2026-11-14 — Sequential campaign delivery policy
+- Owner reports the **earlier short C1 correction prompt has already been sent**. Its completion/result has **not yet been verified**; do not launch a parallel C1-R on the same branch.
+- New [Autonomous Delivery Runbook](AUTONOMOUS_DELIVERY_RUNBOOK.md) maps C0–C9 with work packages, small internal checkpoints, automated tests, guarded merges, and grouped PO acceptance gates.
+- [Queued extended C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) is **continuation AFTER the small run**. Inspect newest Draft PR #5 head; skip previously fixed findings and do remaining long design/visual QA tasks. No extra prompt until current run reports.
+- GitHub issues and documents do not by themselves start an Antigravity session. A future launch/resume requires the agent to receive a single next-campaign instruction and active local workspace.
+
+## C1 small correction run completed — independent GitHub post-check (2026-11-14)
+- User supplied full Antigravity correction run output (local campaign report). GitHub independently confirms **Draft PR #5** still OPEN/unmerged, head `db5036a1e3e9892f9eb6b53ee29500c17708150d` (6 commits total, 32 changed paths).
+- `docs/reviews/C1_CORRECTION_MATRIX.md` exists. Revisions to R01–R06 text are in the PR. **14 real PNG screenshots are committed** under `design/screenshots/` and independently retrieved/visually inspected by ChatGPT using GitHub file content (not mere file presence).
+- [Independent post-correction Review #5906201631](https://github.com/abuhmaid28/homesets/pull/5#pullrequestreview-5906201631): correction pass accepted as **pushed/delivered**, but **C1 OWNER DESIGN GATE REMAINS OPEN**. Remaining visual QA: full-screen clean screenshots without proposal banners, separate rest timer state, remove blue thumb-zone diagnostic guide, 1.5× text-scale checks, synthetic fixture labeling, reproducible contrast script not in committed PR.
+- **Issue #6 now READY for sequential execution** as a longer, non-duplicative C1 design/UX/QA campaign on the same Draft PR. Do not run it concurrently with another active PR #5 edit.
+- No Flutter application, CI or final brand approval. Logo reference exact PNG still absent from GitHub. No actual Honor device test before final release acceptance (GOV07).
