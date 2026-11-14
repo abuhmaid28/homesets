@@ -1,3 +1,5 @@
+> **UPDATE — 2026-11-14, after this audit:** Ahmed explicitly approved the long-running **Option B** with automated tests/guarded merges and one final human phone test. The testing-timing conflict identified in the historical audit below is now **RESOLVED** by Decision Register GOV07–GOV11. The active rules are [Agent Autonomy Policy](AGENT_AUTONOMY_POLICY.md), [Decision Register](DECISION_REGISTER.md) and [Roadmap](ROADMAP.md). The original audit observations about missing binary logo, unverified local Git remote and missing CI remain valid unless subsequently re-verified. The audit body below is preserved as a point-in-time record.
+
 # HOMESETS — Foundation Double-Check Audit
 
 Date: 2026-11-14. Method: direct read of the private GitHub repository and nine planning files; official Antigravity, GitHub and Flutter documentation. **This is a repository audit, not a local machine or phone test.**
