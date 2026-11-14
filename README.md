@@ -29,3 +29,6 @@ Android only; local data; no accounts, backend, recurring costs or network-depen
 
 ## Next action
 Place the exact preferred logo PNG under `assets/brand/reference/`, then review and approve brand asset tests. Do not start Flutter coding or Antigravity tasks yet.
+
+## Current operating model
+Ahmed is PO-only: approvals and device acceptance. ChatGPT manages the source-of-truth docs, roadmap, issues and independent review. Antigravity handles local files/assets/code/verification/Git through approved narrowly scoped tasks. The exact preferred logo binary is still pending upload to the repo; do not ask Ahmed for routine manual GitHub uploads.
