@@ -11,7 +11,8 @@
       --card-border: #2a2d36;
       --accent-lime: #ccff00;
       --text-main: #f4f4f5;
-      --text-muted: #9ca3af;
+      --text-muted: #a1a1aa;
+      --text-tertiary: #8e8e93;
     }
     * {
       box-sizing: border-box;
@@ -32,21 +33,31 @@
       text-align: center;
       margin-bottom: 16px;
       color: var(--text-muted);
-      max-width: 400px;
+      max-width: 440px;
     }
     .preview-header h1 {
       color: var(--accent-lime);
       font-size: 1.25rem;
       margin-bottom: 4px;
     }
+    .preview-note {
+      font-size: 0.75rem;
+      background: #1c1e24;
+      border: 1px solid #2a2d36;
+      padding: 4px 10px;
+      border-radius: 8px;
+      margin-top: 6px;
+      display: inline-block;
+    }
     .device-shell {
       width: 100%;
       max-width: 390px;
-      height: 844px;
+      min-height: 700px;
+      max-height: 844px;
       background-color: var(--bg-dark);
       border: 4px solid #27272a;
       border-radius: 40px;
-      overflow: hidden;
+      overflow-y: auto;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -225,6 +236,7 @@
   <div class="preview-header">
     <h1>هوم سيتس | مركز التقدم والمقارنة</h1>
     <p>تتبع الصور الخاصة، الوزن الأسبوعي، ومعدل بناء العضلات</p>
+    <div class="preview-note">تصميم تجريبي ثابت (Static Prototype) — للعرض البصري فقط بدون تفاعلية برمجية</div>
   </div>
 
   <div class="device-shell">

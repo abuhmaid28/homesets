@@ -41,36 +41,43 @@ The owner-preferred visual direction depicts:
 
 ---
 
-## 3. Candidate Color Palette & Measured Contrast
+## 3. Candidate Color Palette & Measured Contrast (WCAG 2.1 Audit)
 
-All proposed color roles are evaluated against **WCAG 2.1 Level AA (minimum 4.5:1 for body text, 3:1 for large UI components)**.
+All proposed color roles are mathematically verified against **WCAG 2.1 Level AA (minimum 4.5:1 for normal body text, 3.0:1 for large UI components $\ge 18$pt or $\ge 14$pt bold)** and **Level AAA (7.0:1 normal, 4.5:1 large)**.
 
-### 3.1 Dark Theme (Primary Default)
+### 3.1 Mathematical Contrast Formula & Verification Method
+Relative luminance $L$ is computed per W3C specification:
+For each 8-bit channel $C \in \{R, G, B\}$, $C_{\text{srgb}} = C / 255.0$:
+$$C_{\text{linear}} = \begin{cases} \frac{C_{\text{srgb}}}{12.92} & \text{if } C_{\text{srgb}} \le 0.04045 \\ \left(\frac{C_{\text{srgb}} + 0.055}{1.055}\right)^{2.4} & \text{if } C_{\text{srgb}} > 0.04045 \end{cases}$$
+$$L = 0.2126 \cdot R_{\text{linear}} + 0.7152 \cdot G_{\text{linear}} + 0.0722 \cdot B_{\text{linear}}$$
+$$\text{Contrast Ratio} = \frac{\max(L_1, L_2) + 0.05}{\min(L_1, L_2) + 0.05}$$
 
-| Role Name | Hex Code | Contrast vs Background (`#121316`) | WCAG Rating | UI Application |
-| :--- | :--- | :--- | :--- | :--- |
-| **Surface Dark (Base)** | `#121316` | N/A (Background) | Base Canvas | App background, full-screen canvas. |
-| **Surface Card** | `#1C1E24` | 1.15:1 (Subtle elevation) | N/A | Cards, bottom sheets, navigation bar. |
-| **Surface Elevated** | `#272A32` | 1.35:1 (Higher elevation) | N/A | Interactive input fields, chips, steppers. |
-| **Border / Divider** | `#2E323D` | 1.45:1 (Subtle separator) | N/A | Card borders, horizontal rules. |
-| **Primary Accent (Lime)** | `#CCFF00` | **15.2:1** | **AAA** (Exceeds 7:1) | Primary CTA buttons, consistency ring, active tabs, effort badges. |
-| **Accent Lime Muted** | `#99CC00` | **10.1:1** | **AAA** | Secondary badges, progress bars, active chip backgrounds. |
-| **Text Primary (White)** | `#F4F4F5` | **16.8:1** | **AAA** | Primary headings, exercise names, key numeric values. |
-| **Text Muted (Zinc)** | `#A1A1AA` | **7.5:1** | **AAA** | Subtitles, secondary metadata, inactive navigation tabs. |
-| **Text Dim (Gray)** | `#71717A` | **4.6:1** | **AA** (Passes 4.5:1) | Timestamps, disabled placeholders, hint copy. |
-| **Danger / Pain Red** | `#EF4444` | **4.9:1** | **AA** | Pain alert button, stop workout CTA, destructive reset. |
-| **Warning Amber** | `#F59E0B` | **8.2:1** | **AAA** | Interrupted session banner, fatigue warnings. |
+### 3.2 Dark Theme (Primary Default) — Multi-Surface Matrix
 
-### 3.2 Light Theme (Optional Secondary)
+| Role Name | Hex Code | Canvas Surface (`#121316`) | Card Surface (`#1C1E24`) | Elevated Surface (`#22252E`) | Compliance Level | UI Application & Restrictions |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Surface Dark (Base)** | `#121316` | Base Canvas | N/A | N/A | Base | Full-screen background canvas. |
+| **Surface Card** | `#1C1E24` | 1.15:1 | Base Card | N/A | Base | Workout cards, navigation drawer, sheets. |
+| **Surface Elevated** | `#22252E` | 1.35:1 | 1.17:1 | Base Elevated | Base | Input fields, active chips, stepper box. |
+| **Primary Accent (Lime)** | `#CCFF00` | **15.81:1** | **14.18:1** | **13.02:1** | **AAA** (All) | Primary CTA buttons, consistency ring, active tabs. |
+| **Accent Lime Muted** | `#99CC00` | **9.72:1** | **8.72:1** | **8.01:1** | **AAA** (All) | Secondary badges, progress bars, active chip borders. |
+| **Text Primary (White)** | `#F4F4F5` | **16.90:1** | **15.16:1** | **13.92:1** | **AAA** (All) | Primary headings, exercise names, key numbers. |
+| **Text Muted (Zinc-400)** | `#A1A1AA` | **7.25:1** | **6.50:1** | **5.97:1** | **AAA** / **AA** | Subtitles, secondary metadata, inactive navigation tabs. |
+| **Text Tertiary (Accessible)**| `#8E8E93` | **5.70:1** | **5.11:1** | **4.69:1** | **AA** (All $\ge 4.5:1$) | Caption text, timestamps, unit labels (`كجم`, `تكرار`). |
+| **Control Disabled (Non-Text)**| `#71717A` | **3.84:1 (FAIL text)**| **3.45:1 (FAIL text)**| **3.17:1 (FAIL text)**| **Non-Text AA** ($\ge 3:1$) | **RESTRICTED TO NON-TEXT ONLY.** Disabled button outlines, inactive dividers. **Must NOT be used for readable text.** |
+| **Danger / Pain Red** | `#EF4444` | **4.94:1 (AA text)** | **4.43:1 (AA large)** | **4.07:1 (AA large)** | **AA Large** | Pain stop CTA buttons, warning dialog borders. For small text on cards, use `#F87171` (6.57:1). |
+| **Warning Amber** | `#F59E0B` | **8.65:1** | **7.76:1** | **7.13:1** | **AAA** (All) | Interrupted session recovery banner, fatigue alerts. |
+| **Black CTA Text** | `#0B0C0E` | N/A | N/A | N/A | **16.65:1 (AAA)** | Text on Lime CTA button (`#CCFF00`). |
 
-| Role Name | Hex Code | Contrast vs Light BG (`#F8FAFC`) | WCAG Rating | UI Application |
-| :--- | :--- | :--- | :--- | :--- |
-| **Surface Light (Base)** | `#F8FAFC` | N/A (Background) | Base Canvas | App background for light theme. |
-| **Surface Card** | `#FFFFFF` | 1.05:1 (Pure white) | N/A | White card elevation on soft slate. |
-| **Border / Divider** | `#E2E8F0` | 1.25:1 | N/A | Card outlines. |
-| **Primary Accent (Dark Green)** | `#365314` | **9.1:1** (Deep lime/olive) | **AAA** | Primary CTA, active navigation (Lime `#CCFF00` has insufficient contrast on light background; darkened variant used for text/controls). |
-| **Text Primary** | `#0F172A` | **17.2:1** | **AAA** | Primary body text and headings. |
-| **Text Muted** | `#64748B` | **5.4:1** | **AA** | Subtitles and captions. |
+### 3.3 Light Theme (Optional Secondary)
+
+| Role Name | Hex Code | Light Root (`#F8FAFC`) | Light Card (`#FFFFFF`) | Compliance Level | UI Application |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Surface Light (Base)** | `#F8FAFC` | Base Canvas | N/A | Base | App background for light theme. |
+| **Surface Card** | `#FFFFFF` | 1.05:1 | Base Card | Base | White card elevation on soft slate. |
+| **Primary Accent (Dark Green)**| `#365314`| **8.35:1** | **8.73:1** | **AAA** | Primary CTA, active navigation. |
+| **Text Primary** | `#0F172A` | **17.06:1** | **17.85:1** | **AAA** | Primary body text and headings. |
+| **Text Muted** | `#64748B` | **4.55:1** | **4.76:1** | **AA** (Normal) | Subtitles and captions. |
 
 ---
 

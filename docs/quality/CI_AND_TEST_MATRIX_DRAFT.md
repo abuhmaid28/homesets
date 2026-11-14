@@ -31,7 +31,7 @@ When initialized in Campaign G7 / Milestone P0, every implementation PR must pas
        │     `flutter analyze --fatal-infos`
        │
        ├── Step 3: Pure Dart Engine Unit Tests
-       │     `dart test test/engine/` (100+ tests: double progression, fatigue, recovery)
+       │     `flutter test test/domain/engine/` (Architecture target: verify double progression, fatigue, recovery)
        │
        ├── Step 4: Widget & RTL Accessibility Tests
        │     `flutter test test/widgets/` (Touch targets >=48dp, RTL mirroring, contrast)
@@ -42,6 +42,8 @@ When initialized in Campaign G7 / Milestone P0, every implementation PR must pas
        └── Step 6: Android Debug APK Compilation Build
              `flutter build apk --debug` (Verifies buildable Android artifact)
 ```
+
+*(Note: The test commands above represent the planned verification pipeline for Milestone P0+. Zero test directories or runtime Flutter code currently exist in the repository.)*
 
 ---
 
@@ -85,11 +87,14 @@ When initialized in Campaign G7 / Milestone P0, every implementation PR must pas
 
 ## 4. Workout Safety Requirements: Confirmed vs. Proposed
 
+All exercise and load progression logic is classified as **[Proposed pending qualified fitness safety review]**, never as clinical or medical prescriptions.
+
 | Principle / Rule | Status | Source / Evidence | Safety Rationale |
 | :--- | :--- | :--- | :--- |
 | **No Medical Diagnosis** | **[Confirmed]** | D05, D15, Master §0 | The app is an autonomous training log, not a clinical tool. No BMI labeling or clinical claims. |
-| **Pain Stop & Swap** | **[Confirmed]** | D04, Master §11 | Discomfort triggers immediate safe exercise swap or zero-guilt session termination. |
-| **Double Progression** | **[Proposed]** | Master §4, §11 | Evidence-backed progressive overload; advance one variable at a time (reps first, then band resistance). |
+| **Acute Pain Stop Precedence** | **[Proposed Safety Policy]** | Master §11 | Acute joint discomfort triggers **immediate cessation and joint rest**. Never automatically prescribe an alternative loaded movement during acute pain. |
+| **Band Assistance vs Resistance**| **[Proposed Safety Policy]** | C1 Review | **Crucial Distinction**: In assisted pull-ups, heavier bands provide MORE upward assistance (EASIER). In resisted movements (push-ups/rows), heavier bands increase tension (HARDER). Universal color ladders are prohibited. Progression must be exercise-specific. |
+| **Double Progression** | **[Proposed]** | Master §4, §11 | Evidence-backed progressive overload; advance one variable at a time (reps first within range, then external tension/rung). |
 | **1–3 Reps-in-Reserve (RIR)** | **[Proposed]** | Master §4 | Keeps sets challenging for hypertrophy without excessive failure fatigue. |
 | **24–48h Recovery Window** | **[Proposed]** | Master §4, §11 | Allows systemic and local muscle tissue repair before reloading the same muscle group. |
 | **Absence Deload ($\ge 7$ days)**| **[Proposed]** | D15, Master §11 | Protects unconditioned muscles and tendons from acute soreness/injury after time off. |
@@ -97,16 +102,19 @@ When initialized in Campaign G7 / Milestone P0, every implementation PR must pas
 
 ---
 
-## 5. Candidate Tooling & Dependencies License Inventory
+## 5. Candidate Tooling & Dependencies License Inventory (Pre-G6 Review Only)
 
-All proposed candidates are verified for free open-source licensing with zero commercial/private restrictions:
+> **IMPORTANT POLICY GUARD:** All items below are **proposed candidates only**. No dependencies are added to `pubspec.yaml` in Campaign C1. Formal dependency addition remains strictly blocked until Product Owner Gate G6 approval.
 
-| Package / Action | Proposed Version | License | Upstream Source / Date Verified |
-| :--- | :--- | :--- | :--- |
-| `actions/checkout` | `v4` | MIT | GitHub Actions Official (2026) |
-| `actions/setup-java` | `v4` | Apache-2.0 | GitHub Actions Official (2026) |
-| `subosito/flutter-action` | `v2` | MIT | GitHub Community Action (2026) |
-| `drift` + `drift_flutter` | `^2.x` | MIT | Simon Binder / Pub.dev (2026) |
-| `flutter_local_notifications` | `^17.x` | BSD-3-Clause | Michael Bui / Pub.dev (2026) |
-| `intl` | `^0.19.x` | BSD-3-Clause | Dart.dev Official (2026) |
-| `cairo` font | Latest | SIL OFL 1.1 | Google Fonts (2026) |
+Verified against pub.dev and official upstream repositories as of November 2026:
+
+| Package / Action | Upstream Version (pub.dev / GitHub) | License | Min Dart / SDK Requirement | Upstream Source & Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `actions/checkout` | `v4` | MIT | N/A | GitHub Actions Official (2026) |
+| `actions/setup-java` | `v4` | Apache-2.0 | N/A | GitHub Actions Official (2026) |
+| `subosito/flutter-action` | `v2` | MIT | N/A | GitHub Community Action (2026) |
+| `drift` | `2.35.4` | MIT | Dart >= 3.8.0 | Simon Binder / Pub.dev (Active 2026) |
+| `drift_flutter` | `0.3.1` | MIT | Dart >= 3.8.0, Flutter >= 3.24.0 | Simon Binder / Pub.dev (Active 2026) |
+| `flutter_local_notifications` | `23.0.2` | BSD-3-Clause | Dart >= 3.12.0, Android compileSdk 35/36 | Michael Bui / Pub.dev (Active 2026) |
+| `intl` | `0.19.0` (or `^0.20.x`) | BSD-3-Clause | Dart >= 3.0.0 | Dart.dev Official (Active 2026) |
+| `cairo` font | Latest | SIL OFL 1.1 | Open Font License | Google Fonts (Free redistribution) |

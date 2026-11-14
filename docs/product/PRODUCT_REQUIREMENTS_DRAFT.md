@@ -54,59 +54,62 @@ Ahmed wants to build muscle and achieve a defined, athletic physique at home bec
 
 ## 4. MVP Feature Specifications
 
-### 4.1 Onboarding & First Launch (Screen 1–4)
-- **Goal Selection:** Defaulted to "Build Muscle & Shape" (بناء العضلات والقوة).
-- **Physical Profile:** Height (cm), Weight (kg), Age, Push-up & Pull-up baseline rep counts.
+### 4.1 App Setup & Program Initialization (`إعداد التطبيق وبدء برنامجك`)
+- **Single Fixed Goal (MVP Confirmed):** Fixed to **"بناء العضلات والقوة (Build Muscle & Strength)"**. No goal dropdown or selection in MVP onboarding. Additional goals (e.g. fat loss, endurance) are preserved as **[Open / Post-MVP]**.
+- **Physical Baseline Input:** Blank input fields with neutral placeholder hints (e.g., "مثال: 175 سم", "مثال: 70 كجم", "مثال: 8 تكرارات"). No hard-coded personal numbers pre-filled in production builds.
 - **Equipment Inventory:** Toggle selection: Pull-up bar, Resistance bands, Flat ground / chair.
-- **Session Duration:** 15 min, 20 min, 30 min (Default: 20–30 min).
-- **Pain / Avoid Areas:** Checklist: Shoulders, Elbows, Wrists, Lower back, Knees. Exercises loading these joints are excluded.
+- **Session Duration:** 15 min, 20 min, 30 min (Target estimate; Default: 20–30 min).
+- **Pain / Avoid Areas:** Checklist: Shoulders, Elbows, Wrists, Lower back, Knees. Exercises loading these joints are excluded from initial generation.
 - **Preferences:** Egyptian Arabic (RTL default) or English; Dark theme (default) or Light; Optional daily workout reminder (default 3:30 PM).
 
 ### 4.2 Today Screen (Primary Hub)
 - **Next Planned Session Card:**
   - Session title and target muscle groups (e.g., "سحب وضهر - اليوم الأول").
-  - Estimated duration (15–30 min) and exercise count (3–4 movements).
+  - Estimated duration (15–30 min target estimate, not a rigid clock) and exercise count (3–4 movements).
   - Prominent primary CTA button: **ابدأ التمرين (Start Workout)**.
-  - Secondary quick CTA: **تمرين سريع 15 دقيقة (Lite Mode)**.
+  - Secondary quick CTA: **تمرين سريع 15 دقيقة (Lite Mode)** (Target estimate: 2 key compound movements, full weekly credit awarded).
   - Tertiary action: **تبديل تمرين (Swap Exercise)**.
 - **Weekly Consistency Ring:** Shows sessions completed this week versus weekly target (e.g., 3 of 4 completed).
 - **Recent Progress Snippet:** Days since last session, latest weight entry.
 
-### 4.3 Workout Player
-- **Screen Awake:** Display stays awake during active workout session.
+### 4.3 Workout Player & Safety Controls
+- **Screen Awake:** Display stays awake during active workout session via wakelock.
 - **Current Exercise Display:**
   - Exercise title in Egyptian Arabic with English name reference.
   - Muscle targets, current set index (e.g., مجموعة 2 من 3).
-  - Target rep range (e.g., 8–12 تكرار) and band color/resistance rung.
+  - Target rep range (e.g., 8–12 تكرار) and specific band assistance/resistance level.
 - **One-Tap Rep Stepper & Logger:**
-  - Quick rep adjust buttons (-1 / +1) and direct keypad or large step selector.
-  - Log Set Button (تسجيل المجموعة) triggering automatic rest timer.
+  - Quick rep adjust buttons (-1 / +1) and direct large step selector in lower 40% thumb zone.
+  - Log Set Button (تسجيل المجموعة, $\ge 56\times 56$ dp) triggering automated rest timer.
 - **Set Feedback Rating:**
   - Immediately following set log: **سهل (Easy)** | **مظبوط (Right)** | **صعب (Hard)**.
 - **Rest Timer:**
   - Visual circular countdown (default 90s for compound, 60s for isolation).
   - +30s / Skip buttons.
   - Sound and haptic vibration pulse upon timer completion.
-- **Workout Player Controls:**
-  - Skip exercise (تخطي).
-  - Swap exercise due to pain or equipment constraint (تبديل).
-  - Emergency Pain Stop (وقف التمرين - في ألم).
+- **Safety & Pain Controls [Proposed pending qualified safety review]:**
+  - **Acute Pain Stop Precedence:** If the user experiences joint discomfort and taps "في ألم (Pain)", **immediate session cessation and joint rest take primary precedence**. The app must NOT aggressively push another provocative loaded movement during acute pain. Safe alternative review is offered only after pain has subsided.
+  - Voluntary Exercise Swap: Allows manual swap for non-pain reasons (e.g., band anchor unavailable).
 
 ### 4.4 Workout Summary
 - Total duration, total volume (sets completed), exercises logged.
 - Congratulatory encouragement in colloquial Egyptian Arabic.
 - Next scheduled workout recovery advice (e.g., "عضلات الضهر محتاجة ترتاح 48 ساعة").
 
-### 4.5 Progression & Plan Engine (Pure-Dart)
+### 4.5 Progression & Plan Engine (Pure-Dart) [Proposed pending safety review]
 - **Rotation Structure:** Upper Pull / Upper Push / Legs & Core alternating rotation; no fixed calendar days.
-- **Overload Logic (Double Progression):**
-  - Step 1: Add reps until reaching top of bracket (e.g., from 8 up to 12 reps) across all sets with "Right" or "Easy" feedback.
-  - Step 2: Once top rep target is met cleanly, advance difficulty ladder (e.g., increase band tension or use tempo variation) and reset reps to bottom bracket.
-  - Step 3: If "Hard" with falling reps across 2 consecutive sessions, maintain or deload 1 rung.
+- **Band Assistance vs. Resistance Logic (Crucial Distinction):**
+  - **Assisted Movements (e.g. Pull-ups):** A heavier/thicker band provides **more upward assistance**, making the exercise **easier**. Overload progression means progressing to a **thinner band** or performing unassisted reps.
+  - **Resisted Movements (e.g. Band Push-ups, Rows, Curls):** A heavier/thicker band increases tension, making the exercise **harder**. Overload progression means progressing to a **thicker band** or adding reps.
+  - **No Universal Color Ladders:** Because band manufacturers use completely different color coding, bands are calibrated by user-labeled resistance/thickness rungs, never by hard-coded color names.
+- **Double Progression Logic:**
+  - Step 1: Add reps until reaching top of bracket (e.g., 8 up to 12 reps) across all sets with "Right" or "Easy" feedback.
+  - Step 2: Once top rep target is met cleanly, advance load rung (reduce assistance for pull-ups; increase resistance for push-ups/rows) and reset reps to lower bracket.
+  - Step 3: If "Hard" with falling reps across 2 consecutive sessions, hold rung or deload.
 - **Recovery Spacing:** Primary muscle groups are locked from scheduling for 24–48 hours post-workout.
 - **Absence Handling:**
-  - 1–6 days missed: Resume rotation seamlessly at next planned session.
-  - 7–14 days missed: Insert an automatic lighter re-entry session (-30% volume).
+  - 1–6 days missed: Resume rotation seamlessly at next planned session without penalty.
+  - 7–14 days missed: Insert an automatic lighter re-entry session (-30% volume) to prevent severe DOMS.
   - 14+ days missed: Propose re-calibration of working rungs.
 
 ### 4.6 Progress Hub
@@ -114,13 +117,14 @@ Ahmed wants to build muscle and achieve a defined, athletic physique at home bec
   - Angles: Front (أمامي), Side (جانبي), Back (خلفي).
   - Capture helper with silhouette outline guide.
   - Side-by-side comparison slider (Compare Date A vs Date B).
-  - Fully private storage: Saved in app sandbox directory, excluded from Android MediaScanner.
-- **Weight Tracking:**
+  - Fully private storage: Saved in app sandbox directory, excluded from Android MediaScanner and Google Drive auto-backup.
+- **Weight Tracking & 7-Day Rolling Average:**
   - Quick weight logging modal (date + kg to 1 decimal place).
-  - Weekly 7-day rolling average line chart (smooths daily water weight fluctuations).
-  - Gentle advisory prompts: If weight change < 0.1 kg/week over 3 weeks while on muscle-gain goal, display tips to add an extra meal portion.
+  - **Rolling Average Definition:** The chart plots a **7-day trailing calendar rolling average** ($\bar{w} = \frac{1}{N} \sum w_i$ for recorded days in the trailing 7 days).
+  - **Sparse Data Guardrail:** If fewer than 3 weigh-ins exist in a 7-day window, the average is marked provisional. The app **never triggers nutritional advice or portion changes based on sparse or noisy data**.
+  - Gentle advisory prompts: Only if a verified weekly average change is < 0.1 kg/week across 3 consecutive fully-logged weeks, display gentle tips to consider an extra snack.
 - **Strength Charts:**
-  - Progress curves for primary benchmark movements (Pull-up rep max, Band push-up tension).
+  - Progress curves for primary benchmark movements (Pull-up unassisted reps, Band push-up tension).
 - **Meal Checklist:**
   - 4–5 daily checkboxes (وجبة 1، وجبة 2، وجبة 3، سناك بروتين، شرب مياه).
   - Cheap local protein guide (بيض، كبدة، فول، جبنة قريش، عدس، تونة، لبن).

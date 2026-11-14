@@ -23,7 +23,7 @@
 
 ## 2. Detailed Flow Specifications
 
-### Flow 1: First-Time Onboarding & Engine Initialization
+### Flow 1: First-Time App Setup & Engine Initialization (`إعداد التطبيق`)
 ```text
 [App Launch]
     │
@@ -31,15 +31,18 @@
 (Profile exists in DB?)
     ├── Yes ──> [Navigate to Today Screen (SCR-06)]
     └── No  ──> [Welcome Screen: Goal Confirmation (SCR-02)]
+                    │ Goal confirmed: "بناء العضلات والقوة" (MVP Confirmed)
+                    │ Notice: Additional goals preserved as post-MVP
                     │ Tap "متابعة"
                     ▼
                 [Physical Baseline Form (SCR-03)]
+                    │ Clean blank fields with placeholder hints (e.g. 175 cm, 70 kg, 8 reps)
                     │ Height (cm), Weight (kg), Age, Baseline Reps
                     │ Tap "التالي"
                     ▼
                 [Equipment & Time Preferences (SCR-04)]
                     │ Toggle: Pull-up bar [x], Resistance Bands [x]
-                    │ Duration: 15–30 min
+                    │ Duration: 15–30 min target estimate
                     │ Tap "التالي"
                     ▼
                 [Avoid Areas & Local Settings (SCR-05)]
@@ -140,24 +143,29 @@
 
 ---
 
-### Flow 5: Emergency Pain Stop & Safety Exclusion
+### Flow 5: Emergency Acute Pain Stop & Safety Exclusion [Proposed Safety Policy]
 ```text
 [Workout Player (SCR-08)]
-    │ Acute discomfort during set
-    │ Tap prominent secondary button "في ألم (Pain)"
+    │ Acute joint discomfort during set
+    │ Tap prominent button "في ألم (Pain)"
     ▼
 [Safety Alert Modal (SCR-11)]
-    │ "سلامتك أهم من أي تمرين! حابب توقف التمرين ولا نبدل الحركة لحركة مريحة؟"
-    ├── Option A: [تبديل الحركة] ──> Routes to Flow 4 (Swap Sheet)
-    └── Option B: [وقف التمرين فوراً]
+    │ "سلامتك أهم من أي تمرين! هنوقف التمرين فوراً عشان تريح المفصل"
+    │
+    ├── Primary Action: [وقف التمرين فوراً لحماية المفصل]
+    │       │
+    │       ▼
+    │   [Emergency Stop Executed]
+    │       │ Completed sets preserved safely in DB
+    │       │ Active movement and joint group flagged as painful/sensitive
+    │       │ Non-medical safety note: "ريح المفصل واشرب مياه، واستشير طبيب لو الوجع استمر"
+    │       ▼
+    │   [Return to Today Screen with Session Marked Partial]
+    │
+    └── Secondary Action: [تخطي الحركة فقط (بعد زوال الانزعاج)]
             │
             ▼
-        [Emergency Stop Confirmed]
-            │ Completed sets preserved in DB
-            │ App flags exercise joint group as sensitive
-            │ Non-medical advisory note: "ريح المفصل واشرب مياه، وماتضغطش على نفسك أبداً"
-            ▼
-        [Return to Today Screen with Session Marked Partial]
+        [Routes to Voluntary Swap Sheet after confirmation]
 ```
 
 ---

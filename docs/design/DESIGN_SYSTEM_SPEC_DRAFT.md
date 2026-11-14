@@ -13,8 +13,22 @@ To prevent hard-coded colors, padding, and font styles across UI widgets, all de
 
 ```dart
 // Conceptual architectural pattern for Milestone P1:
-final colors = Theme.of(context).extension<HomesetsColors>()!;
-final textStyles = Theme.of(context).textTheme;
+@immutable
+class HomesetsColors extends ThemeExtension<HomesetsColors> {
+  final Color bgDark;           // #121316 (Base canvas)
+  final Color cardDark;         // #1C1E24 (Card surface)
+  final Color elevatedDark;     // #22252E (Input / stepper surface)
+  final Color accentLime;       // #CCFF00 (Primary CTA & highlights, 15.81:1 on bg)
+  final Color accentLimeDim;    // #99CC00 (Secondary badges, 9.72:1 on bg)
+  final Color textPrimary;      // #F4F4F5 (Primary text, 16.90:1 on bg)
+  final Color textSecondary;    // #A1A1AA (Secondary text, 7.25:1 on bg, 6.50:1 on card)
+  final Color textTertiary;     // #8E8E93 (Accessible tertiary text, 5.70:1 on bg, 5.11:1 on card, PASS AA)
+  final Color controlDisabled;  // #71717A (Non-text only: borders/disabled outlines, 3.84:1, PASS non-text AA >=3:1)
+  final Color danger;           // #EF4444 (Pain stop CTA / error borders)
+  final Color warning;          // #F59E0B (Recovery alerts / interrupted session)
+
+  const HomesetsColors({ ... });
+}
 ```
 
 ---
@@ -121,3 +135,7 @@ Typography is defined in scalable pixels (`sp`) supporting Android system text s
 - Micro-interactions must be fast and crisp (maximum 200 ms duration, `Curves.easeInOutCubic`).
 - Workout flow must never feel delayed by gratuitous animation.
 - Supports system-level "Remove animations" accessibility preference.
+
+### 5.4 Responsive Viewport Adaptation & Design Artifact Status
+- **Fluid Vertical Layouts:** Screen designs must never assume a fixed 844 dp height. All viewports (from compact 360×780 dp to large 412×915 dp) must scroll smoothly, respecting Android system gesture bars and camera cutouts (`SafeArea`).
+- **Static Visual Prototypes:** Wireframe and exploration HTML files are **static design prototypes** designed for visual review and headless screenshot generation; they contain zero JavaScript or simulated application logic. All vector silhouettes shown are abstract placeholders, not final logo masters.

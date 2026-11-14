@@ -26,22 +26,23 @@
 
 ---
 
-### US-01: First Launch & Guided Profile Setup (Onboarding)
-**As a** new user (Ahmed),
-**I want to** configure my physical stats, equipment, time limits, and injury exclusions in under 2 minutes,
+### US-01: First Launch & App Setup (`إعداد التطبيق وبدء برنامجك`)
+**As a** new user setting up HOMESETS,
+**I want to** configure my physical stats, equipment, time limits, and injury exclusions with blank fields and clear placeholder hints,
 **So that** the app immediately generates a personalized home training program tailored to my constraints.
 
 #### Acceptance Criteria
-- **Scenario 1.1: Standard onboarding flow**
+- **Scenario 1.1: Standard app setup flow**
   - **Given** the app is launched for the first time on Android,
-  - **When** I progress through the onboarding screens,
-  - **Then** I can select my Goal (Build Muscle default), enter Height (190 cm), Weight (60 kg), Age (26), and Baseline Reps (10 pull-ups, 10 push-ups),
+  - **When** I progress through the setup screens,
+  - **Then** my Goal is displayed as confirmed: **"بناء العضلات والقوة (Build Muscle & Strength)"** (no unapproved selector; additional goals flagged as post-MVP),
+  - **And** I enter my personal stats into clean blank fields with placeholder hints (e.g. "مثال: 175 سم", "مثال: 70 كجم", "مثال: 8 تكرارات"),
   - **And** select Equipment (Pull-up bar + Resistance bands),
-  - **And** select Preferred Duration (15–30 min),
+  - **And** select Preferred Duration (15–30 min target estimate),
   - **And** select Language (Egyptian Arabic RTL) and Theme (Dark Performance Lime),
   - **And** reaching the end immediately loads the Today screen with my first tailored workout generated.
 - **Scenario 1.2: Pain area exclusion**
-  - **Given** I am on the "Avoid Areas" onboarding step,
+  - **Given** I am on the "Avoid Areas" setup step,
   - **When** I toggle "Lower Back" (أسفل الظهر) to avoid,
   - **Then** any spinal-loading exercise (e.g., heavy bent-over band rows or unassisted Good Mornings) is excluded from my generated plan.
 
@@ -76,7 +77,7 @@
   - **Given** I am on the Today screen,
   - **When** I tap "تمرين سريع 15 دقيقة (Lite Mode)",
   - **Then** the engine condenses the session to 2 primary compound movements (e.g., Pull-ups and Band Push-ups),
-  - **And** sets the total estimated duration to 15 minutes,
+  - **And** provides an estimated target duration of ~15 minutes (not a safety-unaware rigid countdown clock),
   - **And** completing this session counts fully toward my weekly consistency score.
 
 ---
@@ -90,7 +91,7 @@
 - **Scenario 4.1: Logging a completed set**
   - **Given** I just completed Set 1 of Pull-ups (Target: 8–10 reps, Actual: 9 reps),
   - **When** I adjust reps if needed using the large +/- stepper in the lower 40% of the screen,
-  - **And** tap the oversized "تسجيل المجموعة (Log Set)" button,
+  - **And** tap the oversized "تسجيل المجموعة (Log Set)" button ($\ge 56\times 56$ dp),
   - **Then** the set is marked complete with a subtle tactile haptic pulse,
   - **And** the automated Rest Timer modal/drawer begins counting down immediately (default 90s).
 - **Scenario 4.2: Screen stays awake**
@@ -100,10 +101,10 @@
 
 ---
 
-### US-05: Set Feedback (Easy / Right / Hard) & Dynamic Overload
+### US-05: Set Feedback & Exercise-Specific Dynamic Overload [Proposed Safety Policy]
 **As a** user progressing over weeks,
 **I want to** rate how hard a set felt with one tap,
-**So that** the pure-Dart plan engine systematically decides whether to add reps or increase band resistance next time.
+**So that** the pure-Dart plan engine systematically decides whether to add reps, adjust resistance, or reduce assistance based on exercise mechanics.
 
 #### Acceptance Criteria
 - **Scenario 5.1: Rating a set**
@@ -111,28 +112,33 @@
   - **When** the rest timer appears,
   - **Then** 3 distinct rating pills are displayed: "سهل (Easy)", "مظبوط (Right)", "صعب (Hard)",
   - **And** selecting a rating saves the perceived effort with the logged set.
-- **Scenario 5.2: Double progression advancement**
-  - **Given** my target bracket for Band Push-ups is 8–12 reps on the Medium Band,
+- **Scenario 5.2: Resisted movements double progression (e.g. Band Push-ups / Rows)**
+  - **Given** my target bracket for Band Push-ups is 8–12 reps on a calibrated medium-tension band,
   - **When** I hit 12 reps on all prescribed sets with "Right" or "Easy" across 2 consecutive sessions,
-  - **Then** next session the engine automatically prescribes the Heavy Band starting back at 8 reps.
+  - **Then** next session the engine automatically advances to a heavier-tension band starting back at 8 reps.
+- **Scenario 5.3: Assisted movements progression (e.g. Band-Assisted Pull-ups)**
+  - **Given** I am performing Band-Assisted Pull-ups with a heavy assistance band,
+  - **When** I achieve the top rep bracket cleanly across 2 consecutive sessions,
+  - **Then** the engine prescribes a **thinner / lighter assistance band** (or unassisted bodyweight reps) to increase physical difficulty.
 
 ---
 
-### US-06: Mid-Workout Exercise Swap & Pain Stop
+### US-06: Emergency Pain Stop Precedence & Voluntary Exercise Swap [Proposed Safety Policy]
 **As a** user experiencing sudden joint discomfort during an exercise,
-**I want to** immediately swap the movement or stop safely,
-**So that** I protect my joints and avoid acute injury.
+**I want** immediate cessation and joint rest to take primary precedence,
+**So that** I protect my joints from acute injury rather than being rushed into another provocative exercise.
 
 #### Acceptance Criteria
-- **Scenario 6.1: Swapping an exercise due to pain**
-  - **Given** I am on Set 1 of Overhead Band Press and feel shoulder pain,
-  - **When** I tap "في ألم (Pain)" or "تبديل (Swap)",
-  - **Then** the app suggests pre-filtered alternative exercises hitting similar muscle groups without that joint impingement (e.g., Band Incline Chest Press),
-  - **And** swapping replaces the movement for this session only or permanently (user choice).
-- **Scenario 6.2: Immediate pain stop**
-  - **Given** I tap "وقف التمرين بسبب ألم",
-  - **When** confirmed,
-  - **Then** the session terminates gracefully, saves all previously completed sets, and tags the painful movement to prevent automatic prescription next time.
+- **Scenario 6.1: Immediate acute pain stop (Primary Precedence)**
+  - **Given** I am performing Overhead Band Press and experience acute shoulder joint discomfort,
+  - **When** I tap "في ألم (Pain)",
+  - **Then** the app prioritizes stopping the workout immediately: "سلامتك أهم من أي تمرين! هنوقف التمرين دلوقتي عشان تريح المفصل",
+  - **And** the session terminates safely, preserving all previously completed sets,
+  - **And** the painful joint group is flagged to prevent automatic prescription in subsequent sessions.
+- **Scenario 6.2: Voluntary exercise swap (Non-Pain Reason)**
+  - **Given** I want to swap an exercise due to equipment access or environmental constraints (e.g., door anchor in use),
+  - **When** I select "تبديل اختياري (Voluntary Swap)",
+  - **Then** the app suggests pre-filtered alternative exercises hitting similar muscle groups with available tools.
 
 ---
 
@@ -155,21 +161,22 @@
 
 ---
 
-### US-08: Weekly Weight Tracking & 7-Day Rolling Trend
+### US-08: Weekly Weight Tracking & 7-Day Rolling Calendar Trend
 **As a** user tracking my bulk towards 80 kg,
-**I want to** log my morning weight and see a smoothed weekly average,
-**So that** I don't panic over daily water-weight fluctuations.
+**I want to** log my morning weight and see a smoothed 7-day rolling calendar average,
+**So that** I don't panic over daily water-weight fluctuations or make bad diet choices based on sparse data.
 
 #### Acceptance Criteria
 - **Scenario 8.1: Logging morning weight**
   - **Given** I weigh myself,
   - **When** I tap "تسجيل الوزن" in Progress Hub,
   - **Then** I can enter my weight (e.g., 61.2 kg),
-  - **And** the chart updates displaying both daily points and the bold 7-day rolling average line.
-- **Scenario 8.2: Slow-gain advisory**
-  - **Given** my weekly average weight changes by less than 0.1 kg over a 3-week window,
+  - **And** the chart updates displaying daily points and the 7-day trailing calendar rolling average.
+- **Scenario 8.2: Sparse data guardrail & slow-gain advisory**
+  - **Given** fewer than 3 weigh-ins exist in a 7-day calendar window,
   - **When** I view the weight tab,
-  - **Then** a supportive non-clinical tip in Egyptian Arabic suggests: "الوزن ثابت تقريباً بقاله 3 أسابيع.. جرب تزود وجبة خفيفة أو سناك بروتين إضافي في يومك".
+  - **Then** the rolling average is marked provisional, and NO nutritional portion advice is triggered.
+  - **And** only if a verified weekly average change is under 0.1 kg/week across 3 consecutive fully-logged weeks, the app displays a gentle suggestion to add an extra snack.
 
 ---
 
