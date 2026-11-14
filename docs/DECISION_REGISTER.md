@@ -42,6 +42,8 @@ Status: **Living register — owner review required for newly proposed items**
 | E01 | 2026-11-14 | Honor X9e Pro runs MagicOS 10 based on Android 16 (owner-reported). | Confirmed (reported by owner) |
 | E02 | 2026-11-14 | On Windows 10, Flutter 3.47.0, Dart 3.13.0, Android SDK 36.0.0; `flutter doctor` showed `No issues found!`. | Confirmed by terminal screenshot |
 | E03 | 2026-11-14 | Owner does not want phone connected to PC by USB. APK installation/testing will be wireless; no emulator needed. | Confirmed |
+| E04 | 2026-11-14 | Antigravity model picker visibly shows `Gemini 3.8 Flash High`; this verifies the displayed name only, not any external model catalog claim. | Confirmed by owner screenshot |
+| E05 | 2026-11-14 | Antigravity displays a separate project/workspace named `homesets` and selected local checkout in its UI. Its Git remote and local folder contents are not yet verified. | Confirmed UI / Open Git connection |
 | G01 | 2026-11-14 | Private GitHub repository `abuhmaid28/homesets`, default branch `main`. | Confirmed via GitHub |
 | G02 | 2026-11-14 | The original P0-05 Antigravity bootstrap prompt was canceled before being used. Documentation, branding, UX and technical planning precede implementation. | Confirmed |
 | B01 | 2026-11-14 | `HOMESETS` is the current **preferred candidate** app name; repository slug is `homesets`. | Preferred, **not final approval** |
@@ -53,7 +55,7 @@ Status: **Living register — owner review required for newly proposed items**
 | ID | Question / investigation |
 | --- | --- |
 | O01 | Android version — resolved by E01. |
-| O02 | Exact Antigravity model picker name. Owner typed "gemeine flash 3.8"; **unverified**, do not assume that is an official model. |
+| O02 | Resolved by E04: displayed picker name `Gemini 3.8 Flash High`. Exact external product/version validity beyond display not checked. |
 | O03 | Resistance-band strengths and whether to purchase stronger bands. |
 | O04 | Exercise demonstration media, provenance and usable asset licenses. |
 | O05 | Final brand name, logo vector, wordmark, accent color tokens, accessible contrast and font license. |
