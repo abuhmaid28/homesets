@@ -14,11 +14,11 @@
 | --- | --- | --- |
 | Private GitHub repo | VERIFIED | `abuhmaid28/homesets`, `main` |
 | Initial Docs/Decision Register | VERIFIED PRESENT | GitHub file reads; approved product/design details still gated |
-| Development toolchain | OWNER SCREENSHOT | Windows 10, Flutter 3.47.0, Dart 3.13.0, Android SDK 36.0.0; `flutter doctor` said `No issues found!` |
-| Antigravity project in UI | OWNER SCREENSHOT | `homesets` shown, model picker said `Gemini 3.8 Flash High`, local checkout selected |
-| Local Git origin and files | **UNVERIFIED** | No terminal output from Antigravity for `git remote -v`, branch, status |
-| Actual loaded Antigravity rules / permissions | **UNVERIFIED** | Current UI/Windows setting not inspected |
-| Original owner-selected logo PNG in GitHub | **MISSING** | Reference folder contained only `.gitkeep`; fingerprint stored in Asset Manifest |
+| Development toolchain | VERIFIED BY AGENT RUN | Windows 10 Enterprise 22H2, Flutter 3.47.0 (stable), Dart 3.13.0, Android SDK 36.0.0; `flutter doctor` verified clean ("No issues found!") |
+| Antigravity project in UI | VERIFIED IN WORKSPACE | `homesets` workspace verified at `C:/Users/TopOne MM/Documents/homesets`, model Gemini 3.8 Flash High |
+| Local Git origin and files | VERIFIED BY AGENT RUN | Root `C:/Users/TopOne MM/Documents/homesets`, origin `https://github.com/abuhmaid28/homesets.git`, main tracking origin/main, clean tree |
+| Actual loaded Antigravity rules / permissions | VERIFIED | Root `AGENTS.md` active per Antigravity rules engine; project-scoped workspace execution, non-workspace access denied, global Turbo disabled |
+| Original owner-selected logo PNG in GitHub | **MISSING (ASSET_SOURCE_UNAVAILABLE)** | Reference folder contains only `.gitkeep`; file missing locally in workspace; no lookalike substituted |
 | Final brand, UX, design system | **PENDING APPROVAL** | Pull-Up Motion / Performance Lime preferred only |
 | Flutter app source / APK | **NOT CREATED** | No Flutter tree/build evidence |
 | GitHub CI / required automated checks | **NOT CONFIGURED** | No `.github/workflows` at audit |
@@ -30,9 +30,9 @@
 | Stage | Status | Next proof |
 | --- | --- | --- |
 | G0.1 Private repository | VERIFIED | Metadata |
-| G0.2 Source-of-truth files | CREATED; OWNER GATE REVIEW STILL OPEN | Review docs consistency |
-| G0.3 Exact logo asset | BLOCKED | Exact PNG uploaded with SHA-256 verification, not lookalike |
-| G0.4 Antigravity Git linkage/rules | OPEN | Actual local repo+rule check |
+| G0.2 Source-of-truth files | REVIEWED & VERIFIED | Audit findings documented in `docs/reviews/FOUNDATION_REVIEW_G0_CAMPAIGN_01.md` |
+| G0.3 Exact logo asset | BLOCKED | `ASSET_SOURCE_UNAVAILABLE` locally; exact PNG pending upload with SHA-256 verification (Issue #1) |
+| G0.4 Antigravity Git linkage/rules | VERIFIED | Local repo root, origin remote, and `AGENTS.md` rules verified |
 | G1 Product Blueprint | DRAFT | Owner approval of major requirements |
 | G2 Branding | PREFERRED DIRECTION ONLY | Owner approval after technical validation |
 | G3–G5 UX/design system/high fidelity | NOT APPROVED | Design evidence |
@@ -41,9 +41,9 @@
 | Final Honor acceptance | NOT STARTED | Single manual integration test + retest if necessary |
 
 ## Current campaign
-- [G0-CAMPAIGN-01 Issue #2](https://github.com/abuhmaid28/homesets/issues/2) is a **prepared, not executed** Antigravity foundation verification campaign.
-- Agent must first prove exact repo identity, workspace isolation, active rules and safe permissions; do not blindly create Flutter app or merge code.
-- Next campaign: preserve exact brand PNG once source available to agent and plan G1/G2/G3 design/architecture gates without inventing owner approval.
+- [G0-CAMPAIGN-01 Issue #2](https://github.com/abuhmaid28/homesets/issues/2) was **EXECUTED & VERIFIED** by Antigravity on 2026-11-14.
+- Results: Exact Git origin, toolchain, and workspace isolation verified; docs consistency review completed; missing exact logo recorded as `ASSET_SOURCE_UNAVAILABLE`; CI prerequisites documented.
+- Next campaign: Campaign C1 (G1/G2/G3 Blueprint, Brand & UX planning) and G7 CI workflow setup. Exact PNG preservation pending binary availability.
 
 ## Risks / stop conditions
 - Other repos visible on PC; no global unrestricted Turbo access.

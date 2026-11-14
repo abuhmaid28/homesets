@@ -32,7 +32,8 @@ Ahmed wants to build muscle at home without a gym. Previous attempts stopped due
 - No calorie or macro tracker, cloud, subscription, public community, AI/LLM or social sharing in MVP.
 
 ## Core experience acceptance
-On Honor: onboarding works; Today -> Workout within 3 taps; one-handed log and Lite work; missed-days recovery is correct; private photo compare and weekly weight trend work; backup round-trip; RTL layouts correct; all features offline; no crash on interruption or application update.
+- **Final Acceptance on Honor X9e Pro (GOV07/GOV10):** Physical phone testing occurs once at the final integrated acceptance gate via wirelessly installed APK. Verifies: onboarding works; Today -> Workout within 3 taps; one-handed log and Lite work; missed-days recovery is correct; private photo compare and weekly weight trend work; backup round-trip; RTL layouts correct; all features offline; no crash on interruption or application update.
+- **Intermediate Milestones (P0–P8):** Validated via continuous automated tests, static analysis, builds, and exact-head CI without routine per-milestone phone gates. Device behavior prior to final acceptance remains unverified.
 
 ## Deliberate open questions
 - Exact band strengths; supported safer exercise substitutions.
