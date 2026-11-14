@@ -75,3 +75,9 @@ Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `d
 - Owner requests genuinely long autonomous work with no routine interruptions; extended [C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) expands correction R01–R06 into responsive UI/design polish, actual visual captures, WCAG/privacy/safety corrections, documentation QA and grouped review.
 - **C1-R not yet executed**. Must stay on existing [Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5), no merge, no Flutter app or new dependency.
 - Current blockers unchanged: exact selected logo binary absent from repo; CI absent; final brand/product/architecture gates unapproved.
+
+## 2026-11-14 — Sequential campaign delivery policy
+- Owner reports the **earlier short C1 correction prompt has already been sent**. Its completion/result has **not yet been verified**; do not launch a parallel C1-R on the same branch.
+- New [Autonomous Delivery Runbook](AUTONOMOUS_DELIVERY_RUNBOOK.md) maps C0–C9 with work packages, small internal checkpoints, automated tests, guarded merges, and grouped PO acceptance gates.
+- [Queued extended C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) is **continuation AFTER the small run**. Inspect newest Draft PR #5 head; skip previously fixed findings and do remaining long design/visual QA tasks. No extra prompt until current run reports.
+- GitHub issues and documents do not by themselves start an Antigravity session. A future launch/resume requires the agent to receive a single next-campaign instruction and active local workspace.
