@@ -71,3 +71,15 @@ Status: **Living register — owner review required for newly proposed items**
 
 ## Next owner gate
 Confirm the registry is faithful, then preserve the exact selected image in `assets/brand/reference/` and review logo small-size, monochrome, Android adaptive-icon and vector-master tests. No technical logo approval yet.
+
+## PO-only operating model — confirmed by Ahmed 2026-11-14
+
+| ID | Decision | Status |
+| --- | --- | --- |
+| GOV01 | Ahmed is Product Owner: he makes product/design/scope decisions, approves gates, and tests behavior on the phone. No routine file operations, Git commands, or manual uploads. | Confirmed |
+| GOV02 | ChatGPT owns planning, docs/decisions/issues it can update directly, design/architecture review, QA and Antigravity task briefs. | Confirmed |
+| GOV03 | Antigravity owns local workspace/file handling, source/binary asset commits, implementation, command logs, builds and Git pushes through narrow authorized tasks. | Confirmed |
+| GOV04 | One-time machine setup/authentication and phone testing may require Ahmed's direct action; minimize these and explain why. | Confirmed |
+| GOV05 | No implicit authorization to change MVP scope, add dependencies, pay for services, merge code, or run destructive operations. | Confirmed |
+
+**Limit:** Current ChatGPT GitHub text-file writer cannot by itself upload the exact 2 MB image asset. The selected source image was verified locally and fingerprinted in ASSET_MANIFEST.md; commit of the exact binary remains an Antigravity handoff. Do not mark it Done until GitHub evidence confirms it.
