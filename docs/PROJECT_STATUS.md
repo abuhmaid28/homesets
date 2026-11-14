@@ -46,3 +46,6 @@ Save the exact selected preferred logo image to `assets/brand/reference/` in Git
 
 ## Handoff protocol for another chat
 Open this file, `docs/DECISION_REGISTER.md`, and `docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt`. Read all three and the latest GitHub state. Never trust a verbal status alone. State what is verified, what remains open, and the next single user action.
+
+## Operating-model update (2026-11-14)
+Ahmed is PO-only; ChatGPT maintains plans/decisions/issues, Antigravity performs local file, image asset, Git and coding tasks through explicit briefs. Logo binary upload still pending and should not be delegated to Ahmed as a routine chore. One-time tool setup or phone-level acceptance may need Ahmed's participation.
