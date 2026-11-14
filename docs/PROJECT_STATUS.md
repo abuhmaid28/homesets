@@ -69,3 +69,9 @@ Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `d
 - **C1 gate remains OPEN**. Await agent fix pass on **same Draft PR**; get screenshot evidence for one grouped owner visual review; no routine approvals and no Flutter implementation yet.
 - Current official pub.dev evidence (2026-11-14): drift 2.35.4, drift_flutter 0.3.1, flutter_local_notifications 23.0.2 (min Dart 3.12) — **candidates only**, no dependency selected/approved. Links in the PR review.
 - Exact owner-selected `homesets-pullup-preferred.png` source is present in ChatGPT working storage and checksum was rechecked as `95822f54686cc17b7878322dc23607af04a010e073ffd722b91c2bc012d1596b`; however **binary remains absent from HOMESETS GitHub**. Distinguish local ChatGPT asset from Antigravity workspace access.
+
+## 2026-11-14 — End-to-end plan and extended C1 work
+- [Master execution plan](MASTER_EXECUTION_PLAN.md) defines C0–C9, detailed goals, internal tests, necessary PO gates and final-only Honor acceptance; campaign map is recommended execution grouping, not new scope approval.
+- Owner requests genuinely long autonomous work with no routine interruptions; extended [C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) expands correction R01–R06 into responsive UI/design polish, actual visual captures, WCAG/privacy/safety corrections, documentation QA and grouped review.
+- **C1-R not yet executed**. Must stay on existing [Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5), no merge, no Flutter app or new dependency.
+- Current blockers unchanged: exact selected logo binary absent from repo; CI absent; final brand/product/architecture gates unapproved.
