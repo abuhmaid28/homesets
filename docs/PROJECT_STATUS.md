@@ -54,3 +54,11 @@
 
 ## Handoff to any new chat
 Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `docs/ROADMAP.md`, `PROJECT_RULES.md` and the latest live GitHub state. Honor newer explicit decisions; never claim that unobserved agent work happened. Identify current campaign and one concrete next step.
+
+## Independent GitHub review after G0-CAMPAIGN-01 (2026-11-14)
+- ChatGPT independently verified [PR #3](https://github.com/abuhmaid28/homesets/pull/3) merged to `main`: head `7a56ed4148794477ed84eb863013eef042917a30`, merge commit `9265e6f6004a21ee222dcdc16518820d88de0d34`; changes limited to three docs, no Flutter runtime.
+- [Issue #2](https://github.com/abuhmaid28/homesets/issues/2) closed.
+- GitHub PR-head combined status shows **zero status checks**; do not cite any successful GitHub Actions run for G0. Documentation-only merge reviewed; no runtime code merge permitted while CI absent.
+- Local Git/Flutter and permission results were recorded by Antigravity, but actual Windows permission enforcement was **not independently tested by ChatGPT**. See [independent review](reviews/INDEPENDENT_G0_REVIEW.md).
+- Exact preferred PNG exists in ChatGPT session storage with SHA-256 `95822f54686cc17b7878322dc23607af04a010e073ffd722b91c2bc012d1596b`; **still missing in the Antigravity local workspace and GitHub**.
+- [C1 design-only autonomous campaign — Issue #4](https://github.com/abuhmaid28/homesets/issues/4) is **prepared, not executed**. It may produce product/UX/design drafts and offline static mockups as one bounded run; no Flutter code, CI claims, or approval of final brand.
