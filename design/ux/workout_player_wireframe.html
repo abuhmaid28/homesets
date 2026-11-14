@@ -3,7 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HOMESETS — Wireframe: Workout Player & Rest Timer</title>
+  <title>HOMESETS — Wireframe: Workout Player (Active Set)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg-dark: #121316;
@@ -14,8 +26,9 @@
       --text-main: #f4f4f5;
       --text-muted: #a1a1aa;
       --text-tertiary: #8e8e93;
-      --danger: #ef4444;
-      --thumb-zone-color: rgba(59, 130, 246, 0.15);
+      --danger-text: #ef4444;
+      --danger-bg: #dc2626;
+      --device-width: 390px;
     }
     * {
       box-sizing: border-box;
@@ -23,55 +36,39 @@
       padding: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
     }
-    body {
-      background-color: #0b0c0e;
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 12px;
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
       min-height: 100vh;
-    }
-    .preview-header {
-      text-align: center;
-      margin-bottom: 16px;
-      color: var(--text-muted);
-      max-width: 440px;
-    }
-    .preview-header h1 {
-      color: var(--accent-lime);
-      font-size: 1.25rem;
-      margin-bottom: 4px;
-    }
-    .preview-note {
-      font-size: 0.75rem;
-      background: #1c1e24;
-      border: 1px solid #2a2d36;
-      padding: 4px 10px;
-      border-radius: 8px;
-      margin-top: 6px;
-      display: inline-block;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
     }
     .device-shell {
       width: 100%;
-      max-width: 390px;
-      min-height: 700px;
-      max-height: 844px;
+      min-height: 100vh;
       background-color: var(--bg-dark);
-      border: 4px solid #27272a;
-      border-radius: 40px;
-      overflow-y: auto;
-      position: relative;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
     .status-bar {
       height: 44px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 24px;
+      padding: 0 20px;
       font-size: 0.8rem;
       color: var(--text-muted);
       font-weight: 600;
@@ -88,73 +85,83 @@
       font-weight: 700;
       color: var(--text-muted);
     }
-    .btn-quit {
+    .btn-icon-pause {
       background: #27272a;
-      color: var(--text-muted);
-      border: none;
-      padding: 6px 12px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 600;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
     }
-    .player-body {
+    .player-content {
       flex: 1;
       padding: 16px 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      gap: 16px;
     }
-    /* Movement Info Card */
-    .exercise-headline {
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .exercise-name {
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 4px;
-    }
-    .exercise-english {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      direction: ltr;
-    }
-    .movement-visual {
-      background: var(--card-bg);
-      border: 1px dashed var(--card-border);
-      border-radius: 20px;
-      height: 140px;
+    .exercise-hero {
       display: flex;
       flex-direction: column;
+      gap: 12px;
+    }
+    .exercise-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.3;
+    }
+    .equipment-badge {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin: 8px 0;
-    }
-    .cue-pill {
+      gap: 6px;
       background: #27272a;
-      color: var(--accent-lime);
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 600;
-    }
-    /* Current Set Progress Chips */
-    .set-chips {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin: 8px 0;
-    }
-    .set-chip {
-      background: #1f222a;
       border: 1px solid var(--card-border);
-      padding: 6px 14px;
-      border-radius: 12px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      align-self: flex-start;
+      flex-wrap: wrap;
+    }
+    .equipment-badge strong {
+      color: var(--accent-lime);
+    }
+    .form-cue-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
       font-size: 0.85rem;
       color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .form-cue-box strong {
+      color: #ffffff;
+    }
+    .set-chips {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .set-chip {
+      flex: 1;
+      height: 40px;
+      background: #1c1e24;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
     }
     .set-chip.active {
       background: rgba(204, 255, 0, 0.15);
@@ -166,28 +173,13 @@
       background: #27272a;
       color: #ffffff;
     }
-    /* LOWER THUMB ZONE (Lower 40%) */
-    .thumb-zone-container {
-      background: linear-gradient(to top, rgba(28, 30, 36, 0.95), transparent);
-      border-top: 1px dashed #3b82f6;
-      position: relative;
-      padding-top: 12px;
+    /* Thumb Control Dock */
+    .thumb-control-dock {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      padding-top: 8px;
     }
-    .thumb-zone-label {
-      position: absolute;
-      top: -10px;
-      left: 16px;
-      background: #3b82f6;
-      color: #ffffff;
-      font-size: 0.65rem;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-    }
-    /* Rep Stepper */
     .rep-stepper {
       display: flex;
       justify-content: space-between;
@@ -195,7 +187,7 @@
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 20px;
-      padding: 8px 16px;
+      padding: 10px 16px;
     }
     .stepper-btn {
       width: 52px;
@@ -215,7 +207,7 @@
       text-align: center;
     }
     .stepper-val {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 900;
       color: var(--accent-lime);
       line-height: 1;
@@ -223,184 +215,86 @@
     .stepper-label {
       font-size: 0.75rem;
       color: var(--text-muted);
+      margin-top: 4px;
     }
-    /* Oversized Log Set Button */
     .btn-log-set {
+      width: 100%;
+      height: 56px;
       background: var(--accent-lime);
       color: #0b0c0e;
       border: none;
-      border-radius: 20px;
-      height: 60px; /* Oversized thumb tap target */
-      font-size: 1.2rem;
-      font-weight: 900;
-      cursor: pointer;
+      border-radius: 18px;
+      font-size: 1.1rem;
+      font-weight: 800;
       display: flex;
-      justify-content: center;
       align-items: center;
-      gap: 10px;
-      box-shadow: 0 8px 20px -4px rgba(204, 255, 0, 0.25);
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(204, 255, 0, 0.2);
     }
-    /* Quick Actions */
     .quick-actions {
       display: flex;
-      justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
     }
     .btn-secondary {
       flex: 1;
-      background: #1f222a;
-      color: var(--text-muted);
+      height: 48px;
+      background: #1c1e24;
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 10px;
+      color: var(--text-muted);
+      border-radius: 14px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
     }
     .btn-pain {
-      color: var(--danger);
-      border-color: rgba(239, 68, 68, 0.3);
-    }
-    /* Rest Timer Modal / Drawer Overlay */
-    .rest-drawer {
-      background: #16181f;
-      border-top: 2px solid var(--accent-lime);
-      border-radius: 28px 28px 0 0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
-    }
-    .rest-title {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 700;
-    }
-    .timer-circle {
-      width: 100px;
-      height: 100px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .timer-svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-    .timer-track {
-      fill: none;
-      stroke: #27272a;
-      stroke-width: 8;
-    }
-    .timer-bar {
-      fill: none;
-      stroke: var(--accent-lime);
-      stroke-width: 8;
-      stroke-dasharray: 264;
-      stroke-dashoffset: 70;
-      stroke-linecap: round;
-    }
-    .timer-number {
-      position: absolute;
-      font-size: 1.6rem;
-      font-weight: 900;
-      color: #ffffff;
-      direction: ltr;
-    }
-    /* Effort Feedback Pills */
-    .feedback-group {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-      justify-content: center;
-    }
-    .btn-feedback {
-      background: #27272a;
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 8px 16px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-feedback.selected {
-      background: rgba(204, 255, 0, 0.2);
-      border-color: var(--accent-lime);
-      color: var(--accent-lime);
-    }
-    .timer-controls {
-      display: flex;
-      gap: 12px;
-      width: 100%;
-    }
-    .btn-timer-action {
-      flex: 1;
-      background: #27272a;
-      color: var(--text-main);
-      border: none;
-      border-radius: 12px;
-      padding: 10px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--danger-text);
+      background: rgba(239, 68, 68, 0.08);
     }
   </style>
 </head>
 <body>
 
-  <div class="preview-header">
-    <h1>هوم سيتس | مشغل التمرين ومؤقت الراحة</h1>
-    <p>تصميم مخصص للاستخدام بيد واحدة داخل منطقة الإبهام (Thumb-Zone)</p>
-    <div class="preview-note">تصميم تجريبي ثابت (Static Prototype) — للعرض البصري فقط بدون تفاعلية برمجية</div>
-  </div>
-
   <div class="device-shell">
-    <!-- Status Bar -->
+    <!-- Android Status Bar -->
     <div class="status-bar">
-      <span>3:40 PM</span>
       <span>📶 🔋 100%</span>
+      <span>3:42 PM</span>
     </div>
 
     <!-- Top Bar -->
     <header class="top-bar">
-      <span class="exercise-counter">التمرين 1 من 3</span>
-      <button class="btn-quit">إيقاف مؤقت ⏸️</button>
+      <div class="exercise-counter">التمرين 1 من 3 • سحب وضهر</div>
+      <button class="btn-icon-pause" aria-label="إيقاف مؤقت">⏸</button>
     </header>
 
-    <div class="player-body">
-      <!-- Exercise Title & Visual -->
-      <div>
-        <div class="exercise-headline">
-          <h2 class="exercise-name">عقلة قبضة واسعة</h2>
-          <div class="exercise-english">Wide Grip Pull-ups</div>
+    <!-- Workout Player Body -->
+    <main class="player-content">
+      <div class="exercise-hero">
+        <h1 class="exercise-title">عقلة قبضة واسعة<br>(Wide Grip Pull-ups)</h1>
+        <div class="equipment-badge">
+          <span>المساعدة:</span>
+          <strong>حبل أسود سميك (مساعدة وزن)</strong>
         </div>
 
-        <div class="movement-visual">
-          <span style="font-size: 2.2rem;">🏋️‍♂️</span>
-          <div class="cue-pill">💡 اسحب بصدرك للبار واقفل لوحين الكتف</div>
+        <div class="form-cue-box">
+          💡 <strong>توجيه الأداء:</strong> اسحب كوعك لورا لتحت، اثبت ثانية عند الصدر، وانزل ببطء كامل في ثانيتين بدون مرجحة.
         </div>
 
         <!-- Sets indicator -->
         <div class="set-chips">
-          <div class="set-chip active">المجموعة 1</div>
+          <div class="set-chip active">المجموعة 1 (الحالية)</div>
           <div class="set-chip">المجموعة 2</div>
           <div class="set-chip">المجموعة 3</div>
         </div>
       </div>
 
-      <!-- LOWER THUMB ZONE (Lower 40% of viewport) -->
-      <div class="thumb-zone-container">
-        <span class="thumb-zone-label">منطقة الإبهام السفلى (Thumb Zone)</span>
-
+      <!-- Lower Thumb Zone Dock -->
+      <div class="thumb-control-dock">
         <!-- Rep Stepper -->
         <div class="rep-stepper">
           <button class="stepper-btn" aria-label="تقليل تكرار">-</button>
@@ -411,43 +305,18 @@
           <button class="stepper-btn" aria-label="زيادة تكرار">+</button>
         </div>
 
-        <!-- Primary Log Set CTA (56dp target) -->
+        <!-- Primary Log Set CTA (56dp) -->
         <button class="btn-log-set" aria-label="تسجيل المجموعة">
-          ✓ تسجيل المجموعة
+          ✓ تسجيل المجموعة وبدء الراحة
         </button>
 
         <!-- Secondary in-set actions -->
         <div class="quick-actions">
-          <button class="btn-secondary">🔄 تبديل اختياري</button>
-          <button class="btn-secondary btn-pain">🛑 في ألم (إيقاف فوري)</button>
+          <button class="btn-secondary">🔄 تبديل التمرين</button>
+          <button class="btn-secondary btn-pain">🛑 ألم في المفصل (إيقاف فوري)</button>
         </div>
       </div>
-
-      <!-- Active Rest Timer Drawer (Simulated Overlay) -->
-      <div class="rest-drawer">
-        <span class="rest-title">وقت الراحة بين المجموعات</span>
-        <div class="timer-circle">
-          <svg class="timer-svg" viewBox="0 0 100 100">
-            <circle class="timer-track" cx="50" cy="50" r="42" />
-            <circle class="timer-bar" cx="50" cy="50" r="42" />
-          </svg>
-          <div class="timer-number">01:14</div>
-        </div>
-
-        <!-- Feedback Rating Pills -->
-        <div class="feedback-group">
-          <button class="btn-feedback">سهل</button>
-          <button class="btn-feedback selected">مظبوط 👍</button>
-          <button class="btn-feedback">صعب</button>
-        </div>
-
-        <div class="timer-controls">
-          <button class="btn-timer-action">+30 ثانية</button>
-          <button class="btn-timer-action" style="background:#3f3f46;">تخطي الراحة ←</button>
-        </div>
-      </div>
-
-    </div>
+    </main>
   </div>
 
 </body>

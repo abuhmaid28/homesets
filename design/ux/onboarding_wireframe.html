@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HOMESETS — Wireframe: App Setup Flow (إعداد التطبيق)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg-dark: #121316;
@@ -13,6 +25,7 @@
       --text-main: #f4f4f5;
       --text-muted: #a1a1aa;
       --text-tertiary: #8e8e93;
+      --device-width: 390px;
     }
     * {
       box-sizing: border-box;
@@ -20,55 +33,39 @@
       padding: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
     }
-    body {
-      background-color: #0b0c0e;
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 12px;
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
       min-height: 100vh;
-    }
-    .preview-header {
-      text-align: center;
-      margin-bottom: 16px;
-      color: var(--text-muted);
-      max-width: 440px;
-    }
-    .preview-header h1 {
-      color: var(--accent-lime);
-      font-size: 1.25rem;
-      margin-bottom: 4px;
-    }
-    .preview-note {
-      font-size: 0.75rem;
-      background: #1c1e24;
-      border: 1px solid #2a2d36;
-      padding: 4px 10px;
-      border-radius: 8px;
-      margin-top: 6px;
-      display: inline-block;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
     }
     .device-shell {
       width: 100%;
-      max-width: 390px;
-      min-height: 700px;
-      max-height: 844px;
+      min-height: 100vh;
       background-color: var(--bg-dark);
-      border: 4px solid #27272a;
-      border-radius: 40px;
-      overflow-y: auto;
-      position: relative;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
     .status-bar {
       height: 44px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 24px;
+      padding: 0 20px;
       font-size: 0.8rem;
       color: var(--text-muted);
       font-weight: 600;
@@ -92,24 +89,36 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      overflow-y: auto;
+      gap: 16px;
     }
-    .step-headline h2 {
-      font-size: 1.5rem;
+    .step-headline h1 {
+      font-size: 1.4rem;
       font-weight: 800;
       color: #ffffff;
       margin-bottom: 6px;
+      line-height: 1.3;
     }
     .step-headline p {
       font-size: 0.85rem;
       color: var(--text-muted);
       line-height: 1.4;
     }
+    .goal-badge {
+      background: #1c1e24;
+      border: 1px solid #2a2d36;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+      font-size: 0.8rem;
+      color: var(--accent-lime);
+      font-weight: 700;
+      line-height: 1.4;
+    }
     .form-section {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      margin: 16px 0;
+      gap: 12px;
+      margin-bottom: 12px;
     }
     .input-group {
       background: var(--card-bg);
@@ -119,50 +128,35 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
     }
     .input-label {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 600;
+      color: var(--text-main);
     }
     .input-value {
       background: #27272a;
       color: var(--accent-lime);
-      border: none;
-      padding: 6px 14px;
+      border: 1px solid #3f3f46;
+      padding: 8px 12px;
       border-radius: 10px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 800;
       text-align: center;
-      width: 100px;
+      width: 110px;
     }
-    .chip-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .selection-chip {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 14px;
+    .privacy-notice {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
       text-align: center;
-      font-size: 0.85rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    .selection-chip.selected {
-      border-color: var(--accent-lime);
-      background: rgba(204, 255, 0, 0.1);
-      color: var(--accent-lime);
+      line-height: 1.4;
+      padding: 0 8px;
     }
     .nav-actions {
       display: flex;
       gap: 12px;
-      padding-top: 16px;
+      padding-top: 12px;
       border-top: 1px solid var(--card-border);
     }
     .btn-next {
@@ -171,8 +165,8 @@
       color: #0b0c0e;
       border: none;
       border-radius: 16px;
-      height: 54px;
-      font-size: 1.05rem;
+      height: 52px;
+      font-size: 1rem;
       font-weight: 800;
       cursor: pointer;
     }
@@ -182,8 +176,8 @@
       color: var(--text-muted);
       border: none;
       border-radius: 16px;
-      height: 54px;
-      font-size: 0.95rem;
+      height: 52px;
+      font-size: 0.9rem;
       font-weight: 700;
       cursor: pointer;
     }
@@ -191,16 +185,10 @@
 </head>
 <body>
 
-  <div class="preview-header">
-    <h1>هوم سيتس | إعداد التطبيق وبدء برنامجك</h1>
-    <p>شاشات إدخال البيانات الشخصية والأدوات وتحديد الإصابات</p>
-    <div class="preview-note">تصميم تجريبي ثابت (Static Prototype) — نموذج عرض بدون تفاعلية برمجية</div>
-  </div>
-
   <div class="device-shell">
     <div class="status-bar">
-      <span>3:30 PM</span>
       <span>📶 🔋 100%</span>
+      <span>3:30 PM</span>
     </div>
 
     <!-- Multi-step Indicator -->
@@ -211,14 +199,14 @@
       <div class="step-bar"></div>
     </div>
 
-    <div class="content-area">
+    <main class="content-area">
       <div>
         <div class="step-headline">
-          <h2>بياناتك البدنية وقوتك الحالية</h2>
-          <p>عشان محرك التمارين يختارلك الأوزان والتكرارات المناسبة من غير ما تبدأ بتمرين صعب جداً أو سهل بزيادة.</p>
+          <h1>بياناتك البدنية وقوتك الحالية</h1>
+          <p>عشان محرك التمارين يختارلك المساعدة والتكرارات المناسبة من غير ما تبدأ بتمرين صعب جداً أو سهل بزيادة.</p>
         </div>
 
-        <div style="background:#1c1e24; border:1px solid #2a2d36; padding:10px 14px; border-radius:12px; margin:10px 0; font-size:0.8rem; color:var(--accent-lime); font-weight:700;">
+        <div class="goal-badge">
           🎯 الهدف المعتمد: بناء العضلات والقوة (حساب مستقل بدون خوادم)
         </div>
 
@@ -247,7 +235,7 @@
             <input type="text" class="input-value" placeholder="مثال: 15" value="" readonly />
           </div>
 
-          <div style="font-size:0.75rem; color:var(--text-tertiary); text-align:center;">
+          <div class="privacy-notice">
             🔒 بياناتك الشخصية بتتخزن محلياً فقط على جهازك ومستثناة من النسخ السحابي
           </div>
         </div>
@@ -258,7 +246,7 @@
         <button class="btn-back">السابق</button>
         <button class="btn-next">التالي (الأدوات والوقت) ←</button>
       </div>
-    </div>
+    </main>
   </div>
 
 </body>

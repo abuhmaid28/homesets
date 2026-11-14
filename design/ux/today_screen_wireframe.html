@@ -4,6 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HOMESETS — Wireframe: Today Screen (اليوم)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg-dark: #121316;
@@ -15,7 +27,7 @@
       --text-muted: #a1a1aa;
       --text-tertiary: #8e8e93;
       --danger: #ef4444;
-      --thumb-zone-border: #3b82f6;
+      --device-width: 390px;
     }
     * {
       box-sizing: border-box;
@@ -23,48 +35,32 @@
       padding: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
     }
-    body {
-      background-color: #0b0c0e;
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 12px;
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
       min-height: 100vh;
-    }
-    .preview-header {
-      text-align: center;
-      margin-bottom: 16px;
-      color: var(--text-muted);
-      max-width: 440px;
-    }
-    .preview-header h1 {
-      color: var(--accent-lime);
-      font-size: 1.25rem;
-      margin-bottom: 4px;
-    }
-    .preview-note {
-      font-size: 0.75rem;
-      background: #1c1e24;
-      border: 1px solid #2a2d36;
-      padding: 4px 10px;
-      border-radius: 8px;
-      margin-top: 6px;
-      display: inline-block;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
     }
     .device-shell {
       width: 100%;
-      max-width: 390px;
-      min-height: 700px;
-      max-height: 844px;
+      min-height: 100vh;
       background-color: var(--bg-dark);
-      border: 4px solid #27272a;
-      border-radius: 40px;
-      overflow-y: auto;
-      position: relative;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
     .status-bar {
       height: 44px;
@@ -181,7 +177,8 @@
     }
     .workout-meta {
       display: flex;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
       font-size: 0.85rem;
       color: var(--text-muted);
     }
@@ -205,6 +202,8 @@
     .exercise-item {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      gap: 8px;
       color: var(--text-main);
     }
     .exercise-item span:last-child {
@@ -291,12 +290,6 @@
   </style>
 </head>
 <body>
-
-  <div class="preview-header">
-    <h1>هوم سيتس | شاشة اليوم (Today Screen Wireframe)</h1>
-    <p>تصميم تجريبي ثابت — الوضع الافتراضي للبدء في أقل من 3 ضغطات</p>
-    <div class="preview-note">تصميم تجريبي ثابت (Static Prototype) — للعرض البصري فقط بدون تفاعلية برمجية</div>
-  </div>
 
   <div class="device-shell">
     <!-- Android Status Bar -->

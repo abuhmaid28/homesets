@@ -3,18 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HOMESETS — Visual Exploration: Workout Player (مقترح مشغل التمرين)</title>
+  <title>HOMESETS — Visual Exploration: Workout Player (Performance Lime)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
   <style>
     :root {
-      --bg-dark: #0f1013;
-      --card-bg: #181a20;
-      --card-elevated: #22252e;
-      --card-border: #2d313d;
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #282b35;
       --lime: #ccff00;
-      --lime-glow: rgba(204, 255, 0, 0.22);
-      --text-white: #f4f4f5;
+      --lime-glow: rgba(204, 255, 0, 0.25);
+      --text-white: #f8fafc;
       --text-gray: #a1a1aa;
-      --danger: #ef4444;
+      --text-tertiary: #8e8e93;
+      --danger-text: #ef4444;
+      --danger-bg: #dc2626;
+      --device-width: 390px;
     }
     * {
       box-sizing: border-box;
@@ -22,367 +36,287 @@
       padding: 0;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
     }
-    body {
-      background-color: #07080a;
-      color: var(--text-white);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 12px;
-      min-height: 100vh;
+    html {
+      font-size: 16px;
     }
-    .disclaimer-banner {
-      background: #1e1b12;
-      border: 1px solid #78350f;
-      color: #fde68a;
-      padding: 10px 16px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      text-align: center;
-      max-width: 440px;
-      margin-bottom: 20px;
-      line-height: 1.4;
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      overflow-x: hidden;
     }
     .phone-container {
       width: 100%;
-      max-width: 390px;
-      min-height: 700px;
-      max-height: 844px;
+      min-height: 100vh;
       background-color: var(--bg-dark);
-      border: 4px solid #27272a;
-      border-radius: 44px;
-      overflow-y: auto;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 30px 60px rgba(0,0,0,0.85);
-      position: relative;
     }
-    /* Status bar */
+    /* Status Bar */
     .status-bar {
       height: 44px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 24px;
+      padding: 0 20px;
       font-size: 0.85rem;
       font-weight: 700;
       color: var(--text-gray);
     }
-    /* Top bar */
+    /* Header */
     .player-header {
       padding: 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #1a1c22;
+      border-bottom: 1px solid var(--card-border);
     }
-    .header-info {
+    .badge-progress {
       font-size: 0.85rem;
       font-weight: 800;
-      color: var(--text-gray);
+      color: var(--lime);
     }
-    .btn-pause {
-      background: var(--card-elevated);
+    .btn-circle-action {
+      background: #252833;
       border: 1px solid var(--card-border);
       color: var(--text-white);
-      padding: 6px 14px;
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
       cursor: pointer;
     }
-    /* Main body */
-    .player-content {
+    /* Main Player Body */
+    .player-body {
       flex: 1;
       padding: 16px 20px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      gap: 16px;
     }
-    .movement-header {
-      text-align: center;
-      margin-bottom: 4px;
-    }
-    .movement-title {
-      font-size: 1.6rem;
-      font-weight: 900;
-      color: #ffffff;
-      margin-bottom: 2px;
-    }
-    .movement-subtitle {
-      font-size: 0.85rem;
-      color: var(--lime);
-      direction: ltr;
-      font-weight: 700;
-    }
-    /* Demonstration vector box */
-    .movement-hero-box {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
-      height: 150px;
-      margin: 10px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      position: relative;
-    }
-    .hero-cue {
-      background: rgba(204, 255, 0, 0.12);
-      border: 1px solid var(--lime);
-      color: var(--lime);
-      padding: 4px 14px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-    /* Set Pills */
-    .sets-row {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-    }
-    .set-pill {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      padding: 6px 16px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      color: var(--text-gray);
-      font-weight: 700;
-    }
-    .set-pill.done {
-      background: #1e2417;
-      border-color: #4d7c0f;
-      color: var(--lime);
-    }
-    .set-pill.active {
-      background: var(--lime);
-      color: #000;
-      border-color: var(--lime);
-      font-weight: 900;
-    }
-    /* LOWER THUMB ZONE (Lower 40%) */
-    .thumb-control-dock {
-      background: linear-gradient(to top, #14171f 80%, transparent);
-      border-top: 1px dashed #3b82f6;
-      position: relative;
-      padding-top: 14px;
+    .exercise-details {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-    .thumb-tag {
-      position: absolute;
-      top: -10px;
-      left: 12px;
-      background: #3b82f6;
+    .hero-exercise-name {
+      font-size: 1.5rem;
+      font-weight: 900;
       color: #ffffff;
-      font-size: 0.65rem;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-weight: 800;
+      line-height: 1.25;
     }
-    /* Rep Stepper */
-    .stepper-box {
+    .load-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      align-self: flex-start;
+      flex-wrap: wrap;
+    }
+    .load-indicator strong {
+      color: var(--lime);
+    }
+    .cue-card {
+      background: linear-gradient(145deg, #181a22 0%, #13151b 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      line-height: 1.4;
+    }
+    .cue-card strong {
+      color: #ffffff;
+    }
+    .sets-track {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .track-pill {
+      flex: 1;
+      height: 42px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    .track-pill.active {
+      background: rgba(204, 255, 0, 0.15);
+      border-color: var(--lime);
+      color: var(--lime);
+      font-weight: 900;
+    }
+    /* Thumb Control Dock */
+    .thumb-control-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 8px;
+    }
+    .rep-stepper-box {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
+      border-radius: 22px;
       padding: 10px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .stepper-clicker {
+    .btn-step {
       width: 52px;
       height: 52px;
-      background: var(--card-elevated);
+      background: #252833;
       border: 1px solid var(--card-border);
       color: #ffffff;
       border-radius: 14px;
       font-size: 1.6rem;
       font-weight: 800;
-      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
     }
-    .stepper-core {
+    .step-counter {
       text-align: center;
     }
-    .stepper-digits {
-      font-size: 2.2rem;
+    .step-digits {
+      font-size: 2.4rem;
       font-weight: 900;
       color: var(--lime);
       line-height: 1;
     }
-    .stepper-text {
+    .step-subtext {
       font-size: 0.75rem;
       color: var(--text-gray);
-      font-weight: 600;
+      margin-top: 4px;
     }
-    /* Big Log CTA */
-    .btn-log-cta {
+    .btn-log-big {
+      width: 100%;
+      height: 56px;
       background: var(--lime);
-      color: #000000;
+      color: #0b0c0e;
       border: none;
-      border-radius: 20px;
-      height: 60px;
-      font-size: 1.25rem;
+      border-radius: 18px;
+      font-size: 1.15rem;
       font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 25px var(--lime-glow);
+    }
+    .in-set-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-action-ghost {
+      flex: 1;
+      height: 48px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      color: var(--text-gray);
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      box-shadow: 0 10px 25px var(--lime-glow);
     }
-    /* Secondary In-Workout Row */
-    .in-set-actions {
-      display: flex;
-      gap: 8px;
-    }
-    .btn-minor {
-      flex: 1;
-      background: var(--card-elevated);
-      border: 1px solid var(--card-border);
-      color: var(--text-gray);
-      padding: 10px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-pain-stop {
-      color: var(--danger);
+    .btn-action-pain {
       border-color: rgba(239, 68, 68, 0.4);
-    }
-    /* Rest Drawer Simulation */
-    .rest-sheet-mock {
-      background: #161922;
-      border: 1px solid var(--card-border);
-      border-top: 3px solid var(--lime);
-      border-radius: 24px 24px 0 0;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    .rest-clock {
-      font-size: 1.8rem;
-      font-weight: 900;
-      color: #ffffff;
-      direction: ltr;
-    }
-    .rating-row {
-      display: flex;
-      gap: 8px;
-      width: 100%;
-    }
-    .rate-btn {
-      flex: 1;
-      background: var(--card-elevated);
-      border: 1px solid var(--card-border);
-      color: var(--text-white);
-      padding: 8px;
-      border-radius: 10px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-    }
-    .rate-btn.selected {
-      background: rgba(204, 255, 0, 0.2);
-      border-color: var(--lime);
-      color: var(--lime);
+      color: var(--danger-text);
+      background: rgba(239, 68, 68, 0.08);
     }
   </style>
 </head>
 <body>
 
-  <div class="disclaimer-banner">
-    ⚠️ <strong>مقترح تصميم استكشافي ثابت (Static Design Proposal):</strong><br>
-    هذا النموذج البصري يوضح تجربة مشغل التمرين بيد واحدة داخل منطقة الإبهام (Thumb-Zone) بدون تفاعلية برمجية ولا يمثل اعتماداً نهائياً.<br>
-    <span style="font-size:0.75rem; color:#fde68a;">📌 الرسم التوضيحي بالداخل هو عنصر نائب تجريدي (Placeholder) وليس الشعار النهائي ولا رسماً بديلاً عن الصورة الأصلية.</span>
-  </div>
-
   <div class="phone-container">
     <!-- Status bar -->
     <div class="status-bar">
-      <span>3:42 PM</span>
       <span>🔋 100% 📶</span>
+      <span>3:48 PM</span>
     </div>
 
     <!-- Header -->
-    <div class="player-header">
-      <span class="header-info">تمرين 1 من 3 • سحب وضهر</span>
-      <button class="btn-pause">إيقاف مؤقت ⏸️</button>
-    </div>
+    <header class="player-header">
+      <div class="badge-progress">التمرين 1 من 3 • عقلة واسعة</div>
+      <button class="btn-circle-action" aria-label="إيقاف مؤقت">⏸</button>
+    </header>
 
-    <!-- Body -->
-    <div class="player-content">
-      <div>
-        <div class="movement-header">
-          <h2 class="movement-title">عقلة قبضة واسعة</h2>
-          <div class="movement-subtitle">Wide Grip Pull-ups</div>
+    <!-- Content -->
+    <main class="player-body">
+      <div class="exercise-details">
+        <h1 class="hero-exercise-name">عقلة قبضة واسعة<br>(Wide Grip Pull-ups)</h1>
+
+        <div class="load-indicator">
+          <span>المساعدة المحسوبة:</span>
+          <strong>حبل أسود (مساعدة وزن الجسم)</strong>
         </div>
 
-        <div class="movement-hero-box">
-          <svg width="48" height="48" viewBox="0 0 100 100" fill="none">
-            <line x1="10" y1="20" x2="90" y2="20" stroke="#ccff00" stroke-width="8" stroke-linecap="round" />
-            <path d="M 25 20 L 32 45 L 42 38 L 46 56 L 50 72 L 54 56 L 58 38 L 68 45 L 75 20 C 70 34 60 46 50 48 C 40 46 30 34 25 20 Z" fill="#ccff00" />
-            <circle cx="50" cy="14" r="8" fill="#ccff00" />
-          </svg>
-          <div class="hero-cue">💡 المسطرة: اسحب بصدرك للبار واقفل لوحين الكتف</div>
+        <div class="cue-card">
+          💡 <strong>التكنيك السليم:</strong> ابدأ من وضع الثبات التام، اسحب بصدرك للبار مع اعتصار عضلات الظهر، وانزل في 2 ثانية كاملة بدون مرجحة.
         </div>
 
-        <div class="sets-row">
-          <div class="set-pill done">مجموعة 1 ✓</div>
-          <div class="set-pill active">مجموعة 2</div>
-          <div class="set-pill">مجموعة 3</div>
+        <!-- Sets Track -->
+        <div class="sets-track">
+          <div class="track-pill active">المجموعة 1 (الآن)</div>
+          <div class="track-pill">المجموعة 2</div>
+          <div class="track-pill">المجموعة 3</div>
         </div>
       </div>
 
-      <!-- LOWER THUMB ZONE -->
+      <!-- Lower Thumb Zone Dock -->
       <div class="thumb-control-dock">
-        <span class="thumb-tag">منطقة الإبهام (Thumb Zone)</span>
-
         <!-- Rep Stepper -->
-        <div class="stepper-box">
-          <button class="stepper-clicker" aria-label="تقليل التكرار">-</button>
-          <div class="stepper-core">
-            <div class="stepper-digits">10</div>
-            <div class="stepper-text">تكرارات محققة (الهدف: 8-10)</div>
+        <div class="rep-stepper-box">
+          <button class="btn-step" aria-label="إنقاص تكرار">-</button>
+          <div class="step-counter">
+            <div class="step-digits">10</div>
+            <div class="step-subtext">تكرارات محققة (الهدف: 8-10)</div>
           </div>
-          <button class="stepper-clicker" aria-label="زيادة التكرار">+</button>
+          <button class="btn-step" aria-label="زيادة تكرار">+</button>
         </div>
 
-        <!-- Primary Log CTA -->
-        <button class="btn-log-cta" aria-label="تسجيل المجموعة وبدء الراحة">
+        <!-- Primary Log CTA (56dp) -->
+        <button class="btn-log-big" aria-label="تسجيل وبدء الراحة">
           ✓ تسجيل المجموعة وبدء الراحة
         </button>
 
+        <!-- Secondary in-set actions -->
         <div class="in-set-actions">
-          <button class="btn-minor">🔄 تبديل التمرين</button>
-          <button class="btn-minor btn-pain-stop">⚠️ حسيت بألم؟</button>
+          <button class="btn-action-ghost">🔄 تبديل التمرين</button>
+          <button class="btn-action-ghost btn-action-pain">🛑 ألم في المفصل (إيقاف)</button>
         </div>
       </div>
-
-      <!-- Rest Sheet Mockup Overlay -->
-      <div class="rest-sheet-mock">
-        <div style="font-size:0.8rem; color:var(--text-gray); font-weight:700;">مؤقت الراحة الحالي</div>
-        <div class="rest-clock">01:18</div>
-        <div class="rating-row">
-          <div class="rate-btn">سهل</div>
-          <div class="rate-btn selected">مظبوط 👍</div>
-          <div class="rate-btn">صعب جداً</div>
-        </div>
-      </div>
-
-    </div>
+    </main>
   </div>
 
 </body>

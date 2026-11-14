@@ -24,7 +24,8 @@ class HomesetsColors extends ThemeExtension<HomesetsColors> {
   final Color textSecondary;    // #A1A1AA (Secondary text, 7.25:1 on bg, 6.50:1 on card)
   final Color textTertiary;     // #8E8E93 (Accessible tertiary text, 5.70:1 on bg, 5.11:1 on card, PASS AA)
   final Color controlDisabled;  // #71717A (Non-text only: borders/disabled outlines, 3.84:1, PASS non-text AA >=3:1)
-  final Color danger;           // #EF4444 (Pain stop CTA / error borders)
+  final Color danger;           // #EF4444 (Pain stop text/icon / error borders, 4.94:1 on bg)
+  final Color dangerFilled;     // #DC2626 (Solid filled button bg with #FFFFFF text, 4.83:1 PASS AA)
   final Color warning;          // #F59E0B (Recovery alerts / interrupted session)
 
   const HomesetsColors({ ... });
