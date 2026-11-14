@@ -1,58 +1,47 @@
-# HOMESETS — Project Roadmap & Acceptance Gates
+# HOMESETS — Roadmap and Automated Acceptance Gates
 
-Status: **Draft plan for owner review**. This is NOT authorization to implement or add dependencies.
-Grounded in the original Master Project Initialization Prompt, sections 5, 6, 12, 16 and 19.
+**Status:** Active workflow approved 2026-11-14. Individual product, brand and architecture designs still require their documented approval gates. Read `docs/AGENT_AUTONOMY_POLICY.md` and GOV06–GOV11 before executing.
+**Explicit amendment:** the old rule that each P0–P8 milestone must be run on the real phone before the next is superseded. Automated evidence + exact-head CI are required during development; one integrated human Honor test occurs at final acceptance.
 
-## Planning and design gates (before application implementation)
+## Planning gates — no accidental product scope expansion
 
-| Gate | Goal | Exact scope | Acceptance / exit |
-| --- | --- | --- | --- |
-| G0 — Governance & source of truth | Prevent lost context and unapproved changes | Private GitHub, master prompt, decision register, current status, work rules | Files readable on GitHub, conflicts explicit, owner reviews; preferred reference logo uploaded |
-| G1 — Product Blueprint | Freeze an achievable MVP | Personas, constraints, user journeys, features, scope exclusions, safety and UX constraints | Owner signs off scope; non-goals captured; no unapproved features |
-| G2 — Brand Identity | Create durable brand assets | Candidate name, pull-up concept, typography proposal, icon variants and license evidence | Small-size/monochrome/adaptive-icon checks + final explicit owner approval |
-| G3 — UX Design | Make the daily training journey effortless | Information architecture, user flow, sketches/wireframes, handling missed days, Lite sessions, pain/stop interaction | Owner reviews Today → Workout → Summary and onboarding; key states accounted for |
-| G4 — Visual Design System | Establish reusable UI language | Token roles, typography, contrast, spacing, radius, component states, localization/RTL, dark and light themes | Approved design-system specification; no Flutter code yet |
-| G5 — High-Fidelity Screen Design | Validate the desired appearance and usability | Pixel-level references for key flows; device-sized prototypes, responsive text and accessibility review | Owner approves representative Today / Workout / Progress screens |
-| G6 — Architecture & Execution Plan | Make implementation safe and maintainable | Domain/data boundaries, deterministic plan engine, backup/photos, options for storage/state, offline policy, test plan | Architecture and dependency decisions documented, no new packages chosen without owner approval |
-| G7 — Antigravity Workspace Setup | Control the coding agent | Local folder cloned from GitHub, actual Rules path verified, review mode, narrow task briefs | Workspace points to correct repo; no code produced until gate is approved |
+| Gate | Goal and scope | Completion criteria |
+| --- | --- | --- |
+| G0 — Governance & isolation | Private repo, source of truth, work rules, local clone, approved autonomous merge rules, source logo preservation | Git remote/workspace verified, rules actually discovered, reference PNG committed and SHA checked, no unrelated files modified |
+| G1 — Product Blueprint | Freeze a realistic 15–30 min, offline, bands/bar muscle-building MVP and safety/problem journeys | Owner has seen/approved proposed scope and acceptance; ambiguities recorded |
+| G2 — Brand | Validate HOMESETS candidate, owner-preferred Pull-Up Motion, icon, wordmark, font/license and color system | Actual vector/size/mono/adaptive-icon evidence; explicit owner design approval |
+| G3 — UX | Onboarding, Today, Workout, Lite, swap, recovery, Progress and settings journeys | Flows and wireframes presented for owner review; pain and interrupted states covered |
+| G4 — Design System | Dark/light roles, tokens, AR/EN RTL, accessibility, components | Design spec, contrast samples, states and reusable components reviewed |
+| G5 — High-fidelity design | Today, workout, progress and representative onboarding mockups | Owner approves selected visual direction before implementation |
+| G6 — Architecture & safe plan logic | Pure-Dart plan engine, local schema/backups/photo privacy, test strategy, package/license selection | Owner reviews major technical/safety choices; no unapproved dependency |
+| G7 — Antigravity rules + CI | Verify local connection, real rule discovery, repeatable automated analysis/test/build on PR head | Evidence-backed workspace scope; CI running green against a known exact head; controls documented |
 
-**No production Flutter implementation before the relevant upstream gates are accepted.** Any exception needs a written owner decision with the cost and impact recorded.
+Each approved planning campaign may draft and revise multiple files continuously without routine user approval. **Owner approval remains necessary for final brand/product/safety choices, not every implementation step.**
 
-## Runtime milestones (original P0–P8 retained)
+## Runtime milestones P0–P8 — agent-driven, human device check deferred
 
-All runtime milestones must produce command logs and be tried on the **actual Honor X9e Pro** before moving to the next. No USB connection; APK transfer and manual installation.
+| Milestone | Goal | Automated evidence required before integration |
+| --- | --- | --- |
+| P0 — Android scaffold | Minimal offline Android-only Flutter app, documented repo structure | `flutter analyze`, `flutter test`, `flutter build apk --debug`, CI on exact head, APK file/log produced; **no Honor run required yet** |
+| P1 — Foundations | Design tokens, theme gallery, navigation, gen-l10n AR/EN RTL | Widget tests for core components, themes, RTL, accessibility + analyze/build/CI |
+| P2 — Data | Versioned local schema, migration tests, validated bundled exercise catalog | Migration/JSON integrity and restart persistence tests, analyze/build/CI |
+| P3 — Plan engine | Deterministic progression, recoveries, substitutions and Lite mode | Thorough pure Dart tests for equipment/pain exclusion, overload, missed days and safe limits; sample plans reviewed for logic |
+| P4 — Core loop | Onboarding, Today, Workout player and pause/resume | Widget/state restoration tests, end-to-end simulation where feasible, analyze/build/CI |
+| P5 — Progress | Photo/weight/strength/consistency + meal checklist | Privacy/file-storage checks, trend math/DB tests, photo lifecycle, backup compatibility where relevant |
+| P6 — Reminders/Backup | Local notification scheduling, validated export/import | Permission-path tests, export/import round trip with photos and corruption cases, static checks and build |
+| P7 — Polish/release candidate | Accessibility, performance, signing plan, failure recovery | Release build logs, app permissions/a11y/privacy checks, regression suite, installation/update plan; keep device behavior unverified |
+| P8 — Private sharing documentation | Install guide and supported equipment choices, no new fitness goal without authorization | Documentation checks, build artifacts, license inventory; unresolved friend-goal scope noted |
 
-| Milestone | Goal | Build/test acceptance | Real-device acceptance |
-| --- | --- | --- | --- |
-| P0 — Bootstrap | Create a reproducible Android-only hello-world | Git repo cloned, project scaffold reviewed; `flutter analyze`, `flutter test`, `flutter build apk --debug` outputs supplied | APK installed wirelessly and launched on Honor X9e Pro; no crash |
-| P1 — Foundation | UI shell, theme, design tokens, AR/EN RTL | Widget tests for theme/localization, analyzer clean | Design gallery and sample screens visible on phone, Dark/Light and RTL checked |
-| P2 — Local data | Versioned schema, migrations, validated exercise catalog | Migration, JSON/schema and persistence tests supplied | Exercise catalog works offline, data survives restart |
-| P3 — Plan engine | Pure-Dart rule engine and progression | Tests cover session selection, recovery, Lite, progression, pain avoid areas, missing equipment and missed days | Sample generated weeks reviewed on phone with Ahmed |
-| P4 — Core loop | Onboarding, Today, Workout player | UI and interrupted-session resume tests, analyzer clean | Real 15–30 minute workout logged one-handed; interruption resumes safely |
-| P5 — Progress | Photos, weight trends, strength and weekly consistency, meal checklist | Data/aggregate tests, photo-private-storage checks | Capture/compare photos on Honor; trends match manually checked results |
-| P6 — Reminders and backup | Local optional notification, export/import with validation | Backup round-trip tests, notification permission checks | Reminder tested on Honor or limitation documented; import restores data/photos |
-| P7 — Polish & release | Accessibility, performance, update and privacy validation | Release APK, code/data tests, manual regression evidence | Install signed APK then update over itself without data loss |
-| P8 — Private sharing | Friend-ready install guidance | Updated docs / privacy assurance | Friend can install and onboard with supported settings; additional goals require separate scope decision |
+**Required for every implementation merge:** authorized scope, reviewed diff, actual logs, artifact/test evidence, **green exact-head CI**, no skipped/missing required check, no critical defects, valid dependency/license decisions, correct target. No merge if CI is absent or fails. Underlying GitHub platform Auto-merge is optional; ordinary merges may be automated by Antigravity if the gates genuinely pass.
 
-## MVP features (must not silently expand)
-- First-launch setup; one-card Today; 15-minute Lite; exercise swap.
-- One-handed workout player, set/reps logging, rest timer, difficulty feedback.
-- Rule-based equipment-aware progressive sessions and recovery.
-- Private physique photos, side-by-side compare, weight trend, strength and weekly consistency.
-- Cheap-protein ideas and meal checklist, no calorie/macros.
-- Local optional reminders; manual export/import backup; Arabic-first RTL and English.
-- Offline operation, no accounts, backend, sync or Play Store.
+## Final integrated human acceptance (single phone-testing phase)
+Install APK wirelessly on Honor X9e Pro; complete real 15–30 minute workout and Lite, interruptions and app restart, missed days, RTL, photo privacy, weight/strength trends, reminders/permission limits, offline mode, backup/restore, signing and upgrade with data intact. Any failure reopens implementation for another automated cycle and final retest. **No release is final until this gate passes.**
 
-## Excluded unless a separate explicit scope decision is made
-Cloud, accounts, server, payment, subscription, AI/LLM runtime, calorie counting, macro tracking, wearables, social features, iOS, public store publishing, additional fitness goals.
+## MVP wall — unchanged
+In: goal/equipment/session-time setup; Today; Lite; one-handed sets/rest logging; safe plan engine; private photos, trends, weekly consistency; meal checklist; settings/manual backup; optional local reminders; Arabic RTL + English; Android offline APK.
+Out: accounts, cloud/backend, online AI, billing, calories/macros, wearables, social, Play Store, iOS, paid services, new training goals without separate scope approval.
 
-## Mandatory agent delivery for every implementation milestone
-- One-sentence goal; context; approved files/areas and out-of-scope.
-- Requirements, exact acceptance criteria, no unapproved dependency.
-- Verification commands and **full actual output**, changed-file inventory, commit SHA.
-- Known issues and stop conditions.
-- Ahmed's **real-device evidence**, not an agent's assertion.
-- Git commit only after verified milestone (or reviewed scoped candidate commit per workflow).
+## Evidence and governance
+Each campaign: clear goal, exact file areas, exclusions, preapproved dependencies, acceptance tests, stop conditions, branch/PR strategy and rollback. Internal small commits with raw `flutter analyze`, `flutter test` and build output where relevant. The agent continues autonomously after green checks, not after guessed success. No force pushes/destructive actions. ChatGPT independently reviews supplied evidence; agent self-reports are not proofs.
 
-## Explicit unresolved conflict
-Original Section 5 says MVP goal = build muscle; Section 16 P8 mentions onboarding with a *different goal*. Treat new goals as post-MVP pending owner decision; do not implement them now.
+**Open design conflict:** Original Master §5 says build-muscle goal only, while P8 mentions a friend selecting a different goal. More goals remain post-MVP until Ahmed changes scope.
