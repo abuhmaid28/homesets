@@ -1,34 +1,34 @@
 # HOMESETS
 
-**Private, offline-first home workout application — Flutter / Android only**
+**Private Android-only, offline-first Flutter home workout app.**
+**Current state:** Planning / foundation governance; no Flutter application or APK yet.
 
-Current state: **PLANNING, NO FLUTTER APP OR APK YET**. Repository is private and used as the durable source of truth for product decisions, brand references, implementation scope and verification.
+## Source of truth — read these in order
+1. [Current verified status](docs/PROJECT_STATUS.md)
+2. [Decision Register — GOV06–GOV11](docs/DECISION_REGISTER.md)
+3. [**Approved Antigravity autonomy / merge policy**](docs/AGENT_AUTONOMY_POLICY.md)
+4. [Current roadmap and gates](docs/ROADMAP.md)
+5. [Project rules](PROJECT_RULES.md) and [always-on workspace AGENTS.md](AGENTS.md)
+6. [Original Master Project Initialization Prompt (unchanged)](docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt)
+7. [Product brief](docs/PRODUCT_BRIEF.md)
+8. [Brand concept (preferred only, not final)](docs/BRAND_DIRECTION.md)
+9. [Asset manifest](docs/ASSET_MANIFEST.md)
 
-## Read this first
-1. [Current project status](docs/PROJECT_STATUS.md)
-2. [Live Decision Register](docs/DECISION_REGISTER.md)
-3. [Original, verbatim Master Project Initialization Prompt](docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt)
-4. [Roadmap and acceptance gates](docs/ROADMAP.md)
-5. [Product brief](docs/PRODUCT_BRIEF.md)
-6. [Preferred brand direction — not final](docs/BRAND_DIRECTION.md)
-7. [Asset provenance](docs/ASSET_MANIFEST.md)
-8. [Agent / project rules](PROJECT_RULES.md)
+## Owners / execution
+- **Ahmed:** Product Owner. Approves major brand/product/safety choices and one final integrated phone acceptance. Not responsible for routine GitHub commands/uploads or repeated coding approvals.
+- **ChatGPT:** project management, documentation, architecture/design reviews, governance and independent QA.
+- **Antigravity:** scoped, potentially long autonomous campaigns with automated tests, branches, commits, pushes, PRs, and **ordinary code merges only after the entire exact-head CI / scope / critical quality checklist passes**. No blind merges or scope expansion.
+- **GitHub:** canonical decisions, provenance, code, review records.
+- **Physical phone:** Honor X9e Pro / Android 16 / MagicOS 10, **one final device acceptance** via wirelessly transferred APK (no USB). Earlier performance and behavior are unverified.
 
-## Ownership and workflow
-- Ahmed: Product Owner and final approval.
-- ChatGPT: advisor, planner, architecture/design reviewer, QA gatekeeper.
-- Antigravity: implementation agent **only after approved task brief and prerequisites**.
-- GitHub: decisions, documentation and code history.
-- Honor X9e Pro (MagicOS 10 / Android 16): actual milestone acceptance through transferred APK (no USB).
+## Product boundaries (unchanged)
+Offline Android APK, no accounts/backend/cloud/recurring spend; 15–30 min muscle building with pull-up bar and resistance bands, conservative progression and recovery, private photos and strength/weight progress; Arabic RTL first with English option.
 
-## Confirmed boundaries
-Android only; local data; no accounts, backend, recurring costs or network-dependent features. Short 15–30 min muscle-building workouts adapted to equipment/time; real progress tracking; Arabic RTL first. No medical advice.
+## Brand status
+Working name **HOMESETS**; preferred Pull-Up Motion neon-lime-on-charcoal logo, `HOME` white and `SETS` lime. **This is preferred, not final approved**. Exact original image is **not currently committed** under `assets/brand/reference/homesets-pullup-preferred.png`; do not replace it with a similar-looking image.
 
-## Important current design choice
-**HOMESETS** is the working name; **Performance Lime + Pull-Up Motion** is the preferred visual direction. The exact owner-selected image needs to be uploaded at `assets/brand/reference/homesets-pullup-preferred.png`. No final logo has been approved, and generated brand-board pictures are not proof of vector/small-size quality.
+## Current project task
+[G0-CAMPAIGN-01 — Autonomous Workspace/Foundation Verification](https://github.com/abuhmaid28/homesets/issues/2) is prepared, **not executed**. Verify exact Git origin, active project rules and permissions, and remaining blockers before starting app implementation.
 
-## Next action
-Place the exact preferred logo PNG under `assets/brand/reference/`, then review and approve brand asset tests. Do not start Flutter coding or Antigravity tasks yet.
-
-## Current operating model
-Ahmed is PO-only: approvals and device acceptance. ChatGPT manages the source-of-truth docs, roadmap, issues and independent review. Antigravity handles local files/assets/code/verification/Git through approved narrowly scoped tasks. The exact preferred logo binary is still pending upload to the repo; do not ask Ahmed for routine manual GitHub uploads.
+## Important technical gate
+At present there is **no Flutter application and no established GitHub Actions CI**. The owner's approval for guarded automatic merges **does not permit a runtime-code merge until the required CI actually exists and passes**. No owner phone test is required at each intermediate milestone; full phone acceptance is required at the end.
