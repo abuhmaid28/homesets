@@ -33,7 +33,7 @@ Status: **Living register — owner review required for newly proposed items**
 | D17 | Deterministic rule-based plan engine; no AI model inside app | Recommended (adopted) |
 | D18 | One profile per installation, manual export/import, private photo storage | Recommended (adopted) |
 | D19 | Antigravity writes app code; ChatGPT plans and independently reviews | Confirmed |
-| D20 | Tiny milestones, Git, tests, actual outputs and real-device evidence before Done | Confirmed |
+| D20 | Tiny milestones, Git and tests: originally Confirmed. The **per-milestone human device gate only** is explicitly superseded by GOV07 on 2026-11-14; small internally verified milestones, evidence, and Git remain mandatory. | Confirmed original; partial supersession GOV07 |
 
 ## Later facts and decisions
 
@@ -82,13 +82,23 @@ Confirm the registry is faithful, then preserve the exact selected image in `ass
 | GOV02 | ChatGPT owns planning, docs/decisions/issues it can update directly, design/architecture review, QA and Antigravity task briefs. | Confirmed |
 | GOV03 | Antigravity owns local workspace/file handling, source/binary asset commits, implementation, command logs, builds and Git pushes through narrow authorized tasks. | Confirmed |
 | GOV04 | One-time machine setup/authentication and phone testing may require Ahmed's direct action; minimize these and explain why. | Confirmed |
-| GOV05 | No implicit authorization to change MVP scope, add dependencies, pay for services, merge code, or run destructive operations. | Confirmed |
+| GOV05 | No implicit authorization to change MVP scope, add dependencies, pay for services, or run destructive operations. **Guarded implementation merges are now explicitly authorized by GOV08**, not unconditional merges. | Confirmed, amended by GOV08 |
 
 **Limit:** Current ChatGPT GitHub text-file writer cannot by itself upload the exact 2 MB image asset. The selected source image was verified locally and fingerprinted in ASSET_MANIFEST.md; commit of the exact binary remains an Antigravity handoff. Do not mark it Done until GitHub evidence confirms it.
 
-## GOV06 — New autonomy preference and process conflict (2026-11-14)
-- **[Confirmed preference from Ahmed]** Wants Antigravity to work in long uninterrupted campaigns, minimize routine approvals, handle project files/commits/merges and defer his manual testing until late.
-- **[Open — process change]** This conflicts with existing D20 and the Master Prompt requirement that each implementation milestone be tested on the physical Honor X9e Pro before moving on. Do not silently treat D20 as withdrawn; document the cost/risks and obtain a one-time explicit choice.
-- **[Recommended]** Autonomous hours within approved campaigns, automatic internal quality checks, independent branch commits, and CI; avoid unconditional machine-wide permissions or unconditional merges before verification.
-- Decision alternatives and trade-offs: [Agent autonomy proposal](AGENT_AUTONOMY_PROPOSAL.md).
-- Foundation audit: [2026-11-14 foundation audit](FOUNDATION_AUDIT_2026-11-14.md).
+## GOV06–GOV11 — Explicit workflow amendment (2026-11-14)
+
+**Owner authorization (verbatim intent):** Ahmed approved changing human device testing from **every milestone** to **a final manual test only**, after understanding the late-defect risk. He authorized long autonomous Antigravity campaigns, automated tests, and merges after passing them, excluding destructive operations and out-of-scope changes. This explicitly changes the procedure in the immutable Master Prompt §0 rule 2, §13 and §16 and original D20, but NOT the app's functional scope, safety principles or documented verification standards.
+
+| ID | Decision | Status |
+| --- | --- | --- |
+| GOV06 | Ahmed prefers long continuous autonomous Antigravity campaigns; no repetitive routine owner approvals. Agent works on many internal tasks per campaign and reports evidence/blocks. | **Confirmed** |
+| GOV07 | **Human phone acceptance only at the final integrated release gate**. Original per-milestone phone gate D20 and Master Prompt §0 rule 2 / §16 are specifically superseded for the **timing of manual testing only**. Milestones still require automated evidence, tests and recorded commits; never call earlier device behavior verified. | **Confirmed — explicit supersession** |
+| GOV08 | Antigravity may create branches, change files **within a preapproved campaign scope**, run tests/builds, push PRs and **merge** independently **only after all required automated checks are demonstrably green on the exact head, reviewed diff is within scope, no unresolved critical issues and required product/design approvals exist**. No blind merges, no bypassing failing/missing checks. | **Confirmed — guarded merge authorization** |
+| GOV09 | No force push, deleting branches/workspaces/user data, secret exposure, external-repo access, paid services, unapproved dependencies, permissions expansion, out-of-scope changes, unsafe exercise logic or destructive operations. Agent must stop on those blockers. | **Confirmed limits** |
+| GOV10 | Final device gate occurs on Honor X9e Pro via wireless APK (no USB). Verify install/update, workouts and resumes, localized UI, backup/photo privacy and reminder limitations. Until then, device behavior is **unverified**, even when automated tests pass. | **Confirmed testing schedule** |
+| GOV11 | Product Owner continues to approve **major product/branding scope decisions** at planned gates, not every implementation task. Long campaigns cannot silently approve the logo, training safety, or changes to any other confirmed requirement. | **Confirmed** |
+
+**Operational source of truth:** [Approved Autonomy Policy](AGENT_AUTONOMY_POLICY.md) and [Updated Roadmap](ROADMAP.md). The original Master Prompt is retained verbatim for history; newer explicitly confirmed entries GOV07–GOV11 control the conflicting process rules.
+
+**Current blockers (unchanged):** Antigravity local origin/permissions unverified, preferred exact PNG missing from GitHub, CI not configured, brand and architecture approval incomplete. The authorization above is **policy**, not proof of an agent run, CI pass, APK, or merge.
