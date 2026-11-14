@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Direction A: Performance Stealth</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #0D0E11;
+      --card-bg: #15171C;
+      --card-border: #262933;
+      --accent-lime: #CCFF00;
+      --accent-lime-dim: #88AA00;
+      --text-main: #FFFFFF;
+      --text-muted: #8E929E;
+      --text-tertiary: #5D616F;
+      --danger: #FF3B30;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    .mono {
+      font-family: ui-monospace, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+    .device-shell {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Direction Banner */
+    .direction-banner {
+      background: #111318;
+      border-bottom: 1px solid var(--card-border);
+      padding: 6px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .direction-tag {
+      color: var(--accent-lime);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .screen-switcher {
+      display: flex;
+      gap: 4px;
+    }
+    .switcher-btn {
+      background: #1a1c24;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .switcher-btn.active {
+      background: var(--accent-lime);
+      color: #000000;
+      border-color: var(--accent-lime);
+    }
+    /* Status bar */
+    .status-bar {
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 18px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    /* Header */
+    .app-header {
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .brand-mark {
+      font-size: 1.1rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .brand-home { color: #FFFFFF; }
+    .brand-sets { color: var(--accent-lime); }
+    .telemetry-chip {
+      background: #15171C;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 0.72rem;
+      color: var(--accent-lime);
+    }
+    .screen-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .screen-view {
+      display: none;
+      flex: 1;
+      padding: 14px 18px 24px;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* Direction A Spec: Zero glow, sharp borders (radius 6-8px), monospace telemetry */
+    .stealth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stealth-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stealth-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .stealth-badge {
+      background: rgba(204, 255, 0, 0.08);
+      border: 1px solid var(--accent-lime-dim);
+      color: var(--accent-lime);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Today Screen Components */
+    .consistency-grid {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .stealth-stat-box {
+      border: 1px solid var(--card-border);
+      background: #0D0E11;
+      padding: 8px 12px;
+      border-radius: 6px;
+      text-align: center;
+      min-width: 68px;
+    }
+    .stealth-stat-val {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+    }
+    .stealth-stat-lbl {
+      font-size: 0.68rem;
+      color: var(--text-tertiary);
+    }
+    .workout-stealth-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -0.3px;
+    }
+    .meta-pills-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .meta-pill {
+      background: #0D0E11;
+      border: 1px solid var(--card-border);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .exercise-checklist {
+      border-top: 1px solid var(--card-border);
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .checklist-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    /* Workout Player Components */
+    .exercise-title-lg {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #FFFFFF;
+      line-height: 1.2;
+    }
+    .exercise-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      letter-spacing: 0.5px;
+    }
+    .set-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0D0E11;
+      border: 1px solid var(--card-border);
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+    .set-indicator {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--accent-lime);
+    }
+    .target-reps-tag {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Heavy Ergonomic Rep Stepper */
+    .stepper-container {
+      background: #111317;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .stepper-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stepper-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 280px;
+    }
+    .step-btn {
+      width: 56px;
+      height: 56px;
+      background: #191B22;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: #FFFFFF;
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .step-btn:active {
+      background: var(--accent-lime);
+      color: #000000;
+    }
+    .rep-display {
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+      line-height: 1;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    /* Muscle Activation & Set History */
+    .activation-card {
+      background: #0D0E11;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .activation-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+    }
+    .muscle-tags {
+      display: flex;
+      gap: 6px;
+    }
+    .muscle-tag {
+      background: #15171C;
+      border: 1px solid var(--card-border);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+    .history-table th {
+      color: var(--text-tertiary);
+      text-align: right;
+      padding: 2px 4px;
+      font-weight: 600;
+    }
+    .history-table td {
+      padding: 4px;
+      color: var(--text-muted);
+      border-top: 1px solid #1a1c24;
+    }
+    .history-table tr.current-row td {
+      color: var(--accent-lime);
+      font-weight: 800;
+    }
+
+    /* Rest Timer Screen */
+    .timer-hero-container {
+      background: #0D0E11;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .timer-digits-lg {
+      font-size: 3.8rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .timer-caption {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .feedback-pills-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feedback-pill-btn {
+      background: #15171C;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .feedback-pill-btn.selected {
+      background: #1d2110;
+      border-color: var(--accent-lime);
+      color: var(--accent-lime);
+    }
+    .pill-rpe-tag {
+      font-size: 0.72rem;
+      color: var(--text-tertiary);
+    }
+
+    /* Primary CTAs */
+    .btn-stealth-primary {
+      background: var(--accent-lime);
+      color: #000000;
+      border: none;
+      border-radius: 6px;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn-stealth-secondary {
+      background: #15171C;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .pain-stop-link {
+      color: var(--danger);
+      font-size: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <!-- Direction Banner & View Switcher -->
+    <div class="direction-banner">
+      <div>DIRECTION A: <span class="direction-tag">PERFORMANCE STEALTH</span></div>
+      <div class="screen-switcher">
+        <button class="switcher-btn" onclick="showScreen('today')">اليوم</button>
+        <button class="switcher-btn active" onclick="showScreen('workout')">التمرين</button>
+        <button class="switcher-btn" onclick="showScreen('rest')">الراحة</button>
+      </div>
+    </div>
+
+    <!-- Android Status Bar -->
+    <div class="status-bar mono">
+      <span>03:45 PM</span>
+      <span>BAT 100% | CELL 5G</span>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand-mark mono">
+        <span class="brand-home">HOME</span><span class="brand-sets">SETS</span>
+      </div>
+      <div class="telemetry-chip mono">STEALTH-01 // NO-GLOW</div>
+    </header>
+
+    <div class="screen-container">
+
+      <!-- ================= SCREEN 1: TODAY ================= -->
+      <section id="screen-today" class="screen-view">
+        <!-- Consistency Telemetry -->
+        <div class="stealth-card">
+          <div class="stealth-header-row">
+            <span class="stealth-label">استمرارية الأسبوع</span>
+            <span class="stealth-badge mono">WEEK 03 / CYCLE 01</span>
+          </div>
+          <div class="consistency-grid">
+            <div class="stealth-stat-box">
+              <div class="stealth-stat-val mono">3/4</div>
+              <div class="stealth-stat-lbl">أيام منجزة</div>
+            </div>
+            <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+              فاضل تمرين واحد لإتمام الهدف الأسبوعي. معدل الالتزام الحالي <strong style="color:var(--accent-lime);" class="mono">75%</strong>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Workout Routine Card -->
+        <div class="stealth-card">
+          <div class="stealth-header-row">
+            <span class="stealth-label">التمرين المبرمج اليوم</span>
+            <span class="stealth-badge mono">AUTOROTATE</span>
+          </div>
+          <h2 class="workout-stealth-title">سحب وضهر وبايسبس</h2>
+          <div class="meta-pills-row mono">
+            <span class="meta-pill">⏱ 25 MIN</span>
+            <span class="meta-pill">🏋️‍♂️ عقلة + أحبال</span>
+            <span class="meta-pill">3 تمارين</span>
+          </div>
+
+          <div class="exercise-checklist">
+            <div class="checklist-row">
+              <span>1. عقلة قبضة واسعة <small dir="ltr" style="color:var(--text-tertiary);">(Pull-ups)</small></span>
+              <span class="mono" style="color:var(--accent-lime);">3 × 8-10</span>
+            </div>
+            <div class="checklist-row">
+              <span>2. سحب حبل ضهر <small dir="ltr" style="color:var(--text-tertiary);">(Band Row)</small></span>
+              <span class="mono" style="color:var(--text-muted);">3 × 10-12</span>
+            </div>
+            <div class="checklist-row">
+              <span>3. بايسبس بحبل المقاومة <small dir="ltr" style="color:var(--text-tertiary);">(Band Curl)</small></span>
+              <span class="mono" style="color:var(--text-muted);">3 × 12-15</span>
+            </div>
+          </div>
+
+          <button class="btn-stealth-primary" onclick="showScreen('workout')" aria-label="ابدأ التمرين">
+            ▶ ابدأ التمرين (25 دقيقة)
+          </button>
+          <button class="btn-stealth-secondary" aria-label="تمرين سريع">
+            ⚡ وضع الإرهاق السريع (15 دقيقة)
+          </button>
+        </div>
+
+        <!-- Nutrition Quick Nudge -->
+        <div class="stealth-card" style="flex-direction:row; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.82rem;">
+            <span style="color:var(--text-muted);">وجبات البروتين: </span>
+            <strong class="mono" style="color:var(--accent-lime);">3 / 5</strong>
+          </div>
+          <span style="font-size:0.75rem; color:var(--text-muted); cursor:pointer;">سجل الوجبة ←</span>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 2: WORKOUT ACTIVE ================= -->
+      <section id="screen-workout" class="screen-view active">
+        <!-- Exercise Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <div class="exercise-subtitle mono" dir="ltr">EXERCISE 01 OF 03</div>
+            <h1 class="exercise-title-lg">عقلة قبضة واسعة</h1>
+            <div style="font-size:0.75rem; color:var(--text-tertiary);" dir="ltr">Bodyweight Pull-ups</div>
+          </div>
+          <div class="stealth-badge mono">SET 1 / 3</div>
+        </div>
+
+        <!-- Set Telemetry Bar -->
+        <div class="set-status-bar mono">
+          <span class="set-indicator">المجموعة الأولى</span>
+          <span class="target-reps-tag">الهدف: 08-10 تكرار (وزن الجسم)</span>
+        </div>
+
+        <!-- Heavy Ergonomic Rep Stepper -->
+        <div class="stepper-container">
+          <div class="stepper-label mono">التكرارات المنجزة فعلياً</div>
+          <div class="stepper-controls">
+            <button class="step-btn mono" onclick="adjustReps(-1)" aria-label="إنقاص">-</button>
+            <div id="rep-val-display" class="rep-display mono">08</div>
+            <button class="step-btn mono" onclick="adjustReps(1)" aria-label="زيادة">+</button>
+          </div>
+        </div>
+
+        <!-- Muscular Activation & Set Progression Table (Eliminates Dead Space) -->
+        <div class="activation-card">
+          <div class="activation-header">
+            <span>العضلات المستهدفة</span>
+            <span class="mono">LAST RECORD: 8 REPS</span>
+          </div>
+          <div class="muscle-tags">
+            <span class="muscle-tag">عضلة الظهر العريضة (Lats)</span>
+            <span class="muscle-tag">البايسبس</span>
+          </div>
+
+          <table class="history-table mono">
+            <thead>
+              <tr>
+                <th>المجموعة</th>
+                <th>الهدف</th>
+                <th>المحقق</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="current-row">
+                <td>مجموعة 1</td>
+                <td>8-10</td>
+                <td>8 تكرار</td>
+                <td style="color:var(--accent-lime);">حالية</td>
+              </tr>
+              <tr>
+                <td>مجموعة 2</td>
+                <td>8-10</td>
+                <td>--</td>
+                <td>قادمة</td>
+              </tr>
+              <tr>
+                <td>مجموعة 3</td>
+                <td>8-10</td>
+                <td>--</td>
+                <td>قادمة</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Thumb Zone Controls -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <button class="btn-stealth-primary" onclick="showScreen('rest')" aria-label="تسجيل المجموعة والراحة">
+            ✓ تسجيل المجموعة واسترخاء (90 ث)
+          </button>
+          <div class="pain-stop-link" onclick="triggerPainStop()">
+            🛑 هل تشعر بألم غير طبيعي في المفصل؟ اضغط للإيقاف الآمن
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 3: REST TIMER ================= -->
+      <section id="screen-rest" class="screen-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="stealth-label">فترة الاستشفاء بين المجموعات</span>
+          <span class="stealth-badge mono">AUTONEXT</span>
+        </div>
+
+        <!-- High-Precision Tabular Countdown -->
+        <div class="timer-hero-container">
+          <div class="timer-caption mono">REST REMAINING</div>
+          <div class="timer-digits-lg mono" id="rest-timer-val">01:30</div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">
+            المجموعة القادمة: <strong style="color:#FFFFFF;">2 من 3</strong> (عقلة قبضة واسعة)
+          </div>
+        </div>
+
+        <!-- Egyptian Exertion Feedback (No Cryptic Jargon) -->
+        <div class="stealth-card">
+          <span class="stealth-label">تقييم المجهود للمجموعة السابقة:</span>
+          <div class="feedback-pills-col">
+            <button class="feedback-pill-btn" onclick="selectFeedback(this)">
+              <span>فاضل طاقة (سهل) 💪</span>
+              <span class="pill-rpe-tag mono">RESERVE: HIGH</span>
+            </button>
+            <button class="feedback-pill-btn selected" onclick="selectFeedback(this)">
+              <span>مظبوط ومثالي (تحدي مناسب) 👍</span>
+              <span class="pill-rpe-tag mono">TARGET REACHED</span>
+            </button>
+            <button class="feedback-pill-btn" onclick="selectFeedback(this)">
+              <span>على الآخر (أقصى مجهود) 🔥</span>
+              <span class="pill-rpe-tag mono">NEAR FAILURE</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rest CTAs -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:8px;">
+            <button class="btn-stealth-secondary mono" style="flex:1;" onclick="addRestTime(30)">
+              +30 ثانية
+            </button>
+            <button class="btn-stealth-primary mono" style="flex:2;" onclick="showScreen('workout')">
+              تخطي وبدء الآن ⏭
+            </button>
+          </div>
+          <div class="pain-stop-link" onclick="triggerPainStop()">
+            🛑 إنهاء التمرين مبكراً بسبب إجهاد أو ألم
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    let currentReps = 8;
+    function adjustReps(delta) {
+      currentReps = Math.max(1, Math.min(50, currentReps + delta));
+      const el = document.getElementById('rep-val-display');
+      if (el) el.innerText = currentReps < 10 ? '0' + currentReps : currentReps;
+    }
+
+    function selectFeedback(btn) {
+      document.querySelectorAll('.feedback-pill-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('screen-' + screenId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.switcher-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(screenId));
+      });
+    }
+
+    function triggerPainStop() {
+      alert("تم تفعيل بروتوكول إيقاف الألم الآمن: يتم إنهاء التمرين فوراً وحفظ البيانات المسجلة واقتراح كمادات أو استشارة طبية.");
+    }
+
+    function addRestTime(sec) {
+      const el = document.getElementById('rest-timer-val');
+      if (el) el.innerText = "02:00";
+    }
+
+    // URL parameter auto-select
+    (function() {
+      const p = new URLSearchParams(window.location.search);
+      const s = p.get('screen');
+      if (s && ['today', 'workout', 'rest'].includes(s)) {
+        showScreen(s);
+      }
+    })();
+  </script>
+</body>
+</html>

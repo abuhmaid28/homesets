@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Interactive Workout Prototype</title>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e26;
+      --card-border: #2a2e3a;
+      --accent-lime: #ccff00;
+      --accent-lime-dim: #99cc00;
+      --lime-glow: rgba(204, 255, 0, 0.2);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-tertiary: #64748b;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", sans-serif;
+    }
+    body {
+      background-color: #08090b;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    /* Prototype Disclaimer Banner */
+    .prototype-disclaimer {
+      width: 100%;
+      background: #1e1b18;
+      border-bottom: 1px solid #453316;
+      color: #fbbf24;
+      padding: 8px 16px;
+      font-size: 0.75rem;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .disclaimer-badge {
+      background: #78350f;
+      color: #fef3c7;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    /* Prototype Debug / Reset Bar */
+    .prototype-bar {
+      width: 100%;
+      max-width: 440px;
+      background: #15171e;
+      border-bottom: 1px solid var(--card-border);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .quick-jump {
+      display: flex;
+      gap: 4px;
+    }
+    .jump-btn {
+      background: #232632;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.68rem;
+    }
+    .jump-btn:hover {
+      background: var(--accent-lime);
+      color: #000;
+    }
+    /* Device Frame */
+    .device-shell {
+      width: 100%;
+      max-width: 412px;
+      min-height: 844px;
+      background-color: var(--bg-dark);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+    }
+    /* Status bar */
+    .status-bar {
+      height: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    /* Header */
+    .app-header {
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .brand-mark {
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .brand-home { color: #ffffff; }
+    .brand-sets {
+      color: var(--accent-lime);
+      text-shadow: 0 0 10px var(--lime-glow);
+    }
+    .mode-badge {
+      background: #232632;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    /* Main Screen Container */
+    .screen-content {
+      flex: 1;
+      padding: 14px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .screen-view {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* Cards */
+    .proto-card {
+      background: linear-gradient(145deg, #1f222c 0%, #171821 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    .proto-card.highlight {
+      border: 1.5px solid rgba(204,255,0,0.4);
+      box-shadow: 0 8px 25px -5px var(--lime-glow);
+    }
+    .card-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--accent-lime);
+      letter-spacing: 0.5px;
+    }
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .meta-chip {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* Primary CTAs */
+    .btn-proto-primary {
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 20px var(--lime-glow);
+      transition: transform 0.1s ease;
+    }
+    .btn-proto-primary:active {
+      transform: scale(0.98);
+    }
+    .btn-proto-secondary {
+      background: #232632;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-proto-secondary:active {
+      background: #2d3140;
+    }
+
+    /* Stepper Controls */
+    .stepper-box {
+      background: #171820;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .stepper-header {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 260px;
+    }
+    .stepper-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      background: #242735;
+      border: 1px solid #363a4c;
+      color: #ffffff;
+      font-size: 1.6rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .stepper-btn:active {
+      background: var(--accent-lime);
+      color: #000;
+    }
+    .stepper-val {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* Exertion Feedback Buttons */
+    .feedback-col {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .feedback-btn {
+      background: #1c1e27;
+      border: 1.5px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .feedback-btn.selected {
+      background: rgba(204,255,0,0.12);
+      border-color: var(--accent-lime);
+      color: var(--accent-lime);
+    }
+
+    /* Live Rest Timer */
+    .rest-hero {
+      background: linear-gradient(145deg, #1f222d 0%, #15161f 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .countdown-val {
+      font-size: 4.2rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+      text-shadow: 0 0 20px var(--lime-glow);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Modal Sheet for Safety Stop */
+    .safety-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-end;
+      z-index: 100;
+    }
+    .safety-modal-overlay.open {
+      display: flex;
+    }
+    .safety-sheet {
+      width: 100%;
+      background: #181922;
+      border-top: 2px solid var(--danger);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 20px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.6);
+    }
+    .safety-title {
+      color: var(--danger);
+      font-size: 1.25rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* History table */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .log-table th {
+      text-align: right;
+      color: var(--text-tertiary);
+      padding: 6px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .log-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Disclaimer Banner -->
+  <div class="prototype-disclaimer">
+    <span class="disclaimer-badge">INTERACTIVE PROTOTYPE</span>
+    نموذج تجريبي تفاعلي لاختبار تجربة الاستخدام فقط — ليس كود تشغيل فعلي
+  </div>
+
+  <!-- Debug & Reset Bar -->
+  <div class="prototype-bar">
+    <span>حالة النموذج: <strong id="debug-state-tag" style="color:var(--accent-lime);">شاشة اليوم</strong></span>
+    <div class="quick-jump">
+      <button class="jump-btn" onclick="goToScreen('today')">اليوم</button>
+      <button class="jump-btn" onclick="startWorkout()">بدء تمرين</button>
+      <button class="jump-btn" onclick="goToScreen('summary')">الملخص</button>
+      <button class="jump-btn" style="color:var(--danger);" onclick="resetPrototype()">إعادة ضبط</button>
+    </div>
+  </div>
+
+  <!-- Device Frame -->
+  <div class="device-shell">
+
+    <!-- Android Status Bar -->
+    <div class="status-bar">
+      <span id="proto-clock">3:50 PM</span>
+      <span>📶 🔋 100%</span>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand-mark">
+        <span class="brand-home">HOME</span><span class="brand-sets">SETS</span>
+      </div>
+      <div class="mode-badge" id="session-badge">بدون إنترنت 📴</div>
+    </header>
+
+    <div class="screen-content">
+
+      <!-- ================= 1. TODAY SCREEN ================= -->
+      <section id="view-today" class="screen-view active">
+        <!-- Streak Card -->
+        <div class="proto-card">
+          <div class="card-top-row">
+            <span class="card-tag">استمرارية الأسبوع</span>
+            <span style="font-size:0.75rem; color:var(--text-muted);" id="today-streak-badge">3 من 4 أيام</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="font-size:2.2rem; font-weight:900; color:var(--accent-lime);" id="today-streak-num">3/4</div>
+            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.4;">
+              فاضلك تمرين واحد وتكمل هدف الأسبوع! الالتزام هو مفتاح بناء العضلات.
+            </div>
+          </div>
+        </div>
+
+        <!-- Workout Routine Card -->
+        <div class="proto-card highlight">
+          <div class="card-top-row">
+            <span class="card-tag">التمرين المقترح اليوم</span>
+            <span style="font-size:0.75rem; background:#242735; padding:3px 8px; border-radius:6px; color:var(--accent-lime);">دوران تلقائي</span>
+          </div>
+          <h2 class="card-title">سحب وضهر وبايسبس</h2>
+          <div class="chips-row">
+            <span class="meta-chip">⏱️ 25 دقيقة</span>
+            <span class="meta-chip">🏋️‍♂️ عقلة + أحبال</span>
+            <span class="meta-chip">3 تمارين (9 مجموعات)</span>
+          </div>
+
+          <div style="border-top:1px solid #282b38; padding-top:12px; display:flex; flex-direction:column; gap:8px; font-size:0.85rem;">
+            <div style="display:flex; justify-content:space-between;">
+              <span>1. عقلة قبضة واسعة <small dir="ltr" style="color:var(--text-tertiary);">(Pull-ups)</small></span>
+              <span style="color:var(--accent-lime); font-weight:700;">3 مجموعات</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>2. سحب حبل ضهر <small dir="ltr" style="color:var(--text-tertiary);">(Band Row)</small></span>
+              <span style="color:var(--text-muted);">3 مجموعات</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>3. بايسبس بحبل المقاومة <small dir="ltr" style="color:var(--text-tertiary);">(Band Curl)</small></span>
+              <span style="color:var(--text-muted);">3 مجموعات</span>
+            </div>
+          </div>
+
+          <button class="btn-proto-primary" onclick="startWorkout()" aria-label="ابدأ التمرين">
+            ▶ ابدأ التمرين (25 دقيقة)
+          </button>
+          <button class="btn-proto-secondary" onclick="startWorkout(true)" aria-label="تمرين سريع">
+            ⚡ وضع الإرهاق السريع (15 دقيقة)
+          </button>
+        </div>
+
+        <!-- Nutrition Nudge -->
+        <div class="proto-card" style="padding:14px 18px; flex-direction:row; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.85rem;">
+            <span style="color:var(--text-muted);">وجبات البروتين: </span>
+            <strong style="color:var(--text-main);">3 من 5</strong>
+          </div>
+          <span style="color:var(--accent-lime); font-size:0.8rem; font-weight:700;">تسجيل سريع ←</span>
+        </div>
+      </section>
+
+      <!-- ================= 2. ACTIVE WORKOUT SCREEN ================= -->
+      <section id="view-workout" class="screen-view">
+        <!-- Exercise Header -->
+        <div class="proto-card" style="padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div style="font-size:0.75rem; color:var(--text-tertiary);" dir="ltr">EXERCISE 01 / 03</div>
+              <h1 class="card-title" style="font-size:1.4rem;">عقلة قبضة واسعة</h1>
+              <div style="font-size:0.78rem; color:var(--text-muted);" dir="ltr">Bodyweight Wide Grip</div>
+            </div>
+            <span class="meta-chip" id="workout-set-badge" style="background:rgba(204,255,0,0.15); border-color:var(--accent-lime); color:var(--accent-lime); font-weight:800;">
+              المجموعة 1 من 3
+            </span>
+          </div>
+          <div style="font-size:0.85rem; color:var(--accent-lime); font-weight:700; margin-top:4px;">
+            الهدف: 8-10 تكرارات بوزن الجسم
+          </div>
+        </div>
+
+        <!-- Interactive Rep Stepper -->
+        <div class="stepper-box">
+          <span class="stepper-header">التكرارات المنجزة في هذه المجموعة</span>
+          <div class="stepper-row">
+            <button class="stepper-btn" onclick="stepReps(-1)">−</button>
+            <div class="stepper-val" id="active-reps-val">8</div>
+            <button class="stepper-btn" onclick="stepReps(1)">+</button>
+          </div>
+        </div>
+
+        <!-- Muscular Activation Info -->
+        <div class="proto-card" style="padding:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted);">
+            <span>العضلات المستهدفة</span>
+            <span>تاريخ التمرين: 8 تكرارات</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <span class="meta-chip">💪 عضلة الظهر العريضة</span>
+            <span class="meta-chip">🔥 البايسبس</span>
+          </div>
+          <div id="previous-sets-summary" style="margin-top:6px; font-size:0.78rem; color:var(--text-muted);">
+            سجل المجموعات السابقة سيظهر هنا بعد التسجيل.
+          </div>
+        </div>
+
+        <!-- Thumb Zone Controls -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <button class="btn-proto-primary" id="log-set-btn" onclick="logCurrentSet()">
+            ✓ تسجيل المجموعة واسترخاء (90 ث)
+          </button>
+          <div style="text-align:center; color:var(--danger); font-size:0.78rem; font-weight:700; cursor:pointer; padding:6px;" onclick="openSafetyModal()">
+            🛑 هل تشعر بألم في المفصل؟ اضغط لإيقاف آمن
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. REST TIMER SCREEN ================= -->
+      <section id="view-rest" class="screen-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--accent-lime);">فترة الراحة والاستشفاء</span>
+          <span class="meta-chip" id="rest-set-preview">المجموعة القادمة: 2 من 3</span>
+        </div>
+
+        <!-- Live Countdown Timer -->
+        <div class="rest-hero">
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">الوقت المتبقي</span>
+          <div class="countdown-val" id="rest-timer-display">01:30</div>
+          <div style="font-size:0.82rem; color:var(--text-muted);">
+            تنفس بعمق واستعد للمجموعة القادمة
+          </div>
+        </div>
+
+        <!-- Egyptian Exertion Feedback -->
+        <div class="proto-card" style="padding:14px 16px;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">إحساسك بالمجموعة السابقة:</span>
+          <div class="feedback-col">
+            <button class="feedback-btn" onclick="selectRestFeedback(this, 'فاضل طاقة (سهل)')">
+              <span>فاضل طاقة (سهل) 💪</span>
+              <span style="font-size:0.72rem; color:var(--text-tertiary);">جاهز للزيادة</span>
+            </button>
+            <button class="feedback-btn selected" onclick="selectRestFeedback(this, 'مظبوط ومثالي')">
+              <span>مظبوط ومثالي 👍</span>
+              <span style="font-size:0.72rem; color:var(--accent-lime); font-weight:700;">التحدي المطلوب</span>
+            </button>
+            <button class="feedback-btn" onclick="selectRestFeedback(this, 'على الآخر (صعب)')">
+              <span>على الآخر (صعب) 🔥</span>
+              <span style="font-size:0.72rem; color:var(--text-tertiary);">أقصى مجهود</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rest Action Controls -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:10px;">
+            <button class="btn-proto-secondary" style="flex:1;" onclick="addTimerSeconds(30)">
+              +30 ثانية
+            </button>
+            <button class="btn-proto-primary" style="flex:2;" onclick="skipRest()">
+              تخطي وبدء الآن ⏭
+            </button>
+          </div>
+          <div style="text-align:center; color:var(--danger); font-size:0.75rem; font-weight:700; cursor:pointer;" onclick="openSafetyModal()">
+            🛑 إنهاء التمرين مبكراً بسبب إجهاد أو ألم
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. SUMMARY SCREEN ================= -->
+      <section id="view-summary" class="screen-view">
+        <div class="proto-card highlight" style="text-align:center; padding:24px 20px;">
+          <div style="font-size:3rem; margin-bottom:6px;" id="summary-emoji">🎉</div>
+          <h2 class="card-title" id="summary-title" style="font-size:1.6rem;">عاش يا بطل! تم إنهاء التمرين</h2>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;" id="summary-subtitle">
+            سجلت اليوم أداءً قوياً وحافظت على استمرارية التدريب.
+          </p>
+        </div>
+
+        <!-- Session Statistics -->
+        <div class="proto-card">
+          <span class="card-tag">ملخص الجلسة</span>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:4px;">
+            <div style="background:#15161f; padding:12px; border-radius:12px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:900; color:var(--accent-lime);" id="summary-duration">08:45</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">المدة الإجمالية</div>
+            </div>
+            <div style="background:#15161f; padding:12px; border-radius:12px; text-align:center;">
+              <div style="font-size:1.4rem; font-weight:900; color:var(--accent-lime);" id="summary-sets-count">3 مجموعات</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">المجموعات المنجزة</div>
+            </div>
+          </div>
+
+          <!-- Logged Sets Table -->
+          <div style="margin-top:10px;">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th>المجموعة</th>
+                  <th>التكرارات</th>
+                  <th>التقييم</th>
+                </tr>
+              </thead>
+              <tbody id="summary-log-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Updated Streak -->
+        <div class="proto-card" style="flex-direction:row; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:0.85rem; font-weight:700;">الهدف الأسبوعي</div>
+            <div style="font-size:0.78rem; color:var(--text-muted);" id="summary-streak-text">4 من 4 أيام مكتملة! أتممت هدف الأسبوع 🔥</div>
+          </div>
+          <div style="font-size:1.5rem; font-weight:900; color:var(--accent-lime);" id="summary-streak-val">4/4</div>
+        </div>
+
+        <button class="btn-proto-primary" onclick="goToScreen('today')" style="margin-top:auto;">
+          العودة لشاشة اليوم
+        </button>
+      </section>
+
+    </div>
+
+    <!-- ================= SAFETY MODAL (BOTTOM SHEET) ================= -->
+    <div id="safety-modal" class="safety-modal-overlay">
+      <div class="safety-sheet">
+        <div class="safety-title">
+          <span>🛑</span>
+          <span>بروتوكول إيقاف الألم المفصلي</span>
+        </div>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.4;">
+          سلامتك هي الأولوية الأولى في HOMESETS. ألم المفاصل والأوتار إشارة خطيرة لا يجوز تجاهلها.
+        </p>
+
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:6px;">
+          <button class="btn-proto-primary" style="background:var(--danger); color:#fff; box-shadow:none;" onclick="confirmPainStop()">
+            🛑 إيقاف التمرين فوراً وحفظ ما تم إنجازه
+          </button>
+          <button class="btn-proto-secondary" onclick="addRestForFatigue()">
+            💧 إجهاد عضلي طبيعي — خذ راحة إضافية 60 ثانية
+          </button>
+          <button class="btn-proto-secondary" style="border:none; color:var(--text-tertiary);" onclick="closeSafetyModal()">
+            إلغاء والعودة للتمرين
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // State Machine
+    const state = {
+      screen: 'today',
+      currentSet: 1,
+      totalSets: 3,
+      currentReps: 8,
+      loggedSets: [],
+      restSecondsRemaining: 90,
+      restTimerInterval: null,
+      selectedExertion: 'مظبوط ومثالي',
+      sessionStartTime: null,
+      isLiteMode: false,
+      safetyStopped: false,
+      streak: 3
+    };
+
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12;
+      document.getElementById('proto-clock').innerText = `${hours}:${minutes} ${ampm}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function goToScreen(screenName) {
+      state.screen = screenName;
+      document.querySelectorAll('.screen-view').forEach(v => v.classList.remove('active'));
+      const target = document.getElementById('view-' + screenName);
+      if (target) target.classList.add('active');
+
+      const tagMap = {
+        'today': 'شاشة اليوم',
+        'workout': `التمرين (مجموعة ${state.currentSet})`,
+        'rest': 'شاشة الراحة',
+        'summary': 'ملخص الجلسة'
+      };
+      document.getElementById('debug-state-tag').innerText = tagMap[screenName] || screenName;
+
+      if (screenName !== 'rest' && state.restTimerInterval) {
+        clearInterval(state.restTimerInterval);
+        state.restTimerInterval = null;
+      }
+    }
+
+    function startWorkout(isLite = false) {
+      state.isLiteMode = isLite;
+      state.currentSet = 1;
+      state.currentReps = 8;
+      state.loggedSets = [];
+      state.safetyStopped = false;
+      state.sessionStartTime = new Date();
+
+      document.getElementById('workout-set-badge').innerText = `المجموعة 1 من ${state.totalSets}`;
+      document.getElementById('active-reps-val').innerText = '8';
+      document.getElementById('previous-sets-summary').innerText = 'سجل المجموعات السابقة سيظهر هنا بعد التسجيل.';
+      document.getElementById('session-badge').innerText = isLite ? 'وضع سريع ⚡' : 'تمرين جاري ⏱️';
+
+      goToScreen('workout');
+    }
+
+    function stepReps(delta) {
+      state.currentReps = Math.max(1, Math.min(30, state.currentReps + delta));
+      document.getElementById('active-reps-val').innerText = state.currentReps;
+    }
+
+    function logCurrentSet() {
+      // Record set
+      state.loggedSets.push({
+        setNum: state.currentSet,
+        reps: state.currentReps,
+        exertion: state.selectedExertion
+      });
+
+      if (state.currentSet < state.totalSets) {
+        // Proceed to Rest
+        startRestPeriod();
+      } else {
+        // Complete Workout
+        finishWorkout();
+      }
+    }
+
+    function startRestPeriod() {
+      state.restSecondsRemaining = 90;
+      updateRestTimerDisplay();
+      document.getElementById('rest-set-preview').innerText = `المجموعة القادمة: ${state.currentSet + 1} من ${state.totalSets}`;
+
+      goToScreen('rest');
+
+      if (state.restTimerInterval) clearInterval(state.restTimerInterval);
+      state.restTimerInterval = setInterval(() => {
+        state.restSecondsRemaining--;
+        updateRestTimerDisplay();
+        if (state.restSecondsRemaining <= 0) {
+          clearInterval(state.restTimerInterval);
+          state.restTimerInterval = null;
+          advanceToNextSet();
+        }
+      }, 1000);
+    }
+
+    function updateRestTimerDisplay() {
+      const mins = Math.floor(state.restSecondsRemaining / 60).toString().padStart(2, '0');
+      const secs = (state.restSecondsRemaining % 60).toString().padStart(2, '0');
+      document.getElementById('rest-timer-display').innerText = `${mins}:${secs}`;
+    }
+
+    function addTimerSeconds(s) {
+      state.restSecondsRemaining += s;
+      updateRestTimerDisplay();
+    }
+
+    function skipRest() {
+      if (state.restTimerInterval) {
+        clearInterval(state.restTimerInterval);
+        state.restTimerInterval = null;
+      }
+      advanceToNextSet();
+    }
+
+    function selectRestFeedback(btn, label) {
+      document.querySelectorAll('.feedback-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.selectedExertion = label;
+      if (state.loggedSets.length > 0) {
+        state.loggedSets[state.loggedSets.length - 1].exertion = label;
+      }
+    }
+
+    function advanceToNextSet() {
+      state.currentSet++;
+      document.getElementById('workout-set-badge').innerText = `المجموعة ${state.currentSet} من ${state.totalSets}`;
+      document.getElementById('active-reps-val').innerText = state.currentReps;
+
+      // Update previous sets summary card
+      let summaryHtml = '<strong style="color:var(--text-main);">المجموعات المنجزة:</strong><br>';
+      state.loggedSets.forEach(s => {
+        summaryHtml += `مجموعة ${s.setNum}: ${s.reps} تكرار (${s.exertion})<br>`;
+      });
+      document.getElementById('previous-sets-summary').innerHTML = summaryHtml;
+
+      if (state.currentSet === state.totalSets) {
+        document.getElementById('log-set-btn').innerText = '✓ تسجيل المجموعة الأخيرة وإنهاء التمرين';
+      } else {
+        document.getElementById('log-set-btn').innerText = '✓ تسجيل المجموعة واسترخاء (90 ث)';
+      }
+
+      goToScreen('workout');
+    }
+
+    function finishWorkout() {
+      goToScreen('summary');
+
+      document.getElementById('summary-emoji').innerText = state.safetyStopped ? '🛡️' : '🎉';
+      document.getElementById('summary-title').innerText = state.safetyStopped ? 'تم إيقاف التمرين بسلام' : 'عاش يا بطل! تم إنهاء التمرين';
+      document.getElementById('summary-subtitle').innerText = state.safetyStopped
+        ? 'تم حفظ جميع المجموعات المسجلة وحماية مفاصلك من التفاقم.'
+        : 'أتممت جميع المجموعات المبرمجة بنجاح.';
+
+      const durationSecs = state.sessionStartTime ? Math.round((new Date() - state.sessionStartTime) / 1000) : 525;
+      const mins = Math.floor(durationSecs / 60).toString().padStart(2, '0');
+      const secs = (durationSecs % 60).toString().padStart(2, '0');
+      document.getElementById('summary-duration').innerText = `${mins}:${secs}`;
+      document.getElementById('summary-sets-count').innerText = `${state.loggedSets.length} مجموعات`;
+
+      // Populate summary table
+      const tbody = document.getElementById('summary-log-tbody');
+      tbody.innerHTML = '';
+      state.loggedSets.forEach(s => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>مجموعة ${s.setNum}</td><td>${s.reps} تكرار</td><td style="color:var(--accent-lime);">${s.exertion}</td>`;
+        tbody.appendChild(row);
+      });
+
+      // Update streak
+      state.streak = 4;
+      document.getElementById('summary-streak-val').innerText = '4/4';
+      document.getElementById('today-streak-num').innerText = '4/4';
+      document.getElementById('today-streak-badge').innerText = '4 من 4 أيام (مكتمل 🔥)';
+      document.getElementById('session-badge').innerText = 'تمرين منجز ✓';
+    }
+
+    // Safety Stop Sheet
+    function openSafetyModal() {
+      document.getElementById('safety-modal').classList.add('open');
+    }
+    function closeSafetyModal() {
+      document.getElementById('safety-modal').classList.remove('open');
+    }
+    function confirmPainStop() {
+      closeSafetyModal();
+      state.safetyStopped = true;
+      if (state.loggedSets.length === 0) {
+        state.loggedSets.push({
+          setNum: state.currentSet,
+          reps: state.currentReps,
+          exertion: 'تم الإيقاف بسبب ألم المفصل'
+        });
+      }
+      finishWorkout();
+    }
+    function addRestForFatigue() {
+      closeSafetyModal();
+      startRestPeriod();
+      addTimerSeconds(60);
+    }
+
+    function resetPrototype() {
+      if (state.restTimerInterval) clearInterval(state.restTimerInterval);
+      state.screen = 'today';
+      state.currentSet = 1;
+      state.currentReps = 8;
+      state.loggedSets = [];
+      state.streak = 3;
+      state.safetyStopped = false;
+      document.getElementById('today-streak-num').innerText = '3/4';
+      document.getElementById('today-streak-badge').innerText = '3 من 4 أيام';
+      document.getElementById('session-badge').innerText = 'بدون إنترنت 📴';
+      goToScreen('today');
+    }
+  </script>
+</body>
+</html>
