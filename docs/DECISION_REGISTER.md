@@ -85,3 +85,10 @@ Confirm the registry is faithful, then preserve the exact selected image in `ass
 | GOV05 | No implicit authorization to change MVP scope, add dependencies, pay for services, merge code, or run destructive operations. | Confirmed |
 
 **Limit:** Current ChatGPT GitHub text-file writer cannot by itself upload the exact 2 MB image asset. The selected source image was verified locally and fingerprinted in ASSET_MANIFEST.md; commit of the exact binary remains an Antigravity handoff. Do not mark it Done until GitHub evidence confirms it.
+
+## GOV06 — New autonomy preference and process conflict (2026-11-14)
+- **[Confirmed preference from Ahmed]** Wants Antigravity to work in long uninterrupted campaigns, minimize routine approvals, handle project files/commits/merges and defer his manual testing until late.
+- **[Open — process change]** This conflicts with existing D20 and the Master Prompt requirement that each implementation milestone be tested on the physical Honor X9e Pro before moving on. Do not silently treat D20 as withdrawn; document the cost/risks and obtain a one-time explicit choice.
+- **[Recommended]** Autonomous hours within approved campaigns, automatic internal quality checks, independent branch commits, and CI; avoid unconditional machine-wide permissions or unconditional merges before verification.
+- Decision alternatives and trade-offs: [Agent autonomy proposal](AGENT_AUTONOMY_PROPOSAL.md).
+- Foundation audit: [2026-11-14 foundation audit](FOUNDATION_AUDIT_2026-11-14.md).
