@@ -1,45 +1,37 @@
-# HOMESETS — Project and Agent Rules
+# HOMESETS — Project Rules (Agent-facing, current)
 
-**Read first:** `docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt`, `docs/DECISION_REGISTER.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`.
+## Must-read source of truth
+Read `docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt`, `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md`, and `docs/BRAND_DIRECTION.md` before starting a campaign. The Master Prompt is the **immutable historical baseline**; later **explicit** owner decisions GOV06–GOV11 supersede its requirement for per-milestone physical phone tests and its old no-merge default, but not the product/safety scope.
 
-## Authority
-- Ahmed is Product Owner; only an explicit owner decision changes a [Confirmed] item.
-- Do not treat [Recommended] or [Open] as approval.
-- If documents disagree, STOP and request clarification.
-- No production code before the applicable planning, brand, design and architecture gates are approved.
+## Roles and operating style
+- **Ahmed:** Product Owner, approves important product/brand/safety choices and final phone acceptance. Never request routine commands, uploads, repeated approvals or Git chores from him.
+- **ChatGPT:** plans tasks, updates GitHub source of truth, independent reviewer.
+- **Antigravity:** execute long bounded campaigns autonomously; split into tiny internal slices, run checks/fix failures, commit/push/create PR, and **merge only after all gates** in the approved policy.
+- Continue without asking for routine code edits, refactoring within approved files, minor UI implementation decisions, tests, retries or clean commits. Ask **only** on actual stop conditions.
 
-## Scope and coding
-- Work only on the files explicitly allowed by the current Agent Task Brief.
-- Never add a dependency, change SDK/version, move data, refactor unrelated code, or run destructive commands without approval.
-- Offline-first and no network permission, server, account, analytics, advertising or paid APIs.
-- Flutter Android only; private APK; Arabic Egyptian user copy, Arabic RTL first, English supported.
-- Favor the simplest implementation with a pure-Dart deterministic workout plan engine.
-- Keep private images inside app-private storage, never public gallery.
-- Do not commit secrets, signing keys or personal fitness photos.
+## Absolute scope and safety restrictions
+- Only operate inside the verified `abuhmaid28/homesets` workspace/repository. Never access EgyHealth360, agent-performance-lab or unrelated user folders.
+- No force push, deleting other user data, disabling safety controls, sharing secrets, commits of signing keys or private physique photos, paid services, unapproved network/backend, cloud sync, accounts or Play Store.
+- Do not add/change dependencies, SDK/tool versions or package licenses without prior specific authorization; document candidate options for review instead.
+- No out-of-scope feature or decision changes. Preserve explicitly Confirmed brand choices; HOMESETS and Pull-Up Motion are **preferred**, not approved final assets.
+- Flutter Android only, offline-first; no app network permission without owner change; Egyptian Arabic RTL first, English optional, dark/light system, free assets with provenance.
+- Not medical advice: conservative progression, equipment/avoid-area filtering, stop/swap for pain, recovery spacing, no BMI/shaming/extreme or unsafe recommendations.
+- If repo state, source asset, safety logic, licenses or approved scope are unclear: STOP with a single concise blocker. Never substitute lookalike images for the exact selected logo.
 
-## Safety
-- This is not medical advice. No diagnoses, BMI labeling, shaming, extreme loading or unsafe training recommendations.
-- Avoid-area filtering, pain stop/swap, conservative progression, recovery and substitutions are essential.
-- If a rule could create a risky workout, stop and request owner review.
+## Quality, Git and merge conditions
+1. Inspect exact repo origin, branch, root, changes, commit and active workspace agent rules. Stop for unknown/dirty unrelated state.
+2. Perform multiple scoped tasks continuously with **small commits and runnable automated checkpoints**.
+3. Verify raw `flutter analyze`, `flutter test`, relevant feature tests and `flutter build apk` results when Flutter exists; text-only stages use suitable documentation/diff checks. Never claim a test ran unless its real output is provided.
+4. Before **implementation code merge**, exact PR-head GitHub CI must be genuinely **green** and mandatory checks must exist and not be skipped or stale. Review changed paths, dependency updates, privacy/safety and regression findings. No bypass when check fails or is unavailable.
+5. Within approved scope, a normal (non-force) PR merge may proceed automatically after all required gates pass. GitHub's built-in Auto-merge is not necessarily enabled; do not promise its availability.
+6. Record commit SHAs, test logs, PR/merge URLs, known issues, rollback plan, unresolved device-only limitations. Update status.
+7. **Do not wait for Ahmed's phone test at P0–P8.** Physical Honor test is deferred to **final integrated acceptance** by his explicit 2026-11-14 decision. Until then, device behavior is UNVERIFIED.
+8. No final MVP Done or release until Ahmed confirms the actual end-to-end Android 16/MagicOS 10 phone test (wireless APK, no USB) and defects are resolved.
 
-## Evidence and workflow
-- No claims of PASS without raw `flutter analyze`, `flutter test`, build output and relevant changed-file evidence.
-- An Antigravity success message is a claim, not proof.
-- Every implementation milestone requires an APK test on Honor X9e Pro before progressing.
-- Owner does not want USB: test through wireless file transfer and manual APK install.
-- Use a small scoped task and stop if ambiguous. Do not auto-merge or deploy.
-- Recommend a Git commit after owner-verified milestones.
+## Agent deliverable per campaign
+Goal/scope; actual branch/origin evidence; files/commits/PRs/merges; raw check outputs and exit codes; signed/unsigned APK artifacts where applicable; failures/corrective steps; open questions, status and next ready campaign. No fabricated results.
 
-## Required report from implementation agent
-1. Goal and scope executed.
-2. Exact file list and diff summary.
-3. Real command output and versions.
-4. APK path when relevant.
-5. Issues and unverified items.
-6. Explicit device-test checklist for Ahmed.
-7. Stop without declaring milestone complete.
+## Permissions
+Prefer HOMESETS-scoped Auto/sandbox and file access restrictions; avoid global Turbo/full filesystem permissions. Actual installed Windows Antigravity mode must be checked and recorded; `PROJECT_RULES.md` by itself does not prove automatic rule discovery. Create/check an active workspace rule when authorized.
 
-**Note:** This document is an agent-readable reference. Whether Antigravity automatically loads it is **unverified**. Verify supported workspace rule filename/path before trusting automation.
-
-## Owner-only approvals / execution delegation (2026-11-14)
-Ahmed is Product Owner, not a routine operator. ChatGPT should perform available GitHub maintenance and review, and delegate local asset/commit/build work to Antigravity by scoped task. No routine file uploads or shell instructions for Ahmed unless unavoidable setup. All scope, safety and evidence gates still apply.
+**Current status:** repository docs exist; local link, CI, image asset and app are not yet verified as completed. Do not claim otherwise.
