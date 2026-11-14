@@ -81,3 +81,10 @@ Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `d
 - New [Autonomous Delivery Runbook](AUTONOMOUS_DELIVERY_RUNBOOK.md) maps C0–C9 with work packages, small internal checkpoints, automated tests, guarded merges, and grouped PO acceptance gates.
 - [Queued extended C1-R Issue #6](https://github.com/abuhmaid28/homesets/issues/6) is **continuation AFTER the small run**. Inspect newest Draft PR #5 head; skip previously fixed findings and do remaining long design/visual QA tasks. No extra prompt until current run reports.
 - GitHub issues and documents do not by themselves start an Antigravity session. A future launch/resume requires the agent to receive a single next-campaign instruction and active local workspace.
+
+## C1 small correction run completed — independent GitHub post-check (2026-11-14)
+- User supplied full Antigravity correction run output (local campaign report). GitHub independently confirms **Draft PR #5** still OPEN/unmerged, head `db5036a1e3e9892f9eb6b53ee29500c17708150d` (6 commits total, 32 changed paths).
+- `docs/reviews/C1_CORRECTION_MATRIX.md` exists. Revisions to R01–R06 text are in the PR. **14 real PNG screenshots are committed** under `design/screenshots/` and independently retrieved/visually inspected by ChatGPT using GitHub file content (not mere file presence).
+- [Independent post-correction Review #5906201631](https://github.com/abuhmaid28/homesets/pull/5#pullrequestreview-5906201631): correction pass accepted as **pushed/delivered**, but **C1 OWNER DESIGN GATE REMAINS OPEN**. Remaining visual QA: full-screen clean screenshots without proposal banners, separate rest timer state, remove blue thumb-zone diagnostic guide, 1.5× text-scale checks, synthetic fixture labeling, reproducible contrast script not in committed PR.
+- **Issue #6 now READY for sequential execution** as a longer, non-duplicative C1 design/UX/QA campaign on the same Draft PR. Do not run it concurrently with another active PR #5 edit.
+- No Flutter application, CI or final brand approval. Logo reference exact PNG still absent from GitHub. No actual Honor device test before final release acceptance (GOV07).
