@@ -49,3 +49,9 @@ Open this file, `docs/DECISION_REGISTER.md`, and `docs/MASTER_PROJECT_INITIALIZA
 
 ## Operating-model update (2026-11-14)
 Ahmed is PO-only; ChatGPT maintains plans/decisions/issues, Antigravity performs local file, image asset, Git and coding tasks through explicit briefs. Logo binary upload still pending and should not be delegated to Ahmed as a routine chore. One-time tool setup or phone-level acceptance may need Ahmed's participation.
+
+## G0.4 workspace observation — 2026-11-14
+- Owner screenshot shows an Antigravity project named `homesets` selected with `Local Checkout`.
+- Selected model UI reads `Gemini 3.8 Flash High`.
+- **Unverified:** local path content, `git status`, `origin`, current branch. Do not assume project has been cloned or configured.
+- **Next narrow action:** ask Antigravity to inspect the selected workspace and either safely clone the exact private repository into an empty location or stop and report existing files/credentials/conflict; no Flutter setup or unrelated repo changes.
