@@ -48,12 +48,41 @@ class WorkoutEngine {
     return true;
   }
 
+  /// Returns the target muscle group for a given routine cycle letter.
+  static String targetGroupForCycle(String cycle) {
+    switch (cycle.toUpperCase()) {
+      case 'A':
+        return 'LATS_BICEPS';
+      case 'B':
+        return 'CHEST_TRICEPS';
+      case 'C':
+        return 'LEGS_GLUTES';
+      default:
+        return 'LATS_BICEPS';
+    }
+  }
+
+  /// Returns the next cycle letter in deterministic 3-way sequence (A -> B -> C -> A).
+  static String nextCycleAfter(String cycle) {
+    switch (cycle.toUpperCase()) {
+      case 'A':
+        return 'B';
+      case 'B':
+        return 'C';
+      case 'C':
+        return 'A';
+      default:
+        return 'A';
+    }
+  }
+
   /// Generates the next scheduled workout session deterministically.
   ScheduledSession generateNextSession({
     required String routineCycle, // 'A', 'B', or 'C'
     DateTime? lastWorkoutTime,
     String? lastTargetMuscleGroup,
     DateTime? clock,
+    Map<String, List<SetLog>>? exerciseHistory,
     bool isLiteMode = false,
   }) {
     final effectiveNow = clock ?? now ?? DateTime.now();
@@ -62,28 +91,26 @@ class WorkoutEngine {
     String targetGroup;
     List<Exercise> candidateExercises;
 
-    // Check muscle recovery window (36 hours minimum)
-    bool requiresRotation = false;
-    if (lastWorkoutTime != null) {
-      final hoursElapsed = effectiveNow.difference(lastWorkoutTime).inHours;
-      if (hoursElapsed < 36) {
-        requiresRotation = true;
-      }
-    }
-
     var selectedCycle = routineCycle.toUpperCase();
     if (selectedCycle != 'A' && selectedCycle != 'B' && selectedCycle != 'C') {
       selectedCycle = 'A';
     }
 
-    if (requiresRotation) {
-      // Rotate away from recently fatigued group: A -> B -> C -> A
-      if (selectedCycle == 'A') {
-        selectedCycle = 'B';
-      } else if (selectedCycle == 'B') {
-        selectedCycle = 'C';
-      } else {
-        selectedCycle = 'A';
+    // Check muscle recovery window (36 hours minimum per fatigued muscle group)
+    // CRITICAL FIX (C3R2 WP02): Rotation away from a routine is ONLY required if the
+    // proposed routine targets the SAME muscle group that was trained within the last 36 hours!
+    // Training an unfatigued group (e.g. chest/triceps 12h after lats/biceps) is fully permitted.
+    if (lastWorkoutTime != null) {
+      final hoursElapsed = effectiveNow.difference(lastWorkoutTime).inHours;
+      if (hoursElapsed < 36) {
+        final fatiguedGroup = lastTargetMuscleGroup ?? 'LATS_BICEPS';
+        if (targetGroupForCycle(selectedCycle) == fatiguedGroup) {
+          // Candidate routine targets the fatigued muscle group; rotate to next unfatigued routine
+          selectedCycle = nextCycleAfter(selectedCycle);
+          if (targetGroupForCycle(selectedCycle) == fatiguedGroup) {
+            selectedCycle = nextCycleAfter(selectedCycle);
+          }
+        }
       }
     }
 
@@ -150,17 +177,39 @@ class WorkoutEngine {
       );
     }
 
-    // Build planned exercises & set counts
+    // Build planned exercises & set counts with progressive overload applied (C3R2 WP06)
     final plannedExercises = <PlannedExercise>[];
     if (isLiteMode) {
       // Adaptive Lite Mode: Take up to 2 eligible exercises × 2 working sets (max 4 sets total, ~11-15m)
       final liteEligible = eligibleExercises.take(2).toList();
       for (final ex in liteEligible) {
+        int minReps = 8;
+        int maxReps = 10;
+        String? tempoCue;
+
+        final history = exerciseHistory?[ex.id];
+        if (history != null && history.isNotEmpty) {
+          final progression = evaluateProgression(
+            sets: history,
+            targetMinReps: minReps,
+            targetMaxReps: maxReps,
+            exerciseId: ex.id,
+          );
+          if (progression == EngineAction.cadencePauseOverload) {
+            tempoCue = '2s pause top, 3s eccentric';
+          } else if (progression == EngineAction.advanceBracket) {
+            minReps = (minReps + 2).clamp(6, 15);
+            maxReps = (maxReps + 2).clamp(8, 20);
+          } else if (progression == EngineAction.expandBracket) {
+            minReps = (minReps + 1).clamp(6, maxReps);
+          }
+        }
+
         plannedExercises.add(PlannedExercise(
           exercise: ex,
-          sets: const [
-            PlannedSet(setIndex: 1, targetMinReps: 8, targetMaxReps: 10, targetRestSeconds: 90),
-            PlannedSet(setIndex: 2, targetMinReps: 8, targetMaxReps: 10, targetRestSeconds: 90),
+          sets: [
+            PlannedSet(setIndex: 1, targetMinReps: minReps, targetMaxReps: maxReps, tempoCue: tempoCue, targetRestSeconds: 90),
+            PlannedSet(setIndex: 2, targetMinReps: minReps, targetMaxReps: maxReps, tempoCue: tempoCue, targetRestSeconds: 90),
           ],
         ));
       }
@@ -170,14 +219,41 @@ class WorkoutEngine {
       for (int i = 0; i < count; i++) {
         final ex = eligibleExercises[i];
         final setsCount = (i == 0) ? 3 : 2;
+
+        int minReps = 8;
+        int maxReps = 10;
+        String? tempoCue;
+
+        final history = exerciseHistory?[ex.id];
+        if (history != null && history.isNotEmpty) {
+          final progression = evaluateProgression(
+            sets: history,
+            targetMinReps: minReps,
+            targetMaxReps: maxReps,
+            exerciseId: ex.id,
+          );
+          if (progression == EngineAction.cadencePauseOverload) {
+            tempoCue = '2s pause top, 3s eccentric';
+          } else if (progression == EngineAction.advanceBracket) {
+            minReps = (minReps + 2).clamp(6, 15);
+            maxReps = (maxReps + 2).clamp(8, 20);
+          } else if (progression == EngineAction.expandBracket) {
+            minReps = (minReps + 1).clamp(6, maxReps);
+          } else if (progression == EngineAction.stepBackBracket) {
+            minReps = (minReps - 2).clamp(4, 8);
+            maxReps = (maxReps - 2).clamp(6, 10);
+          }
+        }
+
         plannedExercises.add(PlannedExercise(
           exercise: ex,
           sets: List.generate(
             setsCount,
             (setIdx) => PlannedSet(
               setIndex: setIdx + 1,
-              targetMinReps: 8,
-              targetMaxReps: 10,
+              targetMinReps: minReps,
+              targetMaxReps: maxReps,
+              tempoCue: tempoCue,
               targetRestSeconds: 90,
             ),
           ),
@@ -239,5 +315,156 @@ class WorkoutEngine {
     }
 
     return EngineAction.holdLoad;
+  }
+
+  /// Evaluates cadence/tempo progression when bodyweight reps reach ceiling (SCEN-013 to SCEN-020).
+  static CadencePauseResult evaluateCadencePause({
+    required String exerciseId,
+    required int baseRepsCeiling,
+    required int cadenceLevel,
+  }) {
+    int isoPause;
+    int eccentric;
+    int targetReps;
+
+    switch (cadenceLevel) {
+      case 1:
+        isoPause = 1;
+        eccentric = 2;
+        targetReps = 9;
+        break;
+      case 2:
+        isoPause = 1;
+        eccentric = 3;
+        targetReps = 8;
+        break;
+      case 3:
+        isoPause = 2;
+        eccentric = 3;
+        targetReps = 7;
+        break;
+      case 4:
+        isoPause = 2;
+        eccentric = 4;
+        targetReps = 6;
+        break;
+      case 5:
+        isoPause = 2;
+        eccentric = 4;
+        targetReps = 5;
+        break;
+      case 6:
+      case 7:
+      case 8:
+      default:
+        isoPause = 3;
+        eccentric = 4;
+        targetReps = 5;
+        break;
+    }
+
+    return CadencePauseResult(
+      action: 'APPLY_TEMPO',
+      isometricPauseTopSec: isoPause,
+      eccentricSec: eccentric,
+      targetReps: targetReps,
+    );
+  }
+
+  /// Evaluates band-assisted pull-up progression (inverse physics) (SCEN-021 to SCEN-032).
+  static BandAssistanceResult evaluateBandAssistance({
+    required String exerciseId,
+    required String currentAssistanceRung,
+    required List<Map<String, dynamic>> setsCompleted,
+    bool anchorWarningReported = false,
+  }) {
+    if (anchorWarningReported) {
+      return const BandAssistanceResult(
+        action: 'SAFETY_PROMPT',
+        warning: 'Loop band securely under both feet or use knee loop to prevent band snap',
+        freezeProgression: false,
+      );
+    }
+
+    const rungs = ['HEAVY_PURPLE', 'MEDIUM_BLACK', 'LIGHT_RED', 'EXTRA_LIGHT_YELLOW', 'UNASSISTED_BODYWEIGHT'];
+    final currentIndex = rungs.indexOf(currentAssistanceRung.toUpperCase());
+
+    final allHitTarget = setsCompleted.isNotEmpty &&
+        setsCompleted.every((s) => (s['reps'] as int? ?? 0) >= 10 && (s['exertion'] as String? ?? '') == 'TARGET_SWEETSPOT');
+
+    if (allHitTarget && currentIndex >= 0 && currentIndex < rungs.length - 1) {
+      final nextRung = rungs[currentIndex + 1];
+      return BandAssistanceResult(
+        action: 'REDUCE_ASSISTANCE',
+        nextAssistanceRung: nextRung,
+        prescribedReps: '3x6-8',
+      );
+    }
+
+    return BandAssistanceResult(
+      action: 'HOLD_ASSISTANCE',
+      currentAssistanceRung: currentAssistanceRung,
+      prescribedReps: '3x6',
+    );
+  }
+
+  /// Evaluates band resistance double progression (SCEN-033 to SCEN-044).
+  static BandResistanceResult evaluateBandResistance({
+    required String exerciseId,
+    required int currentResistanceRank,
+    required List<int> targetReps,
+    required List<Map<String, dynamic>> sets,
+  }) {
+    final maxTarget = targetReps.length > 1 ? targetReps[1] : 12;
+    final allHitCeiling = sets.isNotEmpty &&
+        sets.every((s) => (s['reps'] as int? ?? 0) >= maxTarget && (s['exertion'] as String? ?? '') == 'TARGET_SWEETSPOT');
+
+    if (allHitCeiling) {
+      return BandResistanceResult(
+        action: 'INCREASE_RESISTANCE',
+        nextResistanceRank: currentResistanceRank + 1,
+        resetRepsTo: const [8, 10],
+        reason: 'Standard double progression: add tension, reset reps',
+      );
+    }
+
+    return const BandResistanceResult(
+      action: 'HOLD_LOAD',
+    );
+  }
+
+  /// Evaluates absence deload without streak penalty (D11, D15, SCEN-069 to SCEN-078).
+  static AbsenceDeloadResult evaluateAbsenceDeload({
+    required int daysSinceLastWorkout,
+    required int plannedSetsBaseline,
+  }) {
+    if (daysSinceLastWorkout <= 5) {
+      return const AbsenceDeloadResult(
+        action: EngineAction.normalRotationResume,
+        volumeReductionPercent: 0,
+        streakPenaltyApplied: false,
+        guiltFreeMessaging: true,
+      );
+    } else if (daysSinceLastWorkout <= 10) {
+      return const AbsenceDeloadResult(
+        action: EngineAction.lightReentryDeload,
+        volumeReductionPercent: 25,
+        streakPenaltyApplied: false,
+        guiltFreeMessaging: true,
+      );
+    } else {
+      return const AbsenceDeloadResult(
+        action: EngineAction.adaptationReentryDeload,
+        volumeReductionPercent: 40,
+        streakPenaltyApplied: false,
+        guiltFreeMessaging: true,
+      );
+    }
+  }
+
+  /// Checks whether a session that spans midnight constitutes a single continuous session (SCEN-099).
+  static bool isContinuousShiftWorkSession(DateTime startUtc, DateTime endUtc) {
+    final diffMinutes = endUtc.difference(startUtc).inMinutes;
+    return diffMinutes >= 1 && diffMinutes <= 180;
   }
 }

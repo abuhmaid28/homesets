@@ -54,6 +54,67 @@ enum EngineAction {
   lightReentryDeload,
   adaptationReentryDeload,
   independentExerciseTracking,
+  applyTempo,
+}
+
+class CadencePauseResult {
+  final String action;
+  final int isometricPauseTopSec;
+  final int eccentricSec;
+  final int targetReps;
+
+  const CadencePauseResult({
+    this.action = 'APPLY_TEMPO',
+    required this.isometricPauseTopSec,
+    required this.eccentricSec,
+    required this.targetReps,
+  });
+}
+
+class BandAssistanceResult {
+  final String action;
+  final String? currentAssistanceRung;
+  final String? nextAssistanceRung;
+  final String? prescribedReps;
+  final String? warning;
+  final bool freezeProgression;
+
+  const BandAssistanceResult({
+    required this.action,
+    this.currentAssistanceRung,
+    this.nextAssistanceRung,
+    this.prescribedReps,
+    this.warning,
+    this.freezeProgression = false,
+  });
+}
+
+class BandResistanceResult {
+  final String action;
+  final int? nextResistanceRank;
+  final List<int>? resetRepsTo;
+  final String? reason;
+
+  const BandResistanceResult({
+    required this.action,
+    this.nextResistanceRank,
+    this.resetRepsTo,
+    this.reason,
+  });
+}
+
+class AbsenceDeloadResult {
+  final EngineAction action;
+  final int volumeReductionPercent;
+  final bool streakPenaltyApplied;
+  final bool guiltFreeMessaging;
+
+  const AbsenceDeloadResult({
+    required this.action,
+    required this.volumeReductionPercent,
+    this.streakPenaltyApplied = false,
+    this.guiltFreeMessaging = true,
+  });
 }
 
 class UserProfile {
