@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Exploration: Rest Timer (Performance Lime)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #282b35;
+      --lime: #ccff00;
+      --lime-glow: rgba(204, 255, 0, 0.25);
+      --text-white: #f8fafc;
+      --text-gray: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      overflow-x: hidden;
+    }
+    .phone-container {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    .rest-header {
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .rest-header-tag {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--lime);
+    }
+    .rest-content {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      text-align: center;
+    }
+    /* Circular Timer */
+    .timer-ring-container {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .timer-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .timer-track {
+      fill: none;
+      stroke: #252833;
+      stroke-width: 8;
+    }
+    .timer-bar {
+      fill: none;
+      stroke: var(--lime);
+      stroke-width: 8;
+      stroke-dasharray: 565;
+      stroke-dashoffset: 160;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 10px var(--lime-glow));
+    }
+    .timer-center-text {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .timer-clock {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+    }
+    .timer-sub {
+      font-size: 0.8rem;
+      color: var(--text-gray);
+      margin-top: 4px;
+    }
+    /* Next Set Preview Card */
+    .next-set-card {
+      width: 100%;
+      background: linear-gradient(145deg, #181a22 0%, #13151b 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .next-set-label {
+      font-size: 0.75rem;
+      color: var(--lime);
+      font-weight: 800;
+    }
+    .next-set-name {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .next-set-target {
+      font-size: 0.85rem;
+      color: var(--text-gray);
+    }
+    /* Exertion Feedback Section */
+    .exertion-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .exertion-title {
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      font-weight: 700;
+    }
+    .pills-row {
+      display: flex;
+      gap: 8px;
+    }
+    .pill-btn {
+      flex: 1;
+      height: 46px;
+      background: #252833;
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .pill-btn.active {
+      background: rgba(204, 255, 0, 0.15);
+      border-color: var(--lime);
+      color: var(--lime);
+      font-weight: 900;
+    }
+    /* Actions */
+    .rest-dock {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-skip-primary {
+      width: 100%;
+      height: 56px;
+      background: var(--lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 18px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 10px 25px var(--lime-glow);
+    }
+    .btn-add-time {
+      width: 100%;
+      height: 48px;
+      background: #252833;
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      border-radius: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-container">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>🔋 100% 📶</span>
+      <span>3:50 PM</span>
+    </div>
+
+    <!-- Header -->
+    <header class="rest-header">
+      <div class="rest-header-tag">وقت الراحة والاسترجاع • التمرين 1 من 3</div>
+      <div style="font-size:0.8rem; color:var(--text-gray); font-weight:700;">المجموعة 1 تم تسجيلها ✓</div>
+    </header>
+
+    <!-- Rest Main Body -->
+    <main class="rest-content">
+      <!-- Circular Progress Countdown -->
+      <div class="timer-ring-container">
+        <svg class="timer-svg" viewBox="0 0 100 100">
+          <circle class="timer-track" cx="50" cy="50" r="42" />
+          <circle class="timer-bar" cx="50" cy="50" r="42" />
+        </svg>
+        <div class="timer-center-text">
+          <div class="timer-clock">01:14</div>
+          <div class="timer-sub">ثانية متبقية</div>
+        </div>
+      </div>
+
+      <!-- Exertion Rating Feedback -->
+      <div class="exertion-section">
+        <div class="exertion-title">كيف شعرت بصعوبة المجموعة؟</div>
+        <div class="pills-row">
+          <button class="pill-btn">سهل (RIR 3+)</button>
+          <button class="pill-btn active">مظبوط 👍 (RIR 1-2)</button>
+          <button class="pill-btn">فشل تام (0 RIR)</button>
+        </div>
+      </div>
+
+      <!-- Next Set Card -->
+      <div class="next-set-card">
+        <span class="next-set-label">المجموعة القادمة (المجموعة 2 من 3)</span>
+        <h2 class="next-set-name">عقلة قبضة واسعة (Wide Grip Pull-ups)</h2>
+        <div class="next-set-target">الهدف: 8-10 تكرارات • نفس مستوى المساعدة</div>
+      </div>
+
+      <!-- Thumb Zone Controls -->
+      <div class="rest-dock">
+        <button class="btn-skip-primary" aria-label="بدء المجموعة التالية">
+          جاهز! ابدأ المجموعة القادمة ←
+        </button>
+        <button class="btn-add-time" aria-label="زيادة 30 ثانية">
+          ⏱️ إضافة 30 ثانية راحة إضافية
+        </button>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

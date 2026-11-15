@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: App Setup Flow (إعداد التطبيق)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+    .device-shell {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .stepper-header {
+      padding: 12px 20px;
+      display: flex;
+      gap: 6px;
+    }
+    .step-bar {
+      flex: 1;
+      height: 4px;
+      background: #27272a;
+      border-radius: 2px;
+    }
+    .step-bar.done { background: var(--accent-lime); }
+    .step-bar.active { background: var(--accent-lime); }
+    .content-area {
+      flex: 1;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .step-headline h1 {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+      line-height: 1.3;
+    }
+    .step-headline p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .goal-badge {
+      background: #1c1e24;
+      border: 1px solid #2a2d36;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin: 12px 0;
+      font-size: 0.8rem;
+      color: var(--accent-lime);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .input-group {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .input-value {
+      background: #27272a;
+      color: var(--accent-lime);
+      border: 1px solid #3f3f46;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-align: center;
+      width: 110px;
+    }
+    .privacy-notice {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 8px;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--card-border);
+    }
+    .btn-next {
+      flex: 2;
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 16px;
+      height: 52px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-back {
+      flex: 1;
+      background: #27272a;
+      color: var(--text-muted);
+      border: none;
+      border-radius: 16px;
+      height: 52px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <div class="status-bar">
+      <span>📶 🔋 100%</span>
+      <span>3:30 PM</span>
+    </div>
+
+    <!-- Multi-step Indicator -->
+    <div class="stepper-header">
+      <div class="step-bar done"></div>
+      <div class="step-bar active"></div>
+      <div class="step-bar"></div>
+      <div class="step-bar"></div>
+    </div>
+
+    <main class="content-area">
+      <div>
+        <div class="step-headline">
+          <h1>بياناتك البدنية وقوتك الحالية</h1>
+          <p>عشان محرك التمارين يختارلك المساعدة والتكرارات المناسبة من غير ما تبدأ بتمرين صعب جداً أو سهل بزيادة.</p>
+        </div>
+
+        <div class="goal-badge">
+          🎯 الهدف المعتمد: بناء العضلات والقوة (حساب مستقل بدون خوادم)
+        </div>
+
+        <div class="form-section">
+          <!-- Height Input (Blank with placeholder hint) -->
+          <div class="input-group">
+            <span class="input-label">الطول (سم)</span>
+            <input type="text" class="input-value" placeholder="مثال: 175" value="" readonly />
+          </div>
+
+          <!-- Weight Input (Blank with placeholder hint) -->
+          <div class="input-group">
+            <span class="input-label">الوزن الحالي (كجم)</span>
+            <input type="text" class="input-value" placeholder="مثال: 70.0" value="" readonly />
+          </div>
+
+          <!-- Baseline Pull-ups (Blank with placeholder hint) -->
+          <div class="input-group">
+            <span class="input-label">أقصى تكرارات عقلة تقدر تعملها</span>
+            <input type="text" class="input-value" placeholder="مثال: 8" value="" readonly />
+          </div>
+
+          <!-- Baseline Push-ups (Blank with placeholder hint) -->
+          <div class="input-group">
+            <span class="input-label">أقصى تكرارات ضغط تقدر تعملها</span>
+            <input type="text" class="input-value" placeholder="مثال: 15" value="" readonly />
+          </div>
+
+          <div class="privacy-notice">
+            🔒 بياناتك الشخصية بتتخزن محلياً فقط على جهازك ومستثناة من النسخ السحابي
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="nav-actions">
+        <button class="btn-back">السابق</button>
+        <button class="btn-next">التالي (الأدوات والوقت) ←</button>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

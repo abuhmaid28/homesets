@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Workout Player (Active Set)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --accent-lime-dim: #99cc00;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --danger-text: #ef4444;
+      --danger-bg: #dc2626;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+    .device-shell {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .top-bar {
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1f222a;
+    }
+    .exercise-counter {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .btn-icon-pause {
+      background: #27272a;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .player-content {
+      flex: 1;
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .exercise-hero {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .exercise-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .exercise-en-sub {
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: inline-block;
+    }
+    .equipment-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #27272a;
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      align-self: flex-start;
+      flex-wrap: wrap;
+    }
+    .equipment-badge strong {
+      color: var(--accent-lime);
+    }
+    .form-cue-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .form-cue-box strong {
+      color: #ffffff;
+    }
+    /* Middle Set History & Muscular Activation Card (Eliminating Dead Space) */
+    .mid-info-card {
+      background: #181a20;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mid-info-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      border-bottom: 1px solid #22252e;
+      padding-bottom: 6px;
+    }
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      padding: 4px 0;
+    }
+    .history-row.done {
+      color: var(--text-muted);
+    }
+    .history-row.current {
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .history-badge {
+      background: rgba(204, 255, 0, 0.15);
+      color: var(--accent-lime);
+      border: 1px solid var(--accent-lime);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+    .history-check {
+      color: var(--accent-lime);
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+    /* Thumb Control Dock */
+    .thumb-control-dock {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    .rep-stepper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 8px 14px;
+    }
+    .stepper-btn {
+      width: 50px;
+      height: 50px;
+      background: #27272a;
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stepper-display {
+      text-align: center;
+    }
+    .stepper-val {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+      line-height: 1;
+    }
+    .stepper-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .btn-log-set {
+      width: 100%;
+      height: 54px;
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(204, 255, 0, 0.2);
+    }
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-secondary {
+      flex: 1;
+      height: 44px;
+      background: #1c1e24;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-pain {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--danger-text);
+      background: rgba(239, 68, 68, 0.08);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <!-- Android Status Bar -->
+    <div class="status-bar">
+      <span>📶 🔋 100%</span>
+      <span>3:42 PM</span>
+    </div>
+
+    <!-- Top Bar -->
+    <header class="top-bar">
+      <div class="exercise-counter">التمرين 1 من 3 • عضلات السحب</div>
+      <button class="btn-icon-pause" aria-label="إيقاف مؤقت">⏸</button>
+    </header>
+
+    <!-- Workout Player Body -->
+    <main class="player-content">
+      <div class="exercise-hero">
+        <div>
+          <h1 class="exercise-title">عقلة قبضة واسعة</h1>
+          <span dir="ltr" class="exercise-en-sub">WIDE-GRIP PULL-UPS</span>
+        </div>
+        <div class="equipment-badge">
+          <span>المساعدة:</span>
+          <strong>حبل أسود سميك (مساعدة وزن الجسم)</strong>
+        </div>
+
+        <div class="form-cue-box">
+          💡 <strong>التوجيه الفني:</strong> اسحب كوعك لورا ولتحت، اثبت ثانية عند أعلى البار، وانزل بتحكم كامل في ثانيتين.
+        </div>
+      </div>
+
+      <!-- Mid-Screen Progression & Muscular Activation Card -->
+      <section class="mid-info-card">
+        <div class="mid-info-header">
+          <span>سجل المجموعات الحالية</span>
+          <span style="color:var(--text-tertiary);">العضلات: الظهر العريض • البايسبس</span>
+        </div>
+        <div class="history-row done">
+          <span>المجموعة 1</span>
+          <span>10 تكرارات محققة</span>
+          <span class="history-check">✓ تم</span>
+        </div>
+        <div class="history-row current">
+          <span>المجموعة 2 (الحالية)</span>
+          <span>الهدف: 8-10 تكرارات</span>
+          <span class="history-badge">الآن</span>
+        </div>
+        <div class="history-row done" style="opacity:0.5;">
+          <span>المجموعة 3</span>
+          <span>الهدف: 8-10 تكرارات</span>
+          <span>قادمة</span>
+        </div>
+      </section>
+
+      <!-- Lower Thumb Zone Dock -->
+      <div class="thumb-control-dock">
+        <!-- Rep Stepper -->
+        <div class="rep-stepper">
+          <button class="stepper-btn" aria-label="تقليل تكرار">-</button>
+          <div class="stepper-display">
+            <div class="stepper-val">10</div>
+            <div class="stepper-label">تكرارات محققة للمجموعة 2</div>
+          </div>
+          <button class="stepper-btn" aria-label="زيادة تكرار">+</button>
+        </div>
+
+        <!-- Primary Log Set CTA (54dp) -->
+        <button class="btn-log-set" aria-label="تسجيل المجموعة وبدء الراحة">
+          ✓ تسجيل المجموعة وبدء الراحة
+        </button>
+
+        <!-- Secondary in-set actions -->
+        <div class="quick-actions">
+          <button class="btn-secondary">🔄 تبديل التمرين</button>
+          <button class="btn-secondary btn-pain">🛑 ألم في المفصل (إيقاف فوري)</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>

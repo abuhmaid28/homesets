@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Direction B: Kinetic Depth</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e26;
+      --card-elevated: #232632;
+      --card-border: #2d313e;
+      --accent-lime: #ccff00;
+      --accent-lime-dim: #99cc00;
+      --lime-glow: rgba(204, 255, 0, 0.18);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-tertiary: #64748b;
+      --danger: #ef4444;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+    .device-shell {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Direction Banner */
+    .direction-banner {
+      background: #171920;
+      border-bottom: 1px solid var(--card-border);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .direction-tag {
+      color: var(--accent-lime);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+    .screen-switcher {
+      display: flex;
+      gap: 6px;
+    }
+    .switcher-btn {
+      background: #232632;
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .switcher-btn.active {
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border-color: var(--accent-lime);
+      box-shadow: 0 2px 8px var(--lime-glow);
+    }
+    /* Status bar */
+    .status-bar {
+      height: 42px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    /* Header */
+    .app-header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-mark {
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+    }
+    .brand-home { color: #ffffff; }
+    .brand-sets {
+      color: var(--accent-lime);
+      text-shadow: 0 0 12px var(--lime-glow);
+    }
+    .badge-kinetic {
+      background: linear-gradient(135deg, rgba(204,255,0,0.12), rgba(204,255,0,0.03));
+      border: 1px solid rgba(204,255,0,0.3);
+      color: var(--accent-lime);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .screen-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .screen-view {
+      display: none;
+      flex: 1;
+      padding: 12px 20px 24px;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .screen-view.active {
+      display: flex;
+    }
+
+    /* Direction B Spec: Kinetic Depth, Card Elevation, Rounded Tactility, Soft Neon */
+    .kinetic-card {
+      background: linear-gradient(145deg, #20232c 0%, #181920 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .kinetic-card.highlight {
+      border: 1.5px solid rgba(204, 255, 0, 0.45);
+      box-shadow: 0 12px 30px -5px var(--lime-glow), 0 8px 20px rgba(0,0,0,0.4);
+    }
+    .card-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-label-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent-lime);
+      letter-spacing: 0.5px;
+    }
+    .card-sub-badge {
+      background: #262935;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Today Screen */
+    .consistency-ring-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .ring-box {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-svg {
+      transform: rotate(-90deg);
+      width: 100%;
+      height: 100%;
+    }
+    .ring-bg {
+      fill: none;
+      stroke: #2a2d3a;
+      stroke-width: 5;
+    }
+    .ring-bar {
+      fill: none;
+      stroke: var(--accent-lime);
+      stroke-width: 5;
+      stroke-dasharray: 157;
+      stroke-dashoffset: 39;
+      stroke-linecap: round;
+      filter: drop-shadow(0 0 6px var(--lime-glow));
+    }
+    .ring-text {
+      position: absolute;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: var(--text-main);
+    }
+    .routine-title-lg {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .info-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .exercise-mini-list {
+      border-top: 1px solid #2a2d3a;
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .exercise-mini-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    /* Workout Active Components */
+    .hero-exercise-card {
+      background: linear-gradient(135deg, #242733 0%, #1b1c24 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .exercise-heading {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .exercise-meta-en {
+      font-size: 0.8rem;
+      color: var(--text-tertiary);
+    }
+    .set-pill-badge {
+      background: rgba(204,255,0,0.12);
+      border: 1px solid var(--accent-lime-dim);
+      color: var(--accent-lime);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    /* Tactile Rounded Rep Stepper */
+    .tactile-stepper {
+      background: #171820;
+      border: 1px solid #282b36;
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .stepper-header-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .stepper-pill-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 270px;
+    }
+    .round-step-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #282b37 0%, #1e2029 100%);
+      border: 1px solid #363949;
+      color: #ffffff;
+      font-size: 1.6rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: all 0.15s ease;
+    }
+    .round-step-btn:active {
+      transform: scale(0.94);
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      box-shadow: 0 0 15px var(--lime-glow);
+    }
+    .rep-number-tactile {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 16px rgba(255,255,255,0.15);
+      min-width: 90px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* Muscle Activation & Progression (Solving Dead Space) */
+    .depth-progression-card {
+      background: #181921;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .progression-pills-row {
+      display: flex;
+      gap: 8px;
+    }
+    .muscle-chip-pill {
+      background: #222530;
+      border: 1px solid #2e3240;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Rest Timer Screen */
+    .rest-circle-container {
+      background: linear-gradient(145deg, #20232d 0%, #171821 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    .countdown-number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--accent-lime);
+      text-shadow: 0 0 24px var(--lime-glow);
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+    .rest-sub-info {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Tactile Egyptian Exertion Feedback Buttons */
+    .feedback-tactile-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .feedback-tactile-btn {
+      background: #1e202a;
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: all 0.2s ease;
+    }
+    .feedback-tactile-btn.selected {
+      background: linear-gradient(135deg, rgba(204,255,0,0.15) 0%, rgba(204,255,0,0.05) 100%);
+      border-color: var(--accent-lime);
+      color: var(--accent-lime);
+      box-shadow: 0 6px 18px var(--lime-glow);
+    }
+
+    /* Primary CTAs with Kinetic Depth */
+    .btn-kinetic-primary {
+      background: linear-gradient(135deg, #d4ff1a 0%, #b8e600 100%);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 18px;
+      padding: 16px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 24px var(--lime-glow);
+      transition: transform 0.15s ease;
+    }
+    .btn-kinetic-primary:active {
+      transform: scale(0.98);
+    }
+    .btn-kinetic-secondary {
+      background: #232632;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .safety-pain-pill {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <!-- Direction Banner & View Switcher -->
+    <div class="direction-banner">
+      <div>DIRECTION B: <span class="direction-tag">KINETIC DEPTH</span></div>
+      <div class="screen-switcher">
+        <button class="switcher-btn" onclick="showScreen('today')">اليوم</button>
+        <button class="switcher-btn active" onclick="showScreen('workout')">التمرين</button>
+        <button class="switcher-btn" onclick="showScreen('rest')">الراحة</button>
+      </div>
+    </div>
+
+    <!-- Android Status Bar -->
+    <div class="status-bar">
+      <span>3:45 PM</span>
+      <span>📶 🔋 100%</span>
+    </div>
+
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand-mark">
+        <span class="brand-home">HOME</span><span class="brand-sets">SETS</span>
+      </div>
+      <div class="badge-kinetic">KINETIC-02 // SOFT-GLOW</div>
+    </header>
+
+    <div class="screen-container">
+
+      <!-- ================= SCREEN 1: TODAY ================= -->
+      <section id="screen-today" class="screen-view">
+        <!-- Weekly Consistency Card -->
+        <div class="kinetic-card">
+          <div class="card-label-row">
+            <span class="card-label-text">استمرارية الأسبوع</span>
+            <span class="card-sub-badge">الأسبوع 3</span>
+          </div>
+          <div class="consistency-ring-wrapper">
+            <div class="ring-box">
+              <svg class="ring-svg" viewBox="0 0 60 60">
+                <circle class="ring-bg" cx="30" cy="30" r="25" />
+                <circle class="ring-bar" cx="30" cy="30" r="25" />
+              </svg>
+              <span class="ring-text">3/4</span>
+            </div>
+            <div style="font-size:0.85rem; color:var(--text-muted); line-height:1.4;">
+              فاضلك تمرين واحد وتكمل هدف الأسبوع! الالتزام ممتاز يا بطل 💪
+            </div>
+          </div>
+        </div>
+
+        <!-- Highlighted Workout Card -->
+        <div class="kinetic-card highlight">
+          <div class="card-label-row">
+            <span class="card-label-text">التمرين المقترح اليوم</span>
+            <span class="card-sub-badge">جاهز للبدء</span>
+          </div>
+          <h2 class="routine-title-lg">سحب وضهر وبايسبس</h2>
+          <div class="chips-row">
+            <span class="info-chip">⏱️ 25 دقيقة</span>
+            <span class="info-chip">🏋️‍♂️ عقلة + أحبال</span>
+            <span class="info-chip">3 تمارين</span>
+          </div>
+
+          <div class="exercise-mini-list">
+            <div class="exercise-mini-item">
+              <span>1. عقلة قبضة واسعة <small dir="ltr" style="color:var(--text-tertiary);">(Pull-ups)</small></span>
+              <span style="color:var(--accent-lime); font-weight:700;">3 × 8-10</span>
+            </div>
+            <div class="exercise-mini-item">
+              <span>2. سحب حبل ضهر <small dir="ltr" style="color:var(--text-tertiary);">(Band Row)</small></span>
+              <span style="color:var(--text-muted);">3 × 10-12</span>
+            </div>
+            <div class="exercise-mini-item">
+              <span>3. بايسبس بحبل المقاومة <small dir="ltr" style="color:var(--text-tertiary);">(Band Curl)</small></span>
+              <span style="color:var(--text-muted);">3 × 12-15</span>
+            </div>
+          </div>
+
+          <button class="btn-kinetic-primary" onclick="showScreen('workout')" aria-label="ابدأ التمرين">
+            ▶ ابدأ التمرين (25 دقيقة)
+          </button>
+          <button class="btn-kinetic-secondary" aria-label="الوضع السريع">
+            ⚡ تمرين سريع ومختصر (15 دقيقة)
+          </button>
+        </div>
+
+        <!-- Meal Nudge Card -->
+        <div class="kinetic-card" style="padding:14px 18px; flex-direction:row; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.85rem;">
+            <span style="color:var(--text-muted);">تسجيل وجبات البروتين: </span>
+            <strong style="color:var(--text-main);">3 من 5</strong>
+          </div>
+          <span style="color:var(--accent-lime); font-size:0.8rem; font-weight:700; cursor:pointer;">سجل وجبة ←</span>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 2: WORKOUT ACTIVE ================= -->
+      <section id="screen-workout" class="screen-view active">
+        <!-- Exercise Hero Header -->
+        <div class="hero-exercise-card">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div class="exercise-meta-en" dir="ltr">EXERCISE 01 / 03</div>
+              <h1 class="exercise-heading">عقلة قبضة واسعة</h1>
+              <div style="font-size:0.8rem; color:var(--text-muted);" dir="ltr">Bodyweight Wide Grip</div>
+            </div>
+            <div class="set-pill-badge">المجموعة 1 من 3</div>
+          </div>
+          <div style="font-size:0.85rem; color:var(--accent-lime); font-weight:700;">
+            الهدف: 8-10 تكرارات بوزن الجسم
+          </div>
+        </div>
+
+        <!-- Tactile Ergonomic Rep Stepper -->
+        <div class="tactile-stepper">
+          <span class="stepper-header-text">تكرارات المجموعة الحالية</span>
+          <div class="stepper-pill-row">
+            <button class="round-step-btn" onclick="adjustRepsB(-1)" aria-label="إنقاص">−</button>
+            <div id="rep-val-b" class="rep-number-tactile">8</div>
+            <button class="round-step-btn" onclick="adjustRepsB(1)" aria-label="زيادة">+</button>
+          </div>
+        </div>
+
+        <!-- Muscle Activation & Progression (Eliminates Dead Space) -->
+        <div class="depth-progression-card">
+          <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted);">
+            <span>العضلات النشطة</span>
+            <span>السجل السابق: 8 تكرارات</span>
+          </div>
+          <div class="progression-pills-row">
+            <span class="muscle-chip-pill">💪 عضلة الظهر العريضة</span>
+            <span class="muscle-chip-pill">🔥 البايسبس</span>
+          </div>
+
+          <div style="margin-top:4px; display:flex; justify-content:space-between; font-size:0.8rem; padding:6px 0; border-top:1px solid #282b36;">
+            <span>مجموعة 1: <strong style="color:var(--accent-lime);">8 تكرار (حالية)</strong></span>
+            <span style="color:var(--text-tertiary);">مجموعة 2: 8-10</span>
+            <span style="color:var(--text-tertiary);">مجموعة 3: 8-10</span>
+          </div>
+        </div>
+
+        <!-- Thumb Zone Bottom Controls -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <button class="btn-kinetic-primary" onclick="showScreen('rest')" aria-label="تسجيل المجموعة والراحة">
+            ✓ تسجيل المجموعة واسترخاء (90 ث)
+          </button>
+          <div class="safety-pain-pill" onclick="triggerPainStop()">
+            🛑 هل تشعر بألم في المفصل؟ اضغط لإيقاف آمن فوري
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 3: REST TIMER ================= -->
+      <section id="screen-rest" class="screen-view">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--accent-lime);">فترة الراحة والاستشفاء</span>
+          <span class="card-sub-badge">تلقائي</span>
+        </div>
+
+        <!-- Rest Countdown Hero -->
+        <div class="rest-circle-container">
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">الوقت المتبقي للراحة</span>
+          <div class="countdown-number" id="rest-timer-b">01:30</div>
+          <div class="rest-sub-info">
+            المجموعة القادمة: <strong style="color:#ffffff;">2 من 3</strong> (عقلة قبضة واسعة)
+          </div>
+        </div>
+
+        <!-- Egyptian Exertion Feedback List -->
+        <div class="kinetic-card" style="padding:14px 18px;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">إحساسك بالمجموعة السابقة:</span>
+          <div class="feedback-tactile-list">
+            <button class="feedback-tactile-btn" onclick="selectFeedbackB(this)">
+              <span>فاضل طاقة (سهل) 💪</span>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">جاهز للزيادة</span>
+            </button>
+            <button class="feedback-tactile-btn selected" onclick="selectFeedbackB(this)">
+              <span>مظبوط ومثالي 👍</span>
+              <span style="font-size:0.75rem; color:var(--accent-lime); font-weight:700;">التحدي المطلوب</span>
+            </button>
+            <button class="feedback-tactile-btn" onclick="selectFeedbackB(this)">
+              <span>على الآخر (صعب) 🔥</span>
+              <span style="font-size:0.75rem; color:var(--text-tertiary);">أقصى مجهود</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Rest Action Controls -->
+        <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; gap:10px;">
+            <button class="btn-kinetic-secondary" style="flex:1;" onclick="addRestTimeB(30)">
+              +30 ثانية
+            </button>
+            <button class="btn-kinetic-primary" style="flex:2;" onclick="showScreen('workout')">
+              تخطي وبدء الآن ⏭
+            </button>
+          </div>
+          <div class="safety-pain-pill" onclick="triggerPainStop()">
+            🛑 إنهاء التمرين وحفظ التقدم
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    let repsB = 8;
+    function adjustRepsB(delta) {
+      repsB = Math.max(1, Math.min(50, repsB + delta));
+      const el = document.getElementById('rep-val-b');
+      if (el) el.innerText = repsB;
+    }
+
+    function selectFeedbackB(btn) {
+      document.querySelectorAll('.feedback-tactile-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById('screen-' + screenId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.switcher-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(screenId));
+      });
+    }
+
+    function triggerPainStop() {
+      alert("تم تفعيل بروتوكول إيقاف الألم الآمن: يتم إنهاء التمرين فوراً وحفظ البيانات المسجلة واقتراح كمادات أو استشارة طبية.");
+    }
+
+    function addRestTimeB(sec) {
+      const el = document.getElementById('rest-timer-b');
+      if (el) el.innerText = "02:00";
+    }
+
+    // URL parameter auto-select
+    (function() {
+      const p = new URLSearchParams(window.location.search);
+      const s = p.get('screen');
+      if (s && ['today', 'workout', 'rest'].includes(s)) {
+        showScreen(s);
+      }
+    })();
+  </script>
+</body>
+</html>

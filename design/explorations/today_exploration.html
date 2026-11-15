@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Exploration: Today Screen (Performance Lime)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-elevated: #1a1c22;
+      --card-border: #282b35;
+      --lime: #ccff00;
+      --lime-glow: rgba(204, 255, 0, 0.25);
+      --text-white: #f8fafc;
+      --text-gray: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --danger: #ef4444;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      overflow-x: hidden;
+    }
+    .phone-container {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Status bar */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    /* Header */
+    .header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-wordmark {
+      font-size: 1.25rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      direction: ltr;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo-wordmark .wordmark-home { color: #ffffff; }
+    .logo-wordmark .wordmark-sets { color: var(--lime); }
+    .logo-wordmark .wordmark-tag {
+      font-size: 0.65rem;
+      background: #27272a;
+      border: 1px solid var(--card-border);
+      color: var(--text-tertiary);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+    .shift-tag {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      color: var(--text-gray);
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    /* Scroll Content */
+    .scroll-body {
+      flex: 1;
+      padding: 12px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    /* Consistency Tracker */
+    .consistency-banner {
+      background: linear-gradient(135deg, #181a20 0%, #131418 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .ring-box {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-box svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-num {
+      position: absolute;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: var(--lime);
+    }
+    .consistency-text h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .consistency-text p {
+      font-size: 0.8rem;
+      color: var(--text-gray);
+    }
+    /* High-Fidelity Workout Card */
+    .workout-card-lime {
+      background: linear-gradient(160deg, #1c202a 0%, #14161d 100%);
+      border: 2px solid var(--lime);
+      border-radius: 24px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 12px 30px var(--lime-glow);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge-today {
+      background: rgba(204, 255, 0, 0.15);
+      color: var(--lime);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+    .badge-cycle {
+      color: var(--text-tertiary);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .workout-headline {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      background: #252833;
+      color: var(--text-white);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .routine-list {
+      background: rgba(14, 15, 18, 0.6);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.85rem;
+    }
+    .routine-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .routine-row span:last-child {
+      color: var(--text-gray);
+      font-weight: 700;
+      direction: ltr;
+    }
+    /* High Impact CTA Button */
+    .btn-main-lime {
+      background: var(--lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 18px;
+      height: 56px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px var(--lime-glow);
+    }
+    .btn-lite-wire {
+      background: transparent;
+      color: var(--text-white);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      height: 48px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    /* Nutrition mini card */
+    .nutrition-dock {
+      background: var(--card-elevated);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    /* Navigation Bar */
+    .nav-bar {
+      height: 72px;
+      background: #101115;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .nav-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-gray);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .nav-tab.active { color: var(--lime); }
+    .nav-icon { width: 22px; height: 22px; }
+  </style>
+</head>
+<body>
+
+  <div class="phone-container">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>🔋 100% 📶</span>
+      <span>3:40 PM</span>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-container">
+        <div class="logo-wordmark">
+          <span class="wordmark-home">HOME</span><span class="wordmark-sets">SETS</span>
+          <span class="wordmark-tag">مسار مؤقت</span>
+        </div>
+      </div>
+      <div class="shift-tag">قبل الشغل ⏰</div>
+    </header>
+
+    <!-- Scroll Content -->
+    <main class="scroll-body">
+      <!-- Consistency Tracker -->
+      <section class="consistency-banner">
+        <div class="ring-box">
+          <svg viewBox="0 0 60 60">
+            <circle cx="30" cy="30" r="25" stroke="#252833" stroke-width="6" fill="none" />
+            <circle cx="30" cy="30" r="25" stroke="#ccff00" stroke-width="6" fill="none" stroke-dasharray="157" stroke-dashoffset="40" stroke-linecap="round" />
+          </svg>
+          <span class="ring-num">3/4</span>
+        </div>
+        <div class="consistency-text">
+          <h3>استمرارية الأسبوع</h3>
+          <p>فاضلك تمرين واحد وتكمل هدف الأسبوع 4/4 💪</p>
+        </div>
+      </section>
+
+      <!-- Primary Next Workout Card (Performance Lime Glow) -->
+      <section class="workout-card-lime">
+        <div class="card-top">
+          <span class="badge-today">تمرينة اليوم المقترحة</span>
+          <span class="badge-cycle">دوران تلقائي</span>
+        </div>
+
+        <h1 class="workout-headline">سحب وضهر وبايسبس<br>(Back & Biceps Pull)</h1>
+
+        <div class="chips-row">
+          <span class="chip">⏱️ 25 دقيقة</span>
+          <span class="chip">🏋️ عقلة + حبل</span>
+          <span class="chip">3 تمارين</span>
+        </div>
+
+        <div class="routine-list">
+          <div class="routine-row">
+            <span>1. عقلة قبضة واسعة (Pull-ups)</span>
+            <span>3 × 8-10</span>
+          </div>
+          <div class="routine-row">
+            <span>2. سحب حبل ضهر (Band Bent Row)</span>
+            <span>3 × 10-12</span>
+          </div>
+          <div class="routine-row">
+            <span>3. بايسبس بحبل المقاومة (Band Curl)</span>
+            <span>3 × 12-15</span>
+          </div>
+        </div>
+
+        <button class="btn-main-lime" aria-label="ابدأ التمرين الآن">
+          ▶ ابدأ التمرين (25 دقيقة)
+        </button>
+
+        <button class="btn-lite-wire" aria-label="تمرين سريع وضع الإرهاق">
+          ⚡ تمرين سريع (15 دقيقة)
+        </button>
+      </section>
+
+      <!-- Nutrition mini tracker -->
+      <section class="nutrition-dock">
+        <div>
+          <span>وجبات اليوم: </span>
+          <strong style="color:var(--text-white);">3 من 5 تم تسجيلها</strong>
+        </div>
+        <span style="color:var(--lime); font-weight:700; cursor:pointer;">عرض الوجبات ←</span>
+      </section>
+    </main>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+      <div class="nav-tab active">
+        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>اليوم</span>
+      </div>
+      <div class="nav-tab">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>التقدم</span>
+      </div>
+      <div class="nav-tab">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>الإعدادات</span>
+      </div>
+    </nav>
+  </div>
+
+</body>
+</html>

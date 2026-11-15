@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Wireframe: Progress Hub (التقدم)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #2a2d36;
+      --accent-lime: #ccff00;
+      --accent-lime-dim: #99cc00;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+    .device-shell {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .app-header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+    .header-subtitle {
+      font-size: 0.65rem;
+      color: var(--text-tertiary);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: block;
+    }
+    .synthetic-badge {
+      background: rgba(204, 255, 0, 0.1);
+      border: 1px solid rgba(204, 255, 0, 0.3);
+      color: var(--accent-lime);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+    .subtabs {
+      display: flex;
+      padding: 6px 16px;
+      gap: 8px;
+      background: #16181f;
+      border-bottom: 1px solid var(--card-border);
+      overflow-x: auto;
+    }
+    .subtab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .subtab-btn.active {
+      background: var(--card-bg);
+      color: var(--accent-lime);
+      border: 1px solid var(--card-border);
+    }
+    .content-scroll {
+      flex: 1;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .progress-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    /* Comparison Slider Box */
+    .compare-slider-box {
+      height: 160px;
+      background: #14161c;
+      border-radius: 16px;
+      border: 1px dashed var(--card-border);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .slider-divider {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: var(--accent-lime);
+    }
+    .slider-handle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 28px;
+      height: 28px;
+      background: var(--accent-lime);
+      color: #0b0c0e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+    .compare-tag {
+      position: absolute;
+      bottom: 10px;
+      font-size: 0.7rem;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-main);
+    }
+    /* Semantic Trend Line Chart */
+    .chart-container {
+      background: #14161c;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .trend-svg {
+      width: 100%;
+      height: 90px;
+    }
+    .chart-dates {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      direction: ltr;
+      padding: 0 4px;
+    }
+    .nudge-box {
+      background: #181a22;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .nudge-box strong {
+      color: #ffffff;
+    }
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      height: 72px;
+      background: #14151a;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nav-item.active {
+      color: var(--accent-lime);
+    }
+    .nav-icon {
+      width: 24px;
+      height: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>📶 🔋 100%</span>
+      <span>3:45 PM</span>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div>
+        <h1 class="header-title">سجل التقدم</h1>
+        <span dir="ltr" class="header-subtitle">PROGRESS HUB</span>
+      </div>
+      <div class="synthetic-badge">بيانات افتراضية تجريبية</div>
+    </header>
+
+    <!-- Subtabs -->
+    <nav class="subtabs">
+      <button class="subtab-btn active">الصور 📸</button>
+      <button class="subtab-btn">الوزن ⚖️</button>
+      <button class="subtab-btn">القوة 📈</button>
+      <button class="subtab-btn">الوجبات 🥗</button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-scroll">
+      <!-- Photo Comparison Card -->
+      <section class="progress-card">
+        <div class="card-header-row">
+          <h2 class="card-title">مقارنة الصور التطورية</h2>
+          <span style="font-size:0.8rem; color:var(--accent-lime); font-weight:700; cursor:pointer;">التقاط صورة ➕</span>
+        </div>
+
+        <div class="compare-slider-box">
+          <div style="position: absolute; right: 20px; text-align: center; color: var(--text-muted);">
+            <span style="font-size:0.75rem;">الأسبوع 1 (افتراضي)</span><br>
+            <strong style="color: #fff; font-size:1.1rem;">72.0 كجم</strong>
+          </div>
+          <div class="slider-divider">
+            <div class="slider-handle">↔</div>
+          </div>
+          <div style="position: absolute; left: 20px; text-align: center; color: var(--accent-lime);">
+            <span style="font-size:0.75rem;">الأسبوع 4 (افتراضي)</span><br>
+            <strong style="font-size:1.1rem;">72.9 كجم</strong>
+          </div>
+          <span class="compare-tag" style="right: 10px;">قبل (1 نوفمبر)</span>
+          <span class="compare-tag" style="left: 10px;">الآن (22 نوفمبر)</span>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-tertiary); text-align:center;">
+          🔒 جميع الصور محفوظة في مساحة التطبيق المعزولة ولا تظهر في ألبوم الهاتف
+        </div>
+      </section>
+
+      <!-- Weight Rolling Average Card -->
+      <section class="progress-card">
+        <div class="card-header-row">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">متوسط 7 أيام المتدحرج (Rolling Avg)</div>
+            <div style="font-size:1.6rem; font-weight:900; color:#fff;">72.9 <span style="font-size:0.9rem; color:var(--accent-lime);">كجم</span></div>
+          </div>
+          <button style="background:#27272a; border:1px solid var(--card-border); color:#fff; padding:8px 12px; border-radius:10px; font-size:0.8rem; font-weight:700;">تسجيل وزن اليوم ➕</button>
+        </div>
+
+        <!-- Semantic SVG Rolling Average Trendline -->
+        <div class="chart-container">
+          <svg class="trend-svg" viewBox="0 0 320 80">
+            <!-- Grid lines -->
+            <line x1="10" y1="20" x2="310" y2="20" stroke="#252830" stroke-width="1" stroke-dasharray="4" />
+            <line x1="10" y1="50" x2="310" y2="50" stroke="#252830" stroke-width="1" stroke-dasharray="4" />
+            <!-- Trend Line -->
+            <polyline fill="none" stroke="#ccff00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+              points="20,65 100,55 180,42 260,30 300,24" />
+            <!-- Data Points -->
+            <circle cx="20" cy="65" r="4" fill="#a1a1aa" />
+            <circle cx="100" cy="55" r="4" fill="#a1a1aa" />
+            <circle cx="180" cy="42" r="4" fill="#a1a1aa" />
+            <circle cx="260" cy="30" r="4" fill="#a1a1aa" />
+            <circle cx="300" cy="24" r="5" fill="#ccff00" />
+          </svg>
+          <div class="chart-dates">
+            <span>Nov 1 (72.0)</span>
+            <span>Nov 8 (72.2)</span>
+            <span>Nov 15 (72.5)</span>
+            <span>Nov 22 (72.9)</span>
+          </div>
+        </div>
+
+        <div class="nudge-box">
+          💡 <strong>تحليل المعدل:</strong> زيادة تدريجية بمعدل مثالي (~0.3 كجم أسبوعياً) تدعم البناء العضلي. (ملاحظة: أقل من 3 تسجيلات أسبوعياً يعتبر معدلاً أولياً).
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>اليوم</span>
+      </div>
+      <div class="nav-item active">
+        <svg class="nav-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8v8m-4-5v5m-4-2v2m-2 4h16a2 2 0 002-2V6a2 2 0 00-2-2H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span>التقدم</span>
+      </div>
+      <div class="nav-item">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>الإعدادات</span>
+      </div>
+    </nav>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOMESETS — Visual Exploration: Workout Player (Performance Lime)</title>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const w = params.get('w');
+      if (w) {
+        document.documentElement.style.setProperty('--device-width', w + 'px');
+      }
+      if (params.get('scale') === '1.5') {
+        document.documentElement.classList.add('text-scale-150');
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      --bg-dark: #121316;
+      --card-bg: #1c1e24;
+      --card-border: #282b35;
+      --lime: #ccff00;
+      --lime-glow: rgba(204, 255, 0, 0.25);
+      --text-white: #f8fafc;
+      --text-gray: #a1a1aa;
+      --text-tertiary: #8e8e93;
+      --danger-text: #ef4444;
+      --danger-bg: #dc2626;
+      --device-width: 390px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Tahoma, sans-serif;
+    }
+    html {
+      font-size: 16px;
+    }
+    html.text-scale-150 {
+      font-size: 24px;
+    }
+    html, body {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--device-width);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      overflow-x: hidden;
+    }
+    .phone-container {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-dark);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Status Bar */
+    .status-bar {
+      height: 44px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    /* Header */
+    .player-header {
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .badge-progress {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: var(--lime);
+    }
+    .btn-circle-action {
+      background: #252833;
+      border: 1px solid var(--card-border);
+      color: var(--text-white);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    /* Main Player Body */
+    .player-body {
+      flex: 1;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .exercise-details {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hero-exercise-name {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+    .load-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      align-self: flex-start;
+      flex-wrap: wrap;
+    }
+    .load-indicator strong {
+      color: var(--lime);
+    }
+    .cue-card {
+      background: linear-gradient(145deg, #181a22 0%, #13151b 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 14px;
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      line-height: 1.4;
+    }
+    .cue-card strong {
+      color: #ffffff;
+    }
+    .sets-track {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .track-pill {
+      flex: 1;
+      height: 42px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+    }
+    .track-pill.active {
+      background: rgba(204, 255, 0, 0.15);
+      border-color: var(--lime);
+      color: var(--lime);
+      font-weight: 900;
+    }
+    /* Thumb Control Dock */
+    .thumb-control-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 8px;
+    }
+    .rep-stepper-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-step {
+      width: 52px;
+      height: 52px;
+      background: #252833;
+      border: 1px solid var(--card-border);
+      color: #ffffff;
+      border-radius: 14px;
+      font-size: 1.6rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .step-counter {
+      text-align: center;
+    }
+    .step-digits {
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--lime);
+      line-height: 1;
+    }
+    .step-subtext {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+      margin-top: 4px;
+    }
+    .btn-log-big {
+      width: 100%;
+      height: 56px;
+      background: var(--lime);
+      color: #0b0c0e;
+      border: none;
+      border-radius: 18px;
+      font-size: 1.15rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 25px var(--lime-glow);
+    }
+    .in-set-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-action-ghost {
+      flex: 1;
+      height: 48px;
+      background: #181a22;
+      border: 1px solid var(--card-border);
+      color: var(--text-gray);
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-action-pain {
+      border-color: rgba(239, 68, 68, 0.4);
+      color: var(--danger-text);
+      background: rgba(239, 68, 68, 0.08);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="phone-container">
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>🔋 100% 📶</span>
+      <span>3:48 PM</span>
+    </div>
+
+    <!-- Header -->
+    <header class="player-header">
+      <div class="badge-progress">التمرين 1 من 3 • عقلة واسعة</div>
+      <button class="btn-circle-action" aria-label="إيقاف مؤقت">⏸</button>
+    </header>
+
+    <!-- Content -->
+    <main class="player-body">
+      <div class="exercise-details">
+        <h1 class="hero-exercise-name">عقلة قبضة واسعة<br>(Wide Grip Pull-ups)</h1>
+
+        <div class="load-indicator">
+          <span>المساعدة المحسوبة:</span>
+          <strong>حبل أسود (مساعدة وزن الجسم)</strong>
+        </div>
+
+        <div class="cue-card">
+          💡 <strong>التكنيك السليم:</strong> ابدأ من وضع الثبات التام، اسحب بصدرك للبار مع اعتصار عضلات الظهر، وانزل في 2 ثانية كاملة بدون مرجحة.
+        </div>
+
+        <!-- Sets Track -->
+        <div class="sets-track">
+          <div class="track-pill active">المجموعة 1 (الآن)</div>
+          <div class="track-pill">المجموعة 2</div>
+          <div class="track-pill">المجموعة 3</div>
+        </div>
+      </div>
+
+      <!-- Lower Thumb Zone Dock -->
+      <div class="thumb-control-dock">
+        <!-- Rep Stepper -->
+        <div class="rep-stepper-box">
+          <button class="btn-step" aria-label="إنقاص تكرار">-</button>
+          <div class="step-counter">
+            <div class="step-digits">10</div>
+            <div class="step-subtext">تكرارات محققة (الهدف: 8-10)</div>
+          </div>
+          <button class="btn-step" aria-label="زيادة تكرار">+</button>
+        </div>
+
+        <!-- Primary Log CTA (56dp) -->
+        <button class="btn-log-big" aria-label="تسجيل وبدء الراحة">
+          ✓ تسجيل المجموعة وبدء الراحة
+        </button>
+
+        <!-- Secondary in-set actions -->
+        <div class="in-set-actions">
+          <button class="btn-action-ghost">🔄 تبديل التمرين</button>
+          <button class="btn-action-ghost btn-action-pain">🛑 ألم في المفصل (إيقاف)</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+</body>
+</html>
