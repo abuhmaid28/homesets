@@ -19,6 +19,7 @@ void main() {
     await db.delete('workout_sessions');
     await db.delete('set_logs');
     await db.delete('active_session_state');
+    await db.delete('session_salvage_archive');
   });
 
   tearDown(() async {
@@ -438,6 +439,150 @@ void main() {
       );
       expect(collisionSession.targetMuscleGroup, isNot('CHEST_TRICEPS'),
           reason: '<36h on same muscle group must rotate away to protect joint/muscle recovery');
+    });
+
+    test('WP-A / CORE-FINAL-01: Corrupt session salvage must durably preserve raw bytes in SQLite archive and not earn weekly consistency credit', () async {
+      final repo = WorkoutRepository();
+      final db = await DatabaseHelper.instance.database;
+      final now = DateTime.now();
+
+      final mixedSetsJson = '[{"setIndex":1,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"},{"corrupt_invalid_set": true},{"setIndex":2,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"},{"setIndex":3,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"}]';
+
+      await db.insert('active_session_state', {
+        'session_id': 'corrupt_salvage_sess',
+        'routine_name': 'Routine A: Upper Pull & Biceps',
+        'routine_name_ar': 'التمرين الأول',
+        'is_lite_mode': 0,
+        'started_at': now.subtract(const Duration(minutes: 30)).toIso8601String(),
+        'current_exercise_index': 0,
+        'current_set_index': 2,
+        'completed_sets_json': mixedSetsJson,
+        'active_session_json': '{}',
+      });
+
+      final snapshot = await repo.getActiveSessionState();
+      expect(snapshot, isNotNull);
+      expect(snapshot!.hasCorruptSetLogs, isTrue);
+      expect(snapshot.completedSets.length, equals(3));
+
+      // Salvage session with durable raw byte preservation
+      await repo.salvageCorruptSession(
+        session: CompletedWorkoutSession(
+          id: snapshot.sessionId,
+          scheduledSessionId: snapshot.sessionId,
+          routineName: snapshot.routineName,
+          isLiteMode: snapshot.isLiteMode,
+          startedAt: snapshot.startedAt,
+          endedAt: now,
+          totalDurationSeconds: 1800,
+          completedSets: snapshot.completedSets,
+        ),
+        rawCompletedSetsJson: snapshot.rawCompletedSetsJson,
+        rawActiveSessionJson: snapshot.rawActiveSessionJson,
+        hasCorruptSetLogs: snapshot.hasCorruptSetLogs,
+      );
+
+      // Verify raw bytes are durably archived in session_salvage_archive
+      final archive = await repo.getSalvagedSessionArchive();
+      expect(archive.length, equals(1));
+      expect(archive.first['raw_completed_sets_json'], equals(mixedSetsJson));
+      expect(archive.first['has_corrupt_logs'], equals(1));
+
+      // Verify weekly consistency credit is ZERO
+      final credit = await repo.getWeeklyConsistencyCredit();
+      expect(credit, equals(0), reason: 'Corrupt partial salvage must never earn consistency credit');
+
+      // Verify active_session_state is cleanly purged after archiving
+      final remainingActive = await repo.getActiveSessionState();
+      expect(remainingActive, isNull);
+    });
+
+    test('WP-B / CORE-FINAL-02: Atomic emergency pain stop executes atomically and does not create partial state', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Seed initial user profile with avoided joints
+      await repo.saveUserProfile(const UserProfile(
+        id: 'user_pain_atomic',
+        avoidedJoints: [JointImpactTag.wristCompression],
+      ));
+
+      final painSession = CompletedWorkoutSession(
+        id: 'pain_atomic_sess_1',
+        scheduledSessionId: 'sched_pain_1',
+        routineName: 'Routine B: Upper Push',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 10)),
+        endedAt: now,
+        totalDurationSeconds: 600,
+        completedSets: [
+          SetLog(
+            setIndex: 1,
+            exerciseId: 'pushup_standard',
+            performedReps: 0,
+            exertion: ExertionRating.painStopped,
+            isPainStopped: true,
+            painNote: 'Pain stop',
+            completedAt: now,
+          ),
+        ],
+        isEmergencyStopped: true,
+        emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
+      );
+
+      await repo.saveEmergencyPainStopSession(
+        session: painSession,
+        avoidedJointTags: const [JointImpactTag.shoulderAnterior, JointImpactTag.elbowMedial],
+      );
+
+      // Verify profile has both original and quarantined joints atomically
+      final updatedProfile = await repo.getUserProfile();
+      expect(updatedProfile, isNotNull);
+      expect(updatedProfile!.avoidedJoints, contains(JointImpactTag.wristCompression));
+      expect(updatedProfile.avoidedJoints, contains(JointImpactTag.shoulderAnterior));
+      expect(updatedProfile.avoidedJoints, contains(JointImpactTag.elbowMedial));
+
+      // Verify session was durably saved as emergency stop (0 credit)
+      final credit = await repo.getWeeklyConsistencyCredit();
+      expect(credit, equals(0));
+    });
+
+    test('WP-C: Final set interruption flags isPendingFinalization and avoids replaying final exercise set 1', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Create snapshot representing completion of the final set of the final exercise
+      final finalSetSnapshot = ActiveSessionSnapshot(
+        sessionId: 'session_final_interrupted',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        routineNameAr: 'التمرين الأول',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 25)),
+        currentExerciseIndex: 1, // Final exercise index
+        currentSetIndex: 3,     // Final set
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 15))),
+          SetLog(setIndex: 2, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 10))),
+          SetLog(setIndex: 3, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 5))),
+        ],
+        scheduledSession: const ScheduledSession(
+          id: 'session_final_interrupted',
+          routineName: 'Routine A: Upper Pull & Biceps',
+          routineNameAr: 'التمرين الأول',
+          isLiteMode: false,
+          estimatedDurationMinutes: 25,
+          targetMuscleGroup: 'LATS_BICEPS',
+          exercises: [],
+        ),
+        isPendingFinalization: true,
+      );
+
+      await repo.saveActiveSessionState(finalSetSnapshot);
+
+      final recovered = await repo.getActiveSessionState();
+      expect(recovered, isNotNull);
+      expect(recovered!.currentSetIndex, equals(3),
+          reason: 'Final set index must stay on final set and not reset to 1');
     });
   });
 }
