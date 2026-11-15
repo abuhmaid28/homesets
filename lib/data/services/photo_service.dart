@@ -145,6 +145,10 @@ class MockPhotoService implements PhotoService {
 
   MockPhotoService({this.mockPickResult});
 
+  void seedVirtualFile(String relativePath, List<int> bytes) {
+    storedFiles[relativePath] = Uint8List.fromList(bytes);
+  }
+
   @override
   Future<String?> pickPhotoFromGallery() async {
     return mockPickResult;

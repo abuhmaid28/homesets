@@ -1,8 +1,8 @@
 package com.abuhmaid.homesets
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -12,20 +12,7 @@ import java.io.FileOutputStream
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.abuhmaid.homesets/media"
     private var pendingResult: MethodChannel.Result? = null
-
-    // Native Photo Picker launcher (Android 13+ Photo Picker or backported picker contract)
-    private val pickVisualMediaLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        handleSelectedUri(uri)
-    }
-
-    // Fallback content picker launcher for older Android devices
-    private val getContentLauncher = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        handleSelectedUri(uri)
-    }
+    private val REQUEST_CODE_PICK_IMAGE = 1001
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -39,16 +26,14 @@ class MainActivity : FlutterActivity() {
                     }
                     pendingResult = result
                     try {
-                        if (ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(this)) {
-                            pickVisualMediaLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        } else {
-                            getContentLauncher.launch("image/*")
+                        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                            type = "image/*"
+                            addCategory(Intent.CATEGORY_OPENABLE)
                         }
+                        startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE)
                     } catch (e: Exception) {
                         pendingResult = null
-                        result.error("PICK_FAILED", e.localizedMessage, null)
+                        result.error("PICKER_ERROR", e.message, null)
                     }
                 }
                 else -> result.notImplemented()
@@ -56,39 +41,41 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun handleSelectedUri(uri: Uri?) {
-        val result = pendingResult ?: return
-        pendingResult = null
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_IMAGE) {
+            val result = pendingResult ?: return
+            pendingResult = null
 
-        if (uri == null) {
-            result.success(null)
-            return
-        }
-
-        try {
-            // Copy selected URI directly to an app-private cache file
-            val inputStream = contentResolver.openInputStream(uri)
-            if (inputStream == null) {
-                result.error("STREAM_ERROR", "Could not open stream for selected image", null)
-                return
+            if (resultCode == Activity.RESULT_OK && data != null && data.data != null) {
+                handleSelectedUri(data.data!!, result)
+            } else {
+                result.success(null)
             }
+        }
+    }
 
-            val stagingDir = File(cacheDir, "progress_staging")
+    private fun handleSelectedUri(uri: Uri, result: MethodChannel.Result) {
+        try {
+            val stagingDir = File(context.cacheDir, "progress_staging")
             if (!stagingDir.exists()) {
                 stagingDir.mkdirs()
             }
-            val stagingFile = File(stagingDir, "stage_${System.currentTimeMillis()}.jpg")
-            val outputStream = FileOutputStream(stagingFile)
+            val stageFile = File(stagingDir, "stage_${System.currentTimeMillis()}.jpg")
 
-            inputStream.use { input ->
-                outputStream.use { output ->
-                    input.copyTo(output)
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(stageFile).use { outputStream ->
+                    inputStream.copyTo(outputStream)
                 }
             }
 
-            result.success(stagingFile.absolutePath)
+            if (stageFile.exists() && stageFile.length() > 0) {
+                result.success(stageFile.absolutePath)
+            } else {
+                result.error("EMPTY_FILE", "Selected image was empty", null)
+            }
         } catch (e: Exception) {
-            result.error("COPY_ERROR", e.localizedMessage, null)
+            result.error("COPY_FAILED", e.message, null)
         }
     }
 }
