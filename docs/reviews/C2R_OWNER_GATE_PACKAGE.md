@@ -1,61 +1,49 @@
-# HOMESETS Campaign C2-R — Consolidated Product Owner Gate Package
+# HOMESETS — Accurate Consolidated Product Owner Gate (C2-R + C3)
 
-**Document Status:** [Awaiting Product Owner Decision]  
-**Author:** Antigravity (Gemini 3.8 Flash High)  
-**Date:** 2026-11-15  
-**Product Owner:** Ahmed (@abuhmaid28)  
-**Target Pull Request:** [Draft PR #9](https://github.com/abuhmaid28/homesets/pull/9)  
-**Verification Baseline:** Commit `c43420af` + C2-R Verification Suite  
+**Status: [OPEN — Awaiting Ahmed's explicit approval].**
+**Date:** 2026-11-15.
+**Supersedes:** the earlier C2R owner package at this path which incorrectly described C1 Direction A as orange and Direction B as amber/teal, and falsely implied OS backup/restore rules were already deployed. No production app or Android Manifest exists yet.
+**Source:** [C1 A/B side-by-side](https://github.com/abuhmaid28/homesets/blob/campaign/c1-design-foundation/docs/reviews/C1V2_VISUAL_DIFF_AND_DECISION.md), [C2-R external review](https://github.com/abuhmaid28/homesets/blob/main/docs/reviews/C2R_EXTERNAL_FLUTTER_READINESS_2026-11-15.md).
+**Current status:** Draft PR #5 and #9 are unmerged; real foundation-only CI green at `93f15ee9209ca2154c751e49c3cb185603f3d066`; not Flutter CI.
 
----
+## Decision 1 — Visual direction, not fake alternate colors
+**[Recommended] Hybrid B + A precision**
+- Take **Direction B — Kinetic Depth** as the primary look: dark warm charcoal (`#121316`), Performance Lime (`#CCFF00`), rounded and tactile surfaces.
+- Borrow **Direction A — Performance Stealth** tabular-numeral style and clear high-contrast set/rest timers.
+- Use Arabic Egyptian copy, AR/EN RTL/LTR, accessible contrast/touch sizes, tasteful subtle glow (not excessive), no debug labels or placeholder logos presented as final.
+- Owner-preferred Pull-Up Motion logo PNG is **still missing from GitHub**; use neutral HOMESETS wordmark temporarily, no final adaptive launcher icon until exact PNG+vector/icon checks.
+- Actual comparison: [A Today](https://github.com/abuhmaid28/homesets/blob/campaign/c1-design-foundation/design/reviews/c1-v2/screenshots/dir_a_today_390x844.png), [B Today](https://github.com/abuhmaid28/homesets/blob/campaign/c1-design-foundation/design/reviews/c1-v2/screenshots/dir_b_today_390x844.png), [B Workout](https://github.com/abuhmaid28/homesets/blob/campaign/c1-design-foundation/design/reviews/c1-v2/screenshots/dir_b_workout_390x844.png).
 
-## 1. Executive Summary
+## Decision 2 — Equipment and workout safety (conservative)
+**[Recommended]**
+- Default owned equipment: doorway pull-up bar and resistance bands, plus no-special-equipment bodyweight movements. No added weights, loaded backpack or assumed gym equipment.
+- An **overhead/door-anchor pulldown is unavailable unless a verified suitable anchor is explicitly enabled**, not merely because bands exist. Table inverted rows default disabled until stable load-bearing furniture is verified; neutral-grip handles never assumed on a straight pull-up bar.
+- Pain during exercise => immediate STOP and preserve logged sets; **no automatically prescribed loaded substitute**, no diagnosis or shame. A user can mark avoid areas.
+- Proposed gradual deload on return after extended absence is an adjustable conservative heuristic, not an independently validated medical percentage. No promise that 15m Lite is always achieved; estimates vary with rest and form.
+- This is a software safety design guardrail, not medical advice or qualified exercise-science certification.
 
-Campaign C2-R successfully completed a comprehensive audit and remediation of all seven technical defects (R-C2-01 through R-C2-07) identified in the engineering foundation:
-1. Hardened fixture validation with strict schema typing and relational integrity.
-2. Eliminated duplicate test vectors, achieving 106 unique scenarios.
-3. Added missing movements (`pushup_decline_feet_elevated`, `pushup_band_resisted`) to complete bidirectional referential integrity across all 14 catalog exercises.
-4. Audited equipment safety (door anchor clarified as optional accessory per D09; table row load-bearing furniture check).
-5. Implemented a 21-case mutation test suite proving validators reject invalid data.
-6. Refined specifications to eliminate unscientific claims ("mathematical proofs", "rhabdomyolysis prevention") in favor of empirical modeling and qualified review flags.
-7. Maintained strict boundaries: **zero Flutter runtime code** (`lib/`, `test/`) and **zero dependencies** added to `pubspec.yaml`.
+## Decision 3 — Offline data and privacy model
+**[Recommended]**
+- Local-only app-private SQLite data and private physique photos once P5 implemented. No accounts/backend/cloud sync/runtime AI/telemetry.
+- Explicit Android backup/data extraction configurations in implementation, **not deployed yet**, with OS/OEM differences treated as unverified until final Honor acceptance.
+- Manual explicit backup/export with clear warning that a copied archive can be shared to outside apps; no automatic cloud upload. Staging, validation and rollback planned; **not guaranteed atomic/data-loss-proof** until crash/fault-injection tests and final device acceptance.
+- P0–P4 C3 scope includes profile/session/set persistence **only**. Photos/backup implementation belongs later P5/P6.
 
-This package consolidates the key decisions required from Ahmed to transition from foundation architecture into implementation.
+## Decision 4 — Minimal dependency policy
+**[Recommended] Conditional allowlist; versions must be checked/locked in the coding campaign.**
+- Prefer typed **Drift + drift_flutter** *if* the actual selected compatible versions can be resolved, analyzed and built with existing Flutter/Dart/Android tools; otherwise use **sqflite** as a reviewed fallback, not both.
+- Other category-scoped approved candidates when needed: `path_provider`, Flutter SDK localization/`intl`, `archive`, `crypto`, `flutter_local_notifications`; only for their corresponding milestone, not all on P0. `uuid` optional and may be replaced with simple local IDs if justified. No opaque plugins or paid service.
+- Reference *current as-of-2026-11-15* public candidates: `drift 2.35.4`, `drift_flutter 0.3.1`, `sqflite 2.4.6`, `flutter_local_notifications 23.0.2`. These are **not yet proven build-compatible or installed**; validate license/min SDK/Android config and `flutter pub get`, analyze/test/APK build. Do not silently use stale `^2.24.0` or `^18.0.1` as current.
+- No other dependency without new owner authorization; pin/review `pubspec.lock`.
 
----
+## Decision 5 — First real Flutter implementation campaign
+**[Recommended] Authorize [C3-MEGA Issue #11](https://github.com/abuhmaid28/homesets/issues/11): P0–P4 Android Flutter core, 32 substantive Work Packages**, after explicit grouped approval of decisions 1–4.
+- Real code: safe Flutter scaffold, true Flutter CI, AR/EN RTL hybrid design, pure-Dart engine, capability filtering, local sessions and migrations, onboarding, Today, Active Set/Rest, Lite and Summary.
+- Need actual `flutter analyze`, `flutter test`, `flutter build apk`, exact-head CI and true logs, plus critical safety regression. Do not claim execution of all 106 scenarios until code really runs them.
+- Within approved scope, Antigravity can continuously modify/test/commit/create PR and guarded-merge after actual exact-head checks pass. No phone checks until final release (GOV07); no automatic destructive/force-push actions. Keep checkpoints for resumption if session ends.
+- **Out of C3:** P5 progress photos/weight graphs and P6 notification/backup implementations, final signing/private release and final Honor acceptance.
 
-## 2. Product Owner Decision Items
+## Approval wording (one grouped choice)
+> I approve HOMESETS C3-MEGA implementation with Hybrid B (Kinetic Depth charcoal/lime + tabular timers), bar+bands only and verified-anchor/furniture default exclusions, stop-first/no diagnosis and non-medical adjustable deload, offline app-private storage/manual-only backup proposal, and the constrained minimal dependency allowlist with version/build/license verification. I authorize the 32-work-package real Flutter P0–P4 campaign with automated tests and guarded merges. No new feature scope, unknown plugins or destructive operations.
 
-### Decision 1: Visual Direction Selection (from Campaign C1)
-- **Option A (Industrial High-Contrast Dark):** Pure black (`#0B0D0F`), safety orange accents (`#FF5E1E`), high-visibility bold typography, rugged mechanical feel.
-- **Option B (Minimalist Dark Utility):** Deep obsidian (`#121417`), electric amber/teal accents, subtle cards, refined micro-borders.
-*Recommendation:* Proceed with Option A as the primary workout execution theme, with subtle card styling influenced by Option B.
-
-### Decision 2: Hardware & Equipment Rules (D09 Hardening)
-- Standard HOMESETS equipment remains strictly: **Doorway Pull-up Bar** and **Resistance Bands**.
-- A **door anchor** is classified as an optional accessory. If not owned, the engine automatically selects standing bent-over rows (`row_band_bent_over`) rather than overhead door pulldowns.
-- Inverted table rows require solid, heavy furniture; a safety verification check is displayed before first execution.
-*Recommendation:* Approve the clarified hardware boundaries.
-
-### Decision 3: Safety Invariants & Prolonged Absence Deload
-- **SAFE-01 (1-Tap Pain Stop):** Immediate stop on joint pain tap; completed sets preserved; exercise quarantined from future rotations; zero immediate loaded substitution.
-- **SAFE-03 (Absence Deload):** For absences $\ge 14$ days, volume is conservatively reduced by ~30–40% to mitigate severe soreness and overtraining.
-- **SAFE-05 (Zero Medical Claims):** App never diagnoses injuries; prompts conservative first-aid and medical consultation.
-*Recommendation:* Approve the safety rules as conservative baseline heuristics pending future qualified clinical review.
-
-### Decision 4: Local Storage, Privacy & Restore Architecture
-- **Physique Photos:** Stored strictly in internal app sandbox (`/data/user/0/.../files/physique_photos/`) with `.nomedia` sentinel. Completely hidden from phone gallery.
-- **OS Data Extraction:** Modern Android 12–16 XML `dataExtractionRules` deployed to block unencrypted Google Drive cloud backups and device migration.
-- **Failure-Recoverable Restore:** Two-phase restore pipeline with pre-swap `.snap` cold snapshot rollback to eliminate corruption during power loss.
-*Recommendation:* Approve the offline storage and restore architecture.
-
-### Decision 5: Dependency Authorization & Greenlight for Campaign C3
-- Review candidate dependencies: `drift`, `drift_flutter`, `path_provider`, `flutter_local_notifications`, `intl`, `uuid`, `crypto`, `archive`.
-- Authorize adding these vetted, permissive packages to `pubspec.yaml` in Campaign C3 to begin Flutter runtime implementation and domain engine coding.
-*Recommendation:* Authorize Campaign C3 transition.
-
----
-
-## 3. Physical Testing Notice
-
-Per `AGENT_AUTONOMY_POLICY.md` and `AGENTS.md`, manual real-phone testing on Ahmed's physical device (Honor MagicOS 10) is deliberately deferred to the **final integrated APK acceptance test**. Earlier milestone verification relies strictly on automated headless suites, unit tests, and CI.
+**No decision is recorded as confirmed until Ahmed actually gives this approval.** If he prefers A/B or different storage/deps, update this package before C3 starts.
