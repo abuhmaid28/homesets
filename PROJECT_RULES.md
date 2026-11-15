@@ -35,3 +35,11 @@ Goal/scope; actual branch/origin evidence; files/commits/PRs/merges; raw check o
 Prefer HOMESETS-scoped Auto/sandbox and file access restrictions; avoid global Turbo/full filesystem permissions. Actual installed Windows Antigravity mode must be checked and recorded; `PROJECT_RULES.md` by itself does not prove automatic rule discovery. Create/check an active workspace rule when authorized.
 
 **Current status:** repository docs exist; local link, CI, image asset and app are not yet verified as completed. Do not claim otherwise.
+
+## C3 one-time product-owner authorization (2026-11-15)
+- Ahmed explicitly approved **GOV12–GOV19**: Hybrid Direction B Kinetic Depth charcoal + Performance Lime, A's tabular timers, only bar + resistance bands + bodyweight; default-exclude unverified door/overhead anchors, furniture and neutral-grip handles.
+- Pain STOP immediately saves finished sets, ends the affected activity and does not auto-substitute weighted exercise; recovery deload is an adjustable non-medical heuristic.
+- Local/offline/app-private storage policy approved; **photos and manual backup implementation belong to P5/P6, not C3**. Android OS backup behavior remains unverified until actual device acceptance.
+- **Conditional approved direct-dependency allowlist:** `drift` + `drift_flutter` **or** `sqflite`, `path_provider`, Flutter SDK localization + `intl`, `uuid` (if needed); `archive`, `crypto` and `flutter_local_notifications` for their relevant future scopes only. Verify versions/licenses and actual build first; do not introduce any other direct dependency. Transitive dependencies introduced by approved packages must be reviewed for licenses/permissions.
+- `C3-MEGA Issue #11` is **authorized** for Flutter P0–P4, real CI, tests, APK, scoped autonomous commits and normal gated merges. No routine owner approval, no new product/safety scope. Never mistake source docs/fixtures CI for real Flutter CI.
+- Exact preferred logo PNG/vector is missing from the GitHub repo; use neutral temporary wordmark only, no fake logo. Final launcher icon/package signing remain open.
