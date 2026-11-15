@@ -3,16 +3,16 @@
   "total_scenarios": 106,
   "generated_at": "2026-11-15T00:35:00Z",
   "categories": [
-    "PROGRESSION_BAND_RESISTANCE",
-    "SAFETY_PAIN_STOP_PRECEDENCE",
+    "SHIFT_WORK_TIME_BOUNDARIES",
+    "PROGRESSION_CADENCE_PAUSE",
     "SCHEDULING_RECOVERY_SPACING",
     "LITE_MODE_ADAPTATION",
-    "PROGRESSION_CADENCE_PAUSE",
-    "PROGRESSION_DOUBLE_BODYWEIGHT",
-    "SHIFT_WORK_TIME_BOUNDARIES",
-    "PROGRESSION_BAND_ASSISTANCE",
+    "SAFETY_PAIN_STOP_PRECEDENCE",
     "EQUIPMENT_ABSENCE_FALLBACKS",
-    "SCHEDULING_ABSENCE_DELOAD"
+    "PROGRESSION_BAND_RESISTANCE",
+    "PROGRESSION_DOUBLE_BODYWEIGHT",
+    "SCHEDULING_ABSENCE_DELOAD",
+    "PROGRESSION_BAND_ASSISTANCE"
   ],
   "scenarios": [
     {
@@ -2306,18 +2306,20 @@
     {
       "id": "SCEN-093",
       "category": "EQUIPMENT_ABSENCE_FALLBACKS",
-      "description": "Weak doorframe fallback to bands",
+      "description": "Weak hollow door swings inward; disallows door anchor overhead pull and falls back to standing band row (SAFE-01)",
       "input_state": {
         "inventory": {
           "hasPullUpBar": false,
           "hasBands": true,
-          "hasDoorAnchor": true
+          "hasDoorAnchor": true,
+          "doorLatchWeak": true,
+          "doorSwingsTowardUser": true
         },
         "requested_movement": "PULL"
       },
       "expected_output": {
         "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
-        "prescribed_exercise": "pulldown_door_band",
+        "prescribed_exercise": "row_band_bent_over",
         "purchase_prompt_shown": false,
         "reason": "No unowned hardware required (D09)"
       },
@@ -2327,18 +2329,19 @@
     {
       "id": "SCEN-094",
       "category": "EQUIPMENT_ABSENCE_FALLBACKS",
-      "description": "Travel hotel room bands only",
+      "description": "Travel with bands only under acute lower back fatigue avoids bent-over row shear and isolates arms (SAFE-01)",
       "input_state": {
         "inventory": {
           "hasPullUpBar": false,
           "hasBands": true,
-          "hasDoorAnchor": false
+          "hasDoorAnchor": false,
+          "lumbarFatigueActive": true
         },
         "requested_movement": "PULL"
       },
       "expected_output": {
         "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
-        "prescribed_exercise": "row_band_bent_over",
+        "prescribed_exercise": "curl_band_biceps",
         "purchase_prompt_shown": false,
         "reason": "No unowned hardware required (D09)"
       },

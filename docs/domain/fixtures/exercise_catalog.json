@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "provenance": "HOMESETS Open Calisthenics & Band Exercise Catalog (Public Domain Biomechanical Knowledge)",
-  "license": "CC-BY-4.0",
+  "provenance": "HOMESETS Original Movement Schema & Biomechanical Documentation (derived from open kinesiological principles)",
+  "license": "HOMESETS Open Documentation Asset (Zero proprietary media or external copyrighted text)",
   "generated_at": "2026-11-15T00:30:00Z",
   "exercises": [
     {
@@ -52,8 +52,8 @@
       "supports_band_resistance": false,
       "unprovocative_alternative_id": "curl_band_biceps",
       "skill_prerequisite_reps": 1,
-      "technique_cues_ar": "أخف على الكتف من القبضة الواسعة، تفعيل عالي للبايسبس.",
-      "technique_cues_en": "Shoulder-friendly vertical pull with high bicep recruitment."
+      "technique_cues_ar": "سحب رأسي لطيف على الكتف. يستخدم مقابض متوازية إن توفرت في البار، أو قبضة معكوسة على البار المستقيم.",
+      "technique_cues_en": "Shoulder-friendly vertical pull. Uses parallel grip horns if available, or standard supinated (underhand) chin-up on straight bar."
     },
     {
       "id": "pullup_negative",
@@ -81,13 +81,14 @@
       "primary_muscles": ["latissimus_dorsi"],
       "secondary_muscles": ["biceps_brachii", "rhomboids"],
       "joint_stress_tags": [],
-      "required_equipment": ["resistance_bands", "door_anchor"],
+      "required_equipment": ["resistance_bands"],
+      "optional_accessories": ["door_anchor"],
       "supports_band_assistance": false,
       "supports_band_resistance": true,
       "unprovocative_alternative_id": "row_band_bent_over",
       "skill_prerequisite_reps": 0,
-      "technique_cues_ar": "تثبيت الحبل في أعلى الباب، جلوس على الركبتين وسحب الكوعين للأسفل.",
-      "technique_cues_en": "Anchor band at top of door, kneel and pull elbows down and back."
+      "technique_cues_ar": "تثبيت الحبل في أعلى الباب عبر ملحق تثبيت الباب (أو نقطة تعليق علوية متينة). جلوس على الركبتين وسحب الكوعين للأسفل.",
+      "technique_cues_en": "Requires overhead anchor point or door anchor accessory. Kneel and pull elbows down and back. Fallback to bent-over rows if unanchored."
     },
     {
       "id": "row_band_bent_over",
@@ -120,8 +121,8 @@
       "supports_band_resistance": false,
       "unprovocative_alternative_id": "row_band_bent_over",
       "skill_prerequisite_reps": 0,
-      "technique_cues_ar": "الاستلقاء تحت طاولة متينة والإمساك بالحافة وسحب الصدر لأعلى.",
-      "technique_cues_en": "Lie under sturdy table, pull chest to underside edge."
+      "technique_cues_ar": "تحقق من أن الطاولة ثقيلة، خشبية صلبة، وتتحمل وزن الجسم بالكامل قبل التعلق بها. اسحب الصدر لأعلى.",
+      "technique_cues_en": "Verify table is heavy, solid-wood, and structurally load-bearing before suspending body weight. Pull chest to edge."
     },
     {
       "id": "pushup_standard",
@@ -156,6 +157,40 @@
       "skill_prerequisite_reps": 0,
       "technique_cues_ar": "تخفيف الحمل على المفاصل عبر رفع اليدين، ممتاز للإحماء أو التعافي.",
       "technique_cues_en": "Reduces joint loading, ideal regression or deload variation."
+    },
+    {
+      "id": "pushup_decline_feet_elevated",
+      "slug": "decline-feet-elevated-push-up",
+      "name_ar": "ضغط مائل لأسفل (القدمان مرتفعتان)",
+      "name_en": "Decline Push-Up (Feet Elevated)",
+      "pattern": "HORIZONTAL_PUSH",
+      "primary_muscles": ["pectoralis_major", "anterior_deltoid", "triceps_brachii"],
+      "secondary_muscles": ["core_stabilizers"],
+      "joint_stress_tags": ["WRIST_COMPRESSION", "SHOULDER_ANTERIOR"],
+      "required_equipment": ["bodyweight"],
+      "supports_band_assistance": false,
+      "supports_band_resistance": true,
+      "unprovocative_alternative_id": "pushup_standard",
+      "skill_prerequisite_reps": 10,
+      "technique_cues_ar": "ضع القدمين على مقعد ثابت، وحافظ على استقامة الجذع لتكثيف الحمل على الجزء العلوي من الصدر والكتف.",
+      "technique_cues_en": "Elevate feet on stable surface, maintain rigid plank to shift loading to upper chest and front delts."
+    },
+    {
+      "id": "pushup_band_resisted",
+      "slug": "band-resisted-push-up",
+      "name_ar": "ضغط أرضي بمقاومة الحبل المطاطي",
+      "name_en": "Band-Resisted Push-Up",
+      "pattern": "HORIZONTAL_PUSH",
+      "primary_muscles": ["pectoralis_major", "triceps_brachii"],
+      "secondary_muscles": ["anterior_deltoid", "core_stabilizers"],
+      "joint_stress_tags": ["WRIST_COMPRESSION", "SHOULDER_ANTERIOR"],
+      "required_equipment": ["resistance_bands"],
+      "supports_band_assistance": false,
+      "supports_band_resistance": true,
+      "unprovocative_alternative_id": "pushup_standard",
+      "skill_prerequisite_reps": 12,
+      "technique_cues_ar": "مرر الحبل خلف الظهر وثبّت طرفيه تحت راحتي اليدين لزيادة المقاومة القصوى عند القفل.",
+      "technique_cues_en": "Drape loop band across upper back, pin ends under palms for accommodating resistance at lockout."
     },
     {
       "id": "curl_band_biceps",
