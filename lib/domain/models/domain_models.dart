@@ -1,5 +1,6 @@
 /// Pure-Dart Immutable Domain Models for HOMESETS (Zero Flutter Dependencies)
 /// Strictly aligns with DOMAIN_MODEL_SPEC.md, DECISION_REGISTER.md (D04, D09, D17, GOV13, GOV14).
+library;
 
 enum MovementPattern {
   verticalPull,

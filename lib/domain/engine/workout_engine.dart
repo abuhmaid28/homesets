@@ -65,9 +65,13 @@ class WorkoutEngine {
     var selectedCycle = routineCycle;
     if (requiresRotation) {
       // Rotate away from recently fatigued group
-      if (selectedCycle == 'A') selectedCycle = 'B';
-      else if (selectedCycle == 'B') selectedCycle = 'C';
-      else selectedCycle = 'A';
+      if (selectedCycle == 'A') {
+        selectedCycle = 'B';
+      } else if (selectedCycle == 'B') {
+        selectedCycle = 'C';
+      } else {
+        selectedCycle = 'A';
+      }
     }
 
     if (selectedCycle == 'A') {
