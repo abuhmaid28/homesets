@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Local SQLite Database Helper with Versioned Schema & Immediate Write-Ordering (WP20).
+/// Local SQLite Database Helper with Versioned Schema & Immediate Write-Ordering (WP20, P5 WP02).
 /// Strictly offline, app-private, zero network sync.
 class DatabaseHelper {
   static const String _dbName = 'homesets.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   static Database? _database;
   static DatabaseFactory? _customFactory;
@@ -34,6 +34,7 @@ class DatabaseHelper {
         options: OpenDatabaseOptions(
           version: _dbVersion,
           onCreate: _onCreate,
+          onUpgrade: _onUpgrade,
           onConfigure: _onConfigure,
         ),
       );
@@ -44,6 +45,7 @@ class DatabaseHelper {
         dbPath,
         version: _dbVersion,
         onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
         onConfigure: _onConfigure,
       );
     }
@@ -152,6 +154,56 @@ class DatabaseHelper {
         has_corrupt_logs INTEGER NOT NULL,
         raw_completed_sets_json TEXT NOT NULL,
         raw_active_session_json TEXT NOT NULL
+      );
+    ''');
+
+    // If installing fresh at v2 or above, create v2 tables as well
+    if (version >= 2) {
+      await _migrateToV2(db);
+    }
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _migrateToV2(db);
+    }
+  }
+
+  Future<void> _migrateToV2(Database db) async {
+    // 7. Weight Entries Table (WP03)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS weight_entries (
+        id TEXT PRIMARY KEY,
+        weight_kg REAL NOT NULL,
+        logged_at TEXT NOT NULL,
+        notes TEXT
+      );
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_weight_entries_logged_at ON weight_entries (logged_at);
+    ''');
+
+    // 8. Progress Photos Table (WP07, WP08)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS progress_photos (
+        id TEXT PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        angle TEXT NOT NULL,
+        taken_at TEXT NOT NULL,
+        notes TEXT
+      );
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_progress_photos_taken_at ON progress_photos (taken_at);
+    ''');
+
+    // 9. Daily Meal Checks Table (WP06)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS daily_meal_checks (
+        date TEXT NOT NULL,
+        meal_slot INTEGER NOT NULL,
+        is_checked INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (date, meal_slot)
       );
     ''');
   }

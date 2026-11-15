@@ -504,3 +504,200 @@ class CompletedWorkoutSession {
     );
   }
 }
+
+/// Represents a manual body weight measurement (WP03).
+class WeightEntry {
+  final String id;
+  final double weightKg;
+  final DateTime loggedAt;
+  final String? notes;
+
+  const WeightEntry({
+    required this.id,
+    required this.weightKg,
+    required this.loggedAt,
+    this.notes,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'weight_kg': weightKg,
+      'logged_at': loggedAt.toIso8601String(),
+      'notes': notes,
+    };
+  }
+
+  factory WeightEntry.fromMap(Map<String, dynamic> map) {
+    return WeightEntry(
+      id: map['id'] as String,
+      weightKg: (map['weight_kg'] as num).toDouble(),
+      loggedAt: DateTime.parse(map['logged_at'] as String),
+      notes: map['notes'] as String?,
+    );
+  }
+
+  WeightEntry copyWith({
+    String? id,
+    double? weightKg,
+    DateTime? loggedAt,
+    String? notes,
+  }) {
+    return WeightEntry(
+      id: id ?? this.id,
+      weightKg: weightKg ?? this.weightKg,
+      loggedAt: loggedAt ?? this.loggedAt,
+      notes: notes ?? this.notes,
+    );
+  }
+}
+
+/// Perspective angle for physique progress photos (WP07, WP08).
+enum PhotoAngle {
+  front,
+  side,
+  back,
+}
+
+extension PhotoAngleExtension on PhotoAngle {
+  String toDbString() => name;
+
+  static PhotoAngle fromDbString(String str) {
+    switch (str.toLowerCase()) {
+      case 'side':
+        return PhotoAngle.side;
+      case 'back':
+        return PhotoAngle.back;
+      case 'front':
+      default:
+        return PhotoAngle.front;
+    }
+  }
+
+  String labelEn() {
+    switch (this) {
+      case PhotoAngle.front:
+        return 'Front';
+      case PhotoAngle.side:
+        return 'Side';
+      case PhotoAngle.back:
+        return 'Back';
+    }
+  }
+
+  String labelAr() {
+    switch (this) {
+      case PhotoAngle.front:
+        return 'أمامي';
+      case PhotoAngle.side:
+        return 'جانبي';
+      case PhotoAngle.back:
+        return 'خلفي';
+    }
+  }
+}
+
+/// Metadata record for an app-private progress photo (WP07, WP08).
+class ProgressPhoto {
+  final String id;
+  final String filePath; // Relative path inside app-private files directory
+  final PhotoAngle angle;
+  final DateTime takenAt;
+  final String? notes;
+
+  const ProgressPhoto({
+    required this.id,
+    required this.filePath,
+    required this.angle,
+    required this.takenAt,
+    this.notes,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'file_path': filePath,
+      'angle': angle.toDbString(),
+      'taken_at': takenAt.toIso8601String(),
+      'notes': notes,
+    };
+  }
+
+  factory ProgressPhoto.fromMap(Map<String, dynamic> map) {
+    return ProgressPhoto(
+      id: map['id'] as String,
+      filePath: map['file_path'] as String,
+      angle: PhotoAngleExtension.fromDbString(map['angle'] as String),
+      takenAt: DateTime.parse(map['taken_at'] as String),
+      notes: map['notes'] as String?,
+    );
+  }
+
+  ProgressPhoto copyWith({
+    String? id,
+    String? filePath,
+    PhotoAngle? angle,
+    DateTime? takenAt,
+    String? notes,
+  }) {
+    return ProgressPhoto(
+      id: id ?? this.id,
+      filePath: filePath ?? this.filePath,
+      angle: angle ?? this.angle,
+      takenAt: takenAt ?? this.takenAt,
+      notes: notes ?? this.notes,
+    );
+  }
+}
+
+/// Daily checkbox record for the meal checklist (WP06).
+class DailyMealCheck {
+  final String date; // YYYY-MM-DD
+  final int mealSlot; // 0, 1, 2, 3, 4
+  final bool isChecked;
+
+  const DailyMealCheck({
+    required this.date,
+    required this.mealSlot,
+    required this.isChecked,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'date': date,
+      'meal_slot': mealSlot,
+      'is_checked': isChecked ? 1 : 0,
+    };
+  }
+
+  factory DailyMealCheck.fromMap(Map<String, dynamic> map) {
+    return DailyMealCheck(
+      date: map['date'] as String,
+      mealSlot: map['meal_slot'] as int,
+      isChecked: (map['is_checked'] as int) == 1,
+    );
+  }
+}
+
+/// Aggregated performance metric for an exercise session (WP04).
+class StrengthDataPoint {
+  final DateTime date;
+  final int maxReps;
+  final int totalReps;
+  final int setsCount;
+  final String? bandUsed;
+  final bool isLiteMode;
+  final String sessionId;
+
+  const StrengthDataPoint({
+    required this.date,
+    required this.maxReps,
+    required this.totalReps,
+    required this.setsCount,
+    this.bandUsed,
+    required this.isLiteMode,
+    required this.sessionId,
+  });
+}
+
+
