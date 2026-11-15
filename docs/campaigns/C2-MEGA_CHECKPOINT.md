@@ -33,11 +33,11 @@
 | | **WP17** | Android Notifications & Inexact Alarms | **COMPLETE** | `docs/architecture/ANDROID_NOTIFICATIONS_GUIDE.md` |
 | | **WP18** | Android Signing & Wireless APK Upgrade Path | **COMPLETE** | `docs/architecture/SIGNING_AND_UPGRADE_PATH.md` |
 | | **WP19** | Data Security Threat Model | **COMPLETE** | `docs/architecture/DATA_SECURITY_THREAT_MODEL.md` |
-| **Phase D** | **WP20** | Reproducible Documentation & Fixture Quality Tooling | *QUEUED* | `tools/quality/` (Python stdlib scripts) |
-| | **WP21** | Foundational GitHub Actions Workflow | *QUEUED* | `.github/workflows/foundation.yml` |
-| | **WP22** | Exact-Head CI Run & Verification Evidence | *QUEUED* | Captured GitHub Actions run logs |
-| | **WP23** | Prospective Flutter CI Plan (Milestone P0+) | *QUEUED* | `docs/quality/FLUTTER_CI_IMPLEMENTATION_PLAN.md` |
-| | **WP24** | Quality Traceability Matrix | *QUEUED* | `docs/quality/MVP_TEST_TRACEABILITY.md` |
+| **Phase D** | **WP20** | Reproducible Documentation & Fixture Quality Tooling | **COMPLETE** | `tools/quality/` (3 Python validation suites) |
+| | **WP21** | Foundational GitHub Actions Workflow | **COMPLETE** | `docs/quality/workflows/foundation.yml` (Staged for `workflow` scope token) |
+| | **WP22** | Exact-Head CI Run & Verification Evidence | **CI_UNVERIFIED/BLOCKED** | OAuth token lacks `workflow` scope; local suite verified 3/3 PASS |
+| | **WP23** | Prospective Flutter CI Plan (Milestone P0+) | **COMPLETE** | `docs/quality/FLUTTER_CI_IMPLEMENTATION_PLAN.md` |
+| | **WP24** | Quality Traceability Matrix | **COMPLETE** | `docs/quality/MVP_TEST_TRACEABILITY.md` |
 | **Phase E** | **WP25** | Independent Red-Team Review | *QUEUED* | `docs/reviews/C2_MEGA_INDEPENDENT_QA.md` |
 | | **WP26** | Rework & Regression Cycle | *QUEUED* | Fix verification logs & updated head SHA |
 | | **WP27** | Consolidated Owner Decision Package | *QUEUED* | `docs/reviews/C2_MEGA_OWNER_DECISION_PACKAGE.md` |
