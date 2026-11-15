@@ -53,6 +53,19 @@ class DatabaseHelper {
   Future<void> _onConfigure(Database db) async {
     // Enable foreign key constraints and WAL mode for crash resilience
     await db.execute('PRAGMA foreign_keys = ON;');
+    // Ensure session_salvage_archive table exists for existing databases (WP-A)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS session_salvage_archive (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        routine_name TEXT NOT NULL,
+        salvaged_at TEXT NOT NULL,
+        parsed_sets_count INTEGER NOT NULL,
+        has_corrupt_logs INTEGER NOT NULL,
+        raw_completed_sets_json TEXT NOT NULL,
+        raw_active_session_json TEXT NOT NULL
+      );
+    ''');
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -126,6 +139,20 @@ class DatabaseHelper {
         current_set_index INTEGER NOT NULL,
         completed_sets_json TEXT NOT NULL,
         active_session_json TEXT NOT NULL
+      );
+    ''');
+
+    // 6. Session Salvage Archive Table (WP-A: Lossless durable quarantine for corrupt draft raw bytes)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS session_salvage_archive (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        routine_name TEXT NOT NULL,
+        salvaged_at TEXT NOT NULL,
+        parsed_sets_count INTEGER NOT NULL,
+        has_corrupt_logs INTEGER NOT NULL,
+        raw_completed_sets_json TEXT NOT NULL,
+        raw_active_session_json TEXT NOT NULL
       );
     ''');
   }

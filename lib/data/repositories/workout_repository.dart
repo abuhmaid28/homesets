@@ -15,7 +15,9 @@ class ActiveSessionSnapshot {
   final ScheduledSession? scheduledSession;
   final bool hasCorruptSetLogs;
   final String rawCompletedSetsJson;
+  final String rawActiveSessionJson;
   final bool isPlanUnrecoverable;
+  final bool isPendingFinalization;
 
   const ActiveSessionSnapshot({
     required this.sessionId,
@@ -29,7 +31,9 @@ class ActiveSessionSnapshot {
     this.scheduledSession,
     this.hasCorruptSetLogs = false,
     this.rawCompletedSetsJson = '[]',
+    this.rawActiveSessionJson = '{}',
     this.isPlanUnrecoverable = false,
+    this.isPendingFinalization = false,
   });
 }
 
@@ -218,6 +222,17 @@ class WorkoutRepository {
       isPlanUnrecoverable = true;
     }
 
+    bool isPendingFinalization = false;
+    if (scheduledSession != null && scheduledSession.exercises.isNotEmpty) {
+      final totalPlannedSets = scheduledSession.exercises.fold<int>(
+        0,
+        (sum, e) => sum + e.sets.length,
+      );
+      if (setsList.length >= totalPlannedSets && totalPlannedSets > 0) {
+        isPendingFinalization = true;
+      }
+    }
+
     return ActiveSessionSnapshot(
       sessionId: row['session_id'] as String,
       routineName: row['routine_name'] as String,
@@ -230,7 +245,9 @@ class WorkoutRepository {
       scheduledSession: scheduledSession,
       hasCorruptSetLogs: hasCorruptSetLogs,
       rawCompletedSetsJson: rawSetsJson,
+      rawActiveSessionJson: rawSession ?? '{}',
       isPlanUnrecoverable: isPlanUnrecoverable,
+      isPendingFinalization: isPendingFinalization,
     );
   }
 
@@ -278,6 +295,158 @@ class WorkoutRepository {
       }
 
       // Automatically purge active session state upon successful finalization
+      await txn.delete('active_session_state');
+    });
+  }
+
+  /// Safely salvages valid set logs from an unrecoverable/corrupted active session draft (WP-A).
+  /// Durably archives raw JSON bytes in `session_salvage_archive` BEFORE clearing active state,
+  /// saves valid parsed sets into `set_logs`, and marks the session with `isEmergencyStopped = 1`
+  /// so it NEVER falsely earns weekly consistency credit or masquerades as a full normal completion.
+  Future<void> salvageCorruptSession({
+    required CompletedWorkoutSession session,
+    required String rawCompletedSetsJson,
+    required String rawActiveSessionJson,
+    required bool hasCorruptSetLogs,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      // 1. Durably archive the raw JSON bytes in SQLite
+      await txn.insert(
+        'session_salvage_archive',
+        {
+          'id': 'salvage_${session.id}_${DateTime.now().millisecondsSinceEpoch}',
+          'session_id': session.id,
+          'routine_name': session.routineName,
+          'salvaged_at': DateTime.now().toIso8601String(),
+          'parsed_sets_count': session.completedSets.length,
+          'has_corrupt_logs': hasCorruptSetLogs ? 1 : 0,
+          'raw_completed_sets_json': rawCompletedSetsJson,
+          'raw_active_session_json': rawActiveSessionJson,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 2. Persist the salvaged workout marked as emergency stopped / partial salvage
+      await txn.insert(
+        'workout_sessions',
+        {
+          'id': session.id,
+          'scheduled_session_id': session.scheduledSessionId,
+          'routine_name': session.routineName,
+          'is_lite_mode': session.isLiteMode ? 1 : 0,
+          'started_at': session.startedAt.toIso8601String(),
+          'ended_at': session.endedAt.toIso8601String(),
+          'total_duration_seconds': session.totalDurationSeconds,
+          'is_emergency_stopped': 1,
+          'emergency_stop_reason': hasCorruptSetLogs
+              ? 'Partial salvage from corrupt draft: raw logs archived (WP-A)'
+              : 'Draft plan unrecoverable: raw logs archived (WP-A)',
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 3. Persist valid parsed set logs
+      for (final s in session.completedSets) {
+        await txn.insert(
+          'set_logs',
+          {
+            'id': '${session.id}_set_${s.setIndex}_${s.exerciseId}',
+            'session_id': session.id,
+            'set_index': s.setIndex,
+            'exercise_id': s.exerciseId,
+            'performed_reps': s.performedReps,
+            'band_used': s.bandUsed,
+            'exertion': s.exertion.name,
+            'is_pain_stopped': s.isPainStopped ? 1 : 0,
+            'pain_note': s.painNote,
+            'completed_at': s.completedAt.toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      // 4. Safely purge active_session_state only AFTER durable archiving
+      await txn.delete('active_session_state');
+    });
+  }
+
+  /// Queries all archived corrupt session logs (WP-A).
+  Future<List<Map<String, dynamic>>> getSalvagedSessionArchive() async {
+    final db = await _dbHelper.database;
+    return await db.query(
+      'session_salvage_archive',
+      orderBy: 'salvaged_at DESC',
+    );
+  }
+
+  /// Atomically executes emergency pain STOP persistence (WP-B, SAFE-01, GOV14).
+  /// Updates user profile avoided joints, logs the emergency completed session and set logs,
+  /// and purges active session state in a single SQLite transaction.
+  /// Eliminates risk of partial persistence state if disk/IO errors occur.
+  Future<void> saveEmergencyPainStopSession({
+    required CompletedWorkoutSession session,
+    required List<JointImpactTag> avoidedJointTags,
+  }) async {
+    final db = await _dbHelper.database;
+    await db.transaction((txn) async {
+      // 1. Atomically quarantine joint(s) in user profile
+      if (avoidedJointTags.isNotEmpty) {
+        final profileRows = await txn.query('user_profile', limit: 1);
+        if (profileRows.isNotEmpty) {
+          final profileMap = profileRows.first;
+          final currentAvoided = (profileMap['avoided_joints'] as String)
+              .split(',')
+              .where((s) => s.isNotEmpty)
+              .toSet();
+          currentAvoided.addAll(avoidedJointTags.map((j) => j.name));
+          await txn.update(
+            'user_profile',
+            {'avoided_joints': currentAvoided.join(',')},
+            where: 'id = ?',
+            whereArgs: [profileMap['id']],
+          );
+        }
+      }
+
+      // 2. Persist completed emergency session
+      await txn.insert(
+        'workout_sessions',
+        {
+          'id': session.id,
+          'scheduled_session_id': session.scheduledSessionId,
+          'routine_name': session.routineName,
+          'is_lite_mode': session.isLiteMode ? 1 : 0,
+          'started_at': session.startedAt.toIso8601String(),
+          'ended_at': session.endedAt.toIso8601String(),
+          'total_duration_seconds': session.totalDurationSeconds,
+          'is_emergency_stopped': 1,
+          'emergency_stop_reason': session.emergencyStopReason,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+
+      // 3. Persist completed set logs
+      for (final s in session.completedSets) {
+        await txn.insert(
+          'set_logs',
+          {
+            'id': '${session.id}_set_${s.setIndex}_${s.exerciseId}',
+            'session_id': session.id,
+            'set_index': s.setIndex,
+            'exercise_id': s.exerciseId,
+            'performed_reps': s.performedReps,
+            'band_used': s.bandUsed,
+            'exertion': s.exertion.name,
+            'is_pain_stopped': s.isPainStopped ? 1 : 0,
+            'pain_note': s.painNote,
+            'completed_at': s.completedAt.toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+
+      // 4. Purge active session state
       await txn.delete('active_session_state');
     });
   }
