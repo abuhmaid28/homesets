@@ -123,3 +123,11 @@ Read `docs/DECISION_REGISTER.md`, `docs/AGENT_AUTONOMY_POLICY.md`, this file, `d
 - C1 Draft PR #5 and C2 Draft PR #9 both remain unmerged pending grouped product/brand/safety/dependency gate. Exact preferred logo binary not yet on GitHub, use wordmark-only temporary placeholder if owner authorizes; no final app icon assertion. No APK, real Flutter CI or device test yet.
 
 - **Correction recheck PASS:** [Run #43663431371](https://github.com/abuhmaid28/homesets/actions/runs/43663431371) completed SUCCESS on exact revised PR #9 head `fc5187d7f55272dfada19e7884f060dca13f9952` (pull_request). **Foundation-only CI**, no Flutter tests.
+
+## 2026-11-15 — C3-MEGA owner gate explicitly approved
+- [Decision Register GOV12–GOV19](DECISION_REGISTER.md) records **Ahmed's one-time explicit approval** of Hybrid B Kinetic Depth warm-charcoal/Performance-Lime + Direction A tabular counters, safe equipment/pain defaults, offline private storage, limited dependency allowlist conditional on compatibility/license validation, and autonomous real Flutter P0–P4 implementation.
+- [C3-MEGA Issue #11](https://github.com/abuhmaid28/homesets/issues/11) updated to **AUTHORIZED / READY TO LAUNCH**, 32 substantial internal WPs; **NOT yet executed**, no Flutter app/APK or app CI verified.
+- Separate [Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5) (C1 design) and [Draft PR #9](https://github.com/abuhmaid28/homesets/pull/9) (C2 architecture) remain unmerged. Their reference designs/specs may be selectively adapted into C3 if consistent with newly confirmed decisions; don't blindly merge older draft inaccuracies.
+- Last verified Foundation CI for updated C2 PR #9 [run #43663431371](https://github.com/abuhmaid28/homesets/actions/runs/43663431371) PASS on exact head `fc5187d7f55272dfada19e7884f060dca13f9952`; this is **not Flutter CI**. Implementation merges require separate real Flutter exact-head checks.
+- C3 excludes P5 photos/weight graphs and P6 notifications/manual backup; only session/profile/set persistence in this campaign. Temporary wordmark allowed; original Pull-Up PNG vector/icon remains pending Issue #1. Final human Honor test unchanged at C9.
+- Conditional packages and real app build/test/device behavior remain **unverified until executed**.
