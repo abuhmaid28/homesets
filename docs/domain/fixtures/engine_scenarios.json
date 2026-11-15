@@ -1,0 +1,2553 @@
+{
+  "version": "1.0.0",
+  "total_scenarios": 106,
+  "generated_at": "2026-11-15T00:35:00Z",
+  "categories": [
+    "SHIFT_WORK_TIME_BOUNDARIES",
+    "PROGRESSION_CADENCE_PAUSE",
+    "SCHEDULING_RECOVERY_SPACING",
+    "LITE_MODE_ADAPTATION",
+    "SAFETY_PAIN_STOP_PRECEDENCE",
+    "EQUIPMENT_ABSENCE_FALLBACKS",
+    "PROGRESSION_BAND_RESISTANCE",
+    "PROGRESSION_DOUBLE_BODYWEIGHT",
+    "SCHEDULING_ABSENCE_DELOAD",
+    "PROGRESSION_BAND_ASSISTANCE"
+  ],
+  "scenarios": [
+    {
+      "id": "SCEN-001",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Pull-ups base achievement advances rep bracket floor",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "sets_completed": [
+          {
+            "reps": 6,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 6,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 6,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          6,
+          8
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          6,
+          8
+        ],
+        "action": "EXPAND_BRACKET",
+        "prescribed_reps": "3x7",
+        "reason": "Consistent clean execution at bracket floor"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-002",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Pull-ups hits top of bracket with easy reserve advances to next bracket",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "sets_completed": [
+          {
+            "reps": 8,
+            "exertion": "EASY_RESERVE"
+          },
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          6,
+          8
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "ADVANCE_BRACKET",
+        "prescribed_reps": "3x8",
+        "reason": "Achieved top of 6-8 bracket with reserve"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-003",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Pull-ups hits 3x10 ceiling triggers cadence pause overload instead of external weight",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "sets_completed": [
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          8,
+          10
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          6,
+          8
+        ],
+        "action": "CADENCE_PAUSE_OVERLOAD",
+        "prescribed_tempo": "2s pause top, 3s eccentric",
+        "reason": "Top bodyweight ceiling reached; zero external weights available (D09)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-004",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Pull-ups fails to hit bracket floor holds target load without regression",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "sets_completed": [
+          {
+            "reps": 7,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          }
+        ],
+        "current_target": [
+          8,
+          10
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "HOLD_LOAD",
+        "prescribed_reps": "3x8",
+        "suggested_rest_extension_seconds": 30,
+        "reason": "Falling reps on Set 3 indicate rest deficit; hold bracket"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-005",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Pull-ups consecutive failure across 2 sessions triggers volume deload",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "consecutive_failed_sessions": 2,
+        "last_reps": [
+          6,
+          5,
+          4
+        ],
+        "current_target": [
+          8,
+          10
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          6,
+          8
+        ],
+        "action": "STEP_BACK_BRACKET",
+        "prescribed_sets": 2,
+        "reason": "Fatigue accumulation detected; reduce volume to reset form"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-006",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Standard push-ups hit 3x15 top bracket advances to decline push-ups leverage",
+      "input_state": {
+        "exercise": "pushup_standard",
+        "sets_completed": [
+          {
+            "reps": 15,
+            "exertion": "EASY_RESERVE"
+          },
+          {
+            "reps": 15,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 15,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          12,
+          15
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "LEVERAGE_ADVANCE",
+        "next_exercise": "pushup_decline_feet_elevated",
+        "reason": "Bodyweight mechanical leverage progression"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-007",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Push-ups struggle on floor regresses to hands elevated push-ups",
+      "input_state": {
+        "exercise": "pushup_standard",
+        "sets_completed": [
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 3,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 2,
+            "exertion": "MAX_EFFORT"
+          }
+        ],
+        "current_target": [
+          8,
+          10
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "LEVERAGE_REGRESS",
+        "next_exercise": "pushup_incline_hands_elevated",
+        "reason": "Baseline insufficient for floor push-ups; elevate hands"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-008",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Wide-grip pull-ups vs standard pull-ups progression independence",
+      "input_state": {
+        "exercise": "pullup_wide",
+        "sets_completed": [
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          }
+        ],
+        "standard_pullup_record": 8
+      },
+      "expected_output": {
+        "next_target": [
+          4,
+          6
+        ],
+        "action": "INDEPENDENT_EXERCISE_TRACKING",
+        "reason": "Wide grip has higher lat leverage requirement; progression tracked independently"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-009",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Chin-up neutral grip high bicep recruitment with zero elbow strain",
+      "input_state": {
+        "exercise": "chinup_neutral",
+        "sets_completed": [
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          6,
+          8
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "ADVANCE_BRACKET",
+        "prescribed_reps": "3x8-10",
+        "reason": "Safe joint clearance and target bracket achieved"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-010",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Air squats achieve 3x20 advances to reverse lunges for unilateral overload",
+      "input_state": {
+        "exercise": "squat_bodyweight",
+        "sets_completed": [
+          {
+            "reps": 20,
+            "exertion": "EASY_RESERVE"
+          },
+          {
+            "reps": 20,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 20,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          15,
+          20
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          10,
+          12
+        ],
+        "action": "UNILATERAL_OVERLOAD",
+        "next_exercise": "lunge_reverse",
+        "reason": "High-rep bodyweight squat capped; advance to unilateral challenge"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-011",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Inverted table rows hit 3x12 with easy rating advances foot elevation",
+      "input_state": {
+        "exercise": "row_table_inverted",
+        "sets_completed": [
+          {
+            "reps": 12,
+            "exertion": "EASY_RESERVE"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ],
+        "current_target": [
+          10,
+          12
+        ]
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "LEVERAGE_ADVANCE",
+        "technique_cue": "Elevate heels on chair to increase horizontal pull resistance",
+        "reason": "Zero-bands progression via leverage"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-012",
+      "category": "PROGRESSION_DOUBLE_BODYWEIGHT",
+      "description": "Reverse lunges with balance instability maintains rep target and recommends wall touch",
+      "input_state": {
+        "exercise": "lunge_reverse",
+        "sets_completed": [
+          {
+            "reps": 8,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 7,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          }
+        ],
+        "balance_flag": true
+      },
+      "expected_output": {
+        "next_target": [
+          8,
+          10
+        ],
+        "action": "HOLD_LOAD",
+        "technique_cue": "Touch wall lightly with fingertip to stabilize balance",
+        "reason": "Motor control stabilization priority"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-013",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 1 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 1
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 1,
+        "eccentric_sec": 2,
+        "target_reps": 9
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-014",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 2 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 2
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 1,
+        "eccentric_sec": 3,
+        "target_reps": 8
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-015",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 3 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 3
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 2,
+        "eccentric_sec": 3,
+        "target_reps": 7
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-016",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 4 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 4
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 2,
+        "eccentric_sec": 4,
+        "target_reps": 6
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-017",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 5 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 5
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 2,
+        "eccentric_sec": 4,
+        "target_reps": 5
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-018",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 6 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 6
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 3,
+        "eccentric_sec": 4,
+        "target_reps": 5
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-019",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 7 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 7
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 3,
+        "eccentric_sec": 4,
+        "target_reps": 5
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-020",
+      "category": "PROGRESSION_CADENCE_PAUSE",
+      "description": "Cadence pause progression stage 8 for high-rep calisthenics",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "base_reps_ceiling": 10,
+        "cadence_level": 8
+      },
+      "expected_output": {
+        "action": "APPLY_TEMPO",
+        "isometric_pause_top_sec": 3,
+        "eccentric_sec": 4,
+        "target_reps": 5
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-021",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance HEAVY_PURPLE achieves 3x10 clean reps advances to lighter band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "HEAVY_PURPLE",
+        "sets_completed": [
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "REDUCE_ASSISTANCE",
+        "next_assistance_rung": "MEDIUM_BLACK",
+        "prescribed_reps": "3x6-8",
+        "reason": "Inverse physics: reducing assistance increases muscular load"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-022",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance HEAVY_PURPLE struggling at bottom of bracket holds band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "HEAVY_PURPLE",
+        "sets_completed": [
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "HOLD_ASSISTANCE",
+        "current_assistance_rung": "HEAVY_PURPLE",
+        "prescribed_reps": "3x6",
+        "reason": "Must achieve clean reps before reducing assistance"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-023",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance HEAVY_PURPLE slippage or poor foot anchor safety warning",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "HEAVY_PURPLE",
+        "anchor_warning_reported": true
+      },
+      "expected_output": {
+        "action": "SAFETY_PROMPT",
+        "warning": "Loop band securely under both feet or use knee loop to prevent band snap",
+        "freeze_progression": false
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-024",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance MEDIUM_BLACK achieves 3x10 clean reps advances to lighter band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "MEDIUM_BLACK",
+        "sets_completed": [
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "REDUCE_ASSISTANCE",
+        "next_assistance_rung": "LIGHT_RED",
+        "prescribed_reps": "3x6-8",
+        "reason": "Inverse physics: reducing assistance increases muscular load"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-025",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance MEDIUM_BLACK struggling at bottom of bracket holds band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "MEDIUM_BLACK",
+        "sets_completed": [
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "HOLD_ASSISTANCE",
+        "current_assistance_rung": "MEDIUM_BLACK",
+        "prescribed_reps": "3x6",
+        "reason": "Must achieve clean reps before reducing assistance"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-026",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance MEDIUM_BLACK slippage or poor foot anchor safety warning",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "MEDIUM_BLACK",
+        "anchor_warning_reported": true
+      },
+      "expected_output": {
+        "action": "SAFETY_PROMPT",
+        "warning": "Loop band securely under both feet or use knee loop to prevent band snap",
+        "freeze_progression": false
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-027",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance LIGHT_RED achieves 3x10 clean reps advances to lighter band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "LIGHT_RED",
+        "sets_completed": [
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "REDUCE_ASSISTANCE",
+        "next_assistance_rung": "EXTRA_LIGHT_YELLOW",
+        "prescribed_reps": "3x6-8",
+        "reason": "Inverse physics: reducing assistance increases muscular load"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-028",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance LIGHT_RED struggling at bottom of bracket holds band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "LIGHT_RED",
+        "sets_completed": [
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "HOLD_ASSISTANCE",
+        "current_assistance_rung": "LIGHT_RED",
+        "prescribed_reps": "3x6",
+        "reason": "Must achieve clean reps before reducing assistance"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-029",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance LIGHT_RED slippage or poor foot anchor safety warning",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "LIGHT_RED",
+        "anchor_warning_reported": true
+      },
+      "expected_output": {
+        "action": "SAFETY_PROMPT",
+        "warning": "Loop band securely under both feet or use knee loop to prevent band snap",
+        "freeze_progression": false
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-030",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance EXTRA_LIGHT_YELLOW achieves 3x10 clean reps advances to lighter band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "EXTRA_LIGHT_YELLOW",
+        "sets_completed": [
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 10,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "REDUCE_ASSISTANCE",
+        "next_assistance_rung": "UNASSISTED_BODYWEIGHT",
+        "prescribed_reps": "3x6-8",
+        "reason": "Inverse physics: reducing assistance increases muscular load"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-031",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance EXTRA_LIGHT_YELLOW struggling at bottom of bracket holds band",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "EXTRA_LIGHT_YELLOW",
+        "sets_completed": [
+          {
+            "reps": 6,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 5,
+            "exertion": "MAX_EFFORT"
+          },
+          {
+            "reps": 4,
+            "exertion": "MAX_EFFORT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "HOLD_ASSISTANCE",
+        "current_assistance_rung": "EXTRA_LIGHT_YELLOW",
+        "prescribed_reps": "3x6",
+        "reason": "Must achieve clean reps before reducing assistance"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-032",
+      "category": "PROGRESSION_BAND_ASSISTANCE",
+      "description": "Band assistance EXTRA_LIGHT_YELLOW slippage or poor foot anchor safety warning",
+      "input_state": {
+        "exercise": "pullup_standard",
+        "current_assistance_rung": "EXTRA_LIGHT_YELLOW",
+        "anchor_warning_reported": true
+      },
+      "expected_output": {
+        "action": "SAFETY_PROMPT",
+        "warning": "Loop band securely under both feet or use knee loop to prevent band snap",
+        "freeze_progression": false
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-033",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on row_band_bent_over level 1 progression logic",
+      "input_state": {
+        "exercise": "row_band_bent_over",
+        "current_resistance_rank": 1,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 2,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-034",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on row_band_bent_over level 2 progression logic",
+      "input_state": {
+        "exercise": "row_band_bent_over",
+        "current_resistance_rank": 2,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 3,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-035",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on row_band_bent_over level 3 progression logic",
+      "input_state": {
+        "exercise": "row_band_bent_over",
+        "current_resistance_rank": 3,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 4,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-036",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on row_band_bent_over level 4 progression logic",
+      "input_state": {
+        "exercise": "row_band_bent_over",
+        "current_resistance_rank": 4,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 5,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-037",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on curl_band_biceps level 1 progression logic",
+      "input_state": {
+        "exercise": "curl_band_biceps",
+        "current_resistance_rank": 1,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 2,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-038",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on curl_band_biceps level 2 progression logic",
+      "input_state": {
+        "exercise": "curl_band_biceps",
+        "current_resistance_rank": 2,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 3,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-039",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on curl_band_biceps level 3 progression logic",
+      "input_state": {
+        "exercise": "curl_band_biceps",
+        "current_resistance_rank": 3,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 4,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-040",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on curl_band_biceps level 4 progression logic",
+      "input_state": {
+        "exercise": "curl_band_biceps",
+        "current_resistance_rank": 4,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 5,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-041",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on pushup_band_resisted level 1 progression logic",
+      "input_state": {
+        "exercise": "pushup_band_resisted",
+        "current_resistance_rank": 1,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 2,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-042",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on pushup_band_resisted level 2 progression logic",
+      "input_state": {
+        "exercise": "pushup_band_resisted",
+        "current_resistance_rank": 2,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 3,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-043",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on pushup_band_resisted level 3 progression logic",
+      "input_state": {
+        "exercise": "pushup_band_resisted",
+        "current_resistance_rank": 3,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 4,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-044",
+      "category": "PROGRESSION_BAND_RESISTANCE",
+      "description": "Band resistance on pushup_band_resisted level 4 progression logic",
+      "input_state": {
+        "exercise": "pushup_band_resisted",
+        "current_resistance_rank": 4,
+        "target_reps": [
+          10,
+          12
+        ],
+        "sets": [
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          },
+          {
+            "reps": 12,
+            "exertion": "TARGET_SWEETSPOT"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "INCREASE_RESISTANCE",
+        "next_resistance_rank": 5,
+        "reset_reps_to": [
+          8,
+          10
+        ],
+        "reason": "Standard double progression: add tension, reset reps"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D17"
+    },
+    {
+      "id": "SCEN-045",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on SHOULDER_ACUTE during pullup_wide: Subacromial impingement twinge during pull-up",
+      "input_state": {
+        "active_exercise": "pullup_wide",
+        "reported_joint_pain": "SHOULDER_ACUTE",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "SHOULDER_ACUTE",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-046",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes pullup_wide in next routine after SHOULDER_ACUTE incident",
+      "input_state": {
+        "avoided_joints": [
+          "SHOULDER_ACUTE"
+        ],
+        "scheduled_routine_raw": [
+          "pullup_wide",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "pullup_wide",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-047",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on ELBOW_MEDIAL during curl_band_biceps: Medial epicondyle tendon pain on curls",
+      "input_state": {
+        "active_exercise": "curl_band_biceps",
+        "reported_joint_pain": "ELBOW_MEDIAL",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "ELBOW_MEDIAL",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-048",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes curl_band_biceps in next routine after ELBOW_MEDIAL incident",
+      "input_state": {
+        "avoided_joints": [
+          "ELBOW_MEDIAL"
+        ],
+        "scheduled_routine_raw": [
+          "curl_band_biceps",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "curl_band_biceps",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-049",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on WRIST_COMPRESSION during pushup_standard: Wrist extension pain during floor push-up",
+      "input_state": {
+        "active_exercise": "pushup_standard",
+        "reported_joint_pain": "WRIST_COMPRESSION",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "WRIST_COMPRESSION",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-050",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes pushup_standard in next routine after WRIST_COMPRESSION incident",
+      "input_state": {
+        "avoided_joints": [
+          "WRIST_COMPRESSION"
+        ],
+        "scheduled_routine_raw": [
+          "pushup_standard",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "pushup_standard",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-051",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on LUMBAR_SHEAR during row_band_bent_over: Lower back strain during bent-over row",
+      "input_state": {
+        "active_exercise": "row_band_bent_over",
+        "reported_joint_pain": "LUMBAR_SHEAR",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "LUMBAR_SHEAR",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-052",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes row_band_bent_over in next routine after LUMBAR_SHEAR incident",
+      "input_state": {
+        "avoided_joints": [
+          "LUMBAR_SHEAR"
+        ],
+        "scheduled_routine_raw": [
+          "row_band_bent_over",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "row_band_bent_over",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-053",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on KNEE_PATELLAR during squat_bodyweight: Patellar tendon pain on deep squat",
+      "input_state": {
+        "active_exercise": "squat_bodyweight",
+        "reported_joint_pain": "KNEE_PATELLAR",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "KNEE_PATELLAR",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-054",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes squat_bodyweight in next routine after KNEE_PATELLAR incident",
+      "input_state": {
+        "avoided_joints": [
+          "KNEE_PATELLAR"
+        ],
+        "scheduled_routine_raw": [
+          "squat_bodyweight",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "squat_bodyweight",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-055",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Pain Stop on SHOULDER_ANTERIOR during pushup_standard: Front deltoid pain on push-up",
+      "input_state": {
+        "active_exercise": "pushup_standard",
+        "reported_joint_pain": "SHOULDER_ANTERIOR",
+        "sets_logged_before_stop": 1
+      },
+      "expected_output": {
+        "action": "TERMINATE_SESSION_SAFELY",
+        "immediate_substitute_offered": false,
+        "preserve_set_logs": true,
+        "quarantine_joint": "SHOULDER_ANTERIOR",
+        "reason": "TRUTH-02: Stop-first policy; zero immediate provocative loading"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-056",
+      "category": "SAFETY_PAIN_STOP_PRECEDENCE",
+      "description": "Quarantine filter excludes pushup_standard in next routine after SHOULDER_ANTERIOR incident",
+      "input_state": {
+        "avoided_joints": [
+          "SHOULDER_ANTERIOR"
+        ],
+        "scheduled_routine_raw": [
+          "pushup_standard",
+          "squat_bodyweight"
+        ]
+      },
+      "expected_output": {
+        "action": "FILTER_PROVOCATIVE_EXERCISES",
+        "excluded_exercise": "pushup_standard",
+        "safe_unloaded_mobility_offered": true,
+        "reason": "Joint quarantine active until explicitly unblocked"
+      },
+      "is_negative_case": true,
+      "policy_tag": "SAFE-01"
+    },
+    {
+      "id": "SCEN-057",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Pull workout logged 20h ago -> blocks Pull today",
+      "input_state": {
+        "target_muscle_group": "LATS_BICEPS",
+        "hours_since_last_session": 20,
+        "candidate_exercise": "pullup_standard"
+      },
+      "expected_output": {
+        "action": "ROTATE_TO_UNFATIGUED_GROUP",
+        "recovery_cleared": false,
+        "reason": "Required recovery window is >= 36h; elapsed is 20h"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-058",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates LATS_BICEPS to alternative",
+      "input_state": {
+        "target_muscle_group": "LATS_BICEPS",
+        "hours_since_last_session": 20,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "PUSH"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-059",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Pull workout logged 44h ago -> clears Pull today",
+      "input_state": {
+        "target_muscle_group": "LATS_BICEPS",
+        "hours_since_last_session": 44,
+        "candidate_exercise": "pullup_standard"
+      },
+      "expected_output": {
+        "action": "ALLOW_SESSION",
+        "recovery_cleared": true,
+        "reason": "Required recovery window is >= 36h; elapsed is 44h"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-060",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates LATS_BICEPS to alternative",
+      "input_state": {
+        "target_muscle_group": "LATS_BICEPS",
+        "hours_since_last_session": 44,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "PULL"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-061",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Push workout logged 18h ago -> blocks Push today",
+      "input_state": {
+        "target_muscle_group": "CHEST_TRICEPS",
+        "hours_since_last_session": 18,
+        "candidate_exercise": "pushup_standard"
+      },
+      "expected_output": {
+        "action": "ROTATE_TO_UNFATIGUED_GROUP",
+        "recovery_cleared": false,
+        "reason": "Required recovery window is >= 36h; elapsed is 18h"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-062",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates CHEST_TRICEPS to alternative",
+      "input_state": {
+        "target_muscle_group": "CHEST_TRICEPS",
+        "hours_since_last_session": 18,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "LEGS"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-063",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Push workout logged 40h ago -> clears Push today",
+      "input_state": {
+        "target_muscle_group": "CHEST_TRICEPS",
+        "hours_since_last_session": 40,
+        "candidate_exercise": "pushup_standard"
+      },
+      "expected_output": {
+        "action": "ALLOW_SESSION",
+        "recovery_cleared": true,
+        "reason": "Required recovery window is >= 36h; elapsed is 40h"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-064",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates CHEST_TRICEPS to alternative",
+      "input_state": {
+        "target_muscle_group": "CHEST_TRICEPS",
+        "hours_since_last_session": 40,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "PULL"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-065",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Legs logged 24h ago -> blocks Legs today",
+      "input_state": {
+        "target_muscle_group": "LEGS_GLUTES",
+        "hours_since_last_session": 24,
+        "candidate_exercise": "squat_bodyweight"
+      },
+      "expected_output": {
+        "action": "ROTATE_TO_UNFATIGUED_GROUP",
+        "recovery_cleared": false,
+        "reason": "Required recovery window is >= 36h; elapsed is 24h"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-066",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates LEGS_GLUTES to alternative",
+      "input_state": {
+        "target_muscle_group": "LEGS_GLUTES",
+        "hours_since_last_session": 24,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "PUSH"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-067",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Legs logged 50h ago -> clears Legs today",
+      "input_state": {
+        "target_muscle_group": "LEGS_GLUTES",
+        "hours_since_last_session": 50,
+        "candidate_exercise": "squat_bodyweight"
+      },
+      "expected_output": {
+        "action": "ALLOW_SESSION",
+        "recovery_cleared": true,
+        "reason": "Required recovery window is >= 36h; elapsed is 50h"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-068",
+      "category": "SCHEDULING_RECOVERY_SPACING",
+      "description": "Recovery conflict resolution rotates LEGS_GLUTES to alternative",
+      "input_state": {
+        "target_muscle_group": "LEGS_GLUTES",
+        "hours_since_last_session": 50,
+        "available_rotations": [
+          "PULL",
+          "PUSH",
+          "LEGS"
+        ]
+      },
+      "expected_output": {
+        "action": "PRESCRIBE_ROTATION",
+        "selected_routine": "PULL"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D10"
+    },
+    {
+      "id": "SCEN-069",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 1 days handling",
+      "input_state": {
+        "days_since_last_workout": 1,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "NORMAL_ROTATION_RESUME",
+        "volume_reduction_percent": 0,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-070",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 3 days handling",
+      "input_state": {
+        "days_since_last_workout": 3,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "NORMAL_ROTATION_RESUME",
+        "volume_reduction_percent": 0,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-071",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 5 days handling",
+      "input_state": {
+        "days_since_last_workout": 5,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "NORMAL_ROTATION_RESUME",
+        "volume_reduction_percent": 0,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-072",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 7 days handling",
+      "input_state": {
+        "days_since_last_workout": 7,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "LIGHT_REENTRY_DELOAD",
+        "volume_reduction_percent": 25,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-073",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 8 days handling",
+      "input_state": {
+        "days_since_last_workout": 8,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "LIGHT_REENTRY_DELOAD",
+        "volume_reduction_percent": 25,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-074",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 10 days handling",
+      "input_state": {
+        "days_since_last_workout": 10,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "LIGHT_REENTRY_DELOAD",
+        "volume_reduction_percent": 25,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-075",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 14 days handling",
+      "input_state": {
+        "days_since_last_workout": 14,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "ADAPTATION_REENTRY_DELOAD",
+        "volume_reduction_percent": 40,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-076",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 18 days handling",
+      "input_state": {
+        "days_since_last_workout": 18,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "ADAPTATION_REENTRY_DELOAD",
+        "volume_reduction_percent": 40,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-077",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 21 days handling",
+      "input_state": {
+        "days_since_last_workout": 21,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "ADAPTATION_REENTRY_DELOAD",
+        "volume_reduction_percent": 40,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-078",
+      "category": "SCHEDULING_ABSENCE_DELOAD",
+      "description": "User absent for 30 days handling",
+      "input_state": {
+        "days_since_last_workout": 30,
+        "planned_sets_baseline": 3
+      },
+      "expected_output": {
+        "action": "ADAPTATION_REENTRY_DELOAD",
+        "volume_reduction_percent": 40,
+        "streak_penalty_applied": false,
+        "guilt_free_messaging": true,
+        "reason": "Absence deload prevents acute muscle damage; zero streak shaming (D11, D15)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D15"
+    },
+    {
+      "id": "SCEN-079",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 1",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 1
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-080",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 2",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 2
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-081",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 3",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 3
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-082",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 4",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 4
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-083",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 5",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 5
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-084",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 6",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 6
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-085",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 7",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 7
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-086",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 8",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 8
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-087",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 9",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 9
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-088",
+      "category": "LITE_MODE_ADAPTATION",
+      "description": "Lite mode adaptation for tired day scenario 10",
+      "input_state": {
+        "is_lite_mode_selected": true,
+        "available_minutes": 15,
+        "standard_routine_sets": 9,
+        "fatigue_level": 10
+      },
+      "expected_output": {
+        "action": "PRUNE_TO_ESSENTIALS",
+        "prescribed_exercises": 2,
+        "prescribed_sets_total": 4,
+        "estimated_duration_minutes": 12,
+        "weekly_consistency_credit": 1.0,
+        "reason": "Lite mode caps at 15m; full weekly credit maintained (D12)"
+      },
+      "is_negative_case": false,
+      "policy_tag": "D12"
+    },
+    {
+      "id": "SCEN-089",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Door anchor band pulldown replaces pullup",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": true,
+          "hasDoorAnchor": true
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "pulldown_door_band",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-090",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Bent-over row replaces pullup",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": true,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "row_band_bent_over",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-091",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Table row replaces band row",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": true,
+          "hasBands": false,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "row_table_inverted",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-092",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Air squat and pushups only",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": false,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "squat_bodyweight",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-093",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Weak hollow door swings inward; disallows door anchor overhead pull and falls back to standing band row (SAFE-01)",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": true,
+          "hasDoorAnchor": true,
+          "doorLatchWeak": true,
+          "doorSwingsTowardUser": true
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "row_band_bent_over",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-094",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Travel with bands only under acute lower back fatigue avoids bent-over row shear and isolates arms (SAFE-01)",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": true,
+          "hasDoorAnchor": false,
+          "lumbarFatigueActive": true
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "curl_band_biceps",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-095",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Band too weak for assistance -> negatives",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": true,
+          "hasBands": true,
+          "bandMaxKg": 5
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "pullup_negative",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-096",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Inverted table row fallback",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": false,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "row_table_inverted",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-097",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Standard floor pushup",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": false,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "pushup_standard",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-098",
+      "category": "EQUIPMENT_ABSENCE_FALLBACKS",
+      "description": "Reverse lunges bodyweight",
+      "input_state": {
+        "inventory": {
+          "hasPullUpBar": false,
+          "hasBands": false,
+          "hasDoorAnchor": false
+        },
+        "requested_movement": "PULL"
+      },
+      "expected_output": {
+        "action": "SUBSTITUTE_ACCORDING_TO_HARDWARE",
+        "prescribed_exercise": "lunge_reverse",
+        "purchase_prompt_shown": false,
+        "reason": "No unowned hardware required (D09)"
+      },
+      "is_negative_case": true,
+      "policy_tag": "D09"
+    },
+    {
+      "id": "SCEN-099",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: MIDNIGHT_CROSSING_LOG",
+      "input_state": {
+        "workout_start": "23:50",
+        "workout_end": "00:15"
+      },
+      "expected_output": {
+        "expected_behavior": "Logs as single continuous session on wake-day cycle",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0100",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: PRE_SHIFT_330PM_WINDOW",
+      "input_state": {
+        "current_time": "15:30",
+        "shift_start": "19:00"
+      },
+      "expected_output": {
+        "expected_behavior": "Prompts Today workout; optimal 1.5h before commute",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0101",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: POST_SHIFT_FATIGUE_PREVENTION",
+      "input_state": {
+        "current_time": "05:00",
+        "shift_end": "04:00"
+      },
+      "expected_output": {
+        "expected_behavior": "Warns against immediate heavy lifting before sleep",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0102",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: SAME_DAY_DUPLICATE_SESSION",
+      "input_state": {
+        "session_count_today": 1,
+        "attempting_session_2": true
+      },
+      "expected_output": {
+        "expected_behavior": "Flags potential overtraining; caps volume at Lite mode",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0103",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: WEEKEND_DAY_OFF_FLEXIBILITY",
+      "input_state": {
+        "is_saturday": true,
+        "wake_time": "14:00"
+      },
+      "expected_output": {
+        "expected_behavior": "Permits full standard routine during day off",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0104",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: DST_TRANSITION_TOLERANCE",
+      "input_state": {
+        "dst_clock_shift_hours": 1
+      },
+      "expected_output": {
+        "expected_behavior": "Calculates duration via UTC elapsed diff, immune to clock jumps",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0105",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: TIMEZONE_CHANGE_TRAVEL",
+      "input_state": {
+        "timezone_offset_change": 2
+      },
+      "expected_output": {
+        "expected_behavior": "Preserves workout log order via immutable UTC timestamps",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    },
+    {
+      "id": "SCEN-0106",
+      "category": "SHIFT_WORK_TIME_BOUNDARIES",
+      "description": "Shift work scenario: MISSED_330PM_REMINDER_TOLERANCE",
+      "input_state": {
+        "reminder_dismissed": true
+      },
+      "expected_output": {
+        "expected_behavior": "Zero guilt prompt; session remains available whenever ready",
+        "shift_work_compliant": true
+      },
+      "is_negative_case": false,
+      "policy_tag": "D07"
+    }
+  ]
+}
