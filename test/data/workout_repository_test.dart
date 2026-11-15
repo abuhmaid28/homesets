@@ -78,6 +78,20 @@ void main() {
             exertion: ExertionRating.targetSweetspot,
             completedAt: startTime.add(const Duration(minutes: 2)),
           ),
+          SetLog(
+            setIndex: 2,
+            exerciseId: 'pullup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: startTime.add(const Duration(minutes: 5)),
+          ),
+          SetLog(
+            setIndex: 3,
+            exerciseId: 'pullup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: startTime.add(const Duration(minutes: 8)),
+          ),
         ],
       );
 
@@ -90,7 +104,7 @@ void main() {
       expect(recovered!.sessionId, equals('session_active_123'));
       expect(recovered.currentExerciseIndex, equals(1));
       expect(recovered.currentSetIndex, equals(2));
-      expect(recovered.completedSets.length, equals(1));
+      expect(recovered.completedSets.length, equals(3));
       expect(recovered.completedSets.first.performedReps, equals(8));
 
       // Finalize completed workout
@@ -155,6 +169,20 @@ void main() {
             performedReps: 8,
             exertion: ExertionRating.targetSweetspot,
             completedAt: now.subtract(const Duration(minutes: 10)),
+          ),
+          SetLog(
+            setIndex: 2,
+            exerciseId: 'pullup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 7)),
+          ),
+          SetLog(
+            setIndex: 3,
+            exerciseId: 'pullup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 4)),
           ),
         ],
         isEmergencyStopped: false,

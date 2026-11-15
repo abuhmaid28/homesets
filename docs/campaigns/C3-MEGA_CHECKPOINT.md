@@ -10,12 +10,12 @@
 
 ---
 
-## 1. Work Package Execution Matrix (C3-MEGA 32 WPs + C3R2 10 WPs: 100% COMPLETE)
+## 1. Work Package Execution Matrix (C3-MEGA 32 WPs + C3R2 10 WPs + F1-F6: 100% COMPLETE)
 
-### C3R2 Residual Correctness Work Packages (WP01–WP10)
+### C3R2 Residual Correctness Work Packages (WP01–WP10 & F1–F6)
 | WP | Description | Status | Verification Reference |
 | :--- | :--- | :--- | :--- |
-| **WP01** | Preflight and failing repro matrix before fixes | **DONE** | `test/domain/c3r2_repro_test.dart` (6 regression tests) |
+| **WP01** | Preflight and failing repro matrix before fixes | **DONE** | `test/domain/c3r2_repro_test.dart` (12 regression tests) |
 | **WP02** | Rotation double-skip & per-group recovery (12h gap) | **DONE** | Per-muscle group recovery window, `getLastWorkoutMuscleGroup()` |
 | **WP03** | Fixture coverage truth & domain engine calls | **DONE** | `evaluateCadencePause`, `evaluateBandAssistance`, `evaluateBandResistance`, `evaluateAbsenceDeload` |
 | **WP04** | Safe legacy/corrupt snapshot recovery & Discard Draft | **DONE** | Fallback `ScheduledSession` synthesis preserving `isLiteMode`; Discard Draft dialog |
@@ -23,22 +23,34 @@
 | **WP06** | Progression applied to real sessions | **DONE** | `getRecentExerciseHistory()` connected to `generateNextSession()` with adapted reps/tempo cues |
 | **WP07** | Real consistency credit (zero-set session exclusion) | **DONE** | `EXISTS (SELECT 1 ... performed_reps > 0 AND is_pain_stopped = 0)` |
 | **WP08** | Dependency & audit honesty | **DONE** | Reconciled `path`, `flutter_lints`, `sqflite_common_ffi` with GOV16 ledger |
-| **WP09** | Verify exact-head CI plus honest APK permissions | **DONE** | Debug vs release manifest audit, APK built, 39 tests passing |
+| **WP09** | Verify exact-head CI plus honest APK permissions | **DONE** | Debug vs release manifest audit, APK built, 45 tests passing |
 | **WP10** | Independent self-review and deliver | **DONE** | Matrix written, PR #12 preserved in Draft |
+| **F1** | Eliminate fabricated fallback exercises on corrupt draft | **DONE** | `getActiveSessionState()` sets `isPlanUnrecoverable=true`, nulls plan; non-destructive cards on Today |
+| **F2** | Defensive item-by-item completed sets JSON parsing | **DONE** | Parses valid set entries individually; skips corrupt elements; sets `hasCorruptSetLogs` flag |
+| **F3** | Per-muscle 36h fatigue window across all recent sessions | **DONE** | `getLastWorkoutTimePerMuscleGroup()`; marks session unviable if all groups fatigued |
+| **F4** | Recoverable Pain Stop on local disk/DB write failure | **DONE** | Detects SQLite write failure; renders amber notice with idempotent "Retry Save" |
+| **F5** | Direct absence deload wiring & latest session progression | **DONE** | Evaluates absence deload directly into planned sets; isolates latest session sets |
+| **F6** | Legitimate workout completion threshold for consistency | **DONE** | Enforces $\ge 2$ sets (Lite) or $\ge 3$ sets (Standard) with reps > 0 for credit |
 
 ---
 
 ## 2. Test Verification Ledger
 
 ### Flutter Test Suite (`flutter test`)
-- **Total Tests:** 39
-- **Passing:** 39 (100%)
+- **Total Tests:** 45
+- **Passing:** 45 (100%)
 - **Failing:** 0
 - **Suites:**
-  1. `test/domain/c3r2_repro_test.dart` (6 tests passing):
+  1. `test/domain/c3r2_repro_test.dart` (12 tests passing):
      - REPRO-01: Rotation double-skip bug resolved (12h gap after A does not skip B)
      - REPRO-02: Zero-set session does not earn consistency credit
-     - REPRO-03: Corrupt active session JSON recovered preserving `isLiteMode`
+     - REPRO-03 / F1: Corrupt active session JSON recovered preserving `isLiteMode` and marked unrecoverable without fabricated exercises
+     - F1: Routine C corrupt snapshot with 0 sets does NOT return viable session with 0 exercises
+     - F2: Corrupt entry in completed_sets_json preserves valid sets and flags hasCorruptSetLogs
+     - F3: Rapid A -> B -> C -> A within 36h identifies all groups fatigued and returns recovery session
+     - F5: Absence deload automatically integrates into planned volume after 8+ days missed
+     - F5: Progression evaluates latest session sets rather than 30-day pooled sets
+     - F6: Partially quit session (<2 sets Lite, <3 sets Standard) does NOT earn weekly credit
      - REPRO-04: Absence deload evaluates 0%, 25%, 40% with zero streak penalty
      - REPRO-05: Cadence pause tempo cue progression applied to generated session
      - REPRO-06: Integrated cycle flow across consecutive days and short/long gaps
@@ -65,10 +77,10 @@
      - Hardware inventory persistence
      - Active session crash recovery state machine and purge on completion
      - Exact original `ScheduledSession` recovery on crash resume (C3R-03)
-     - Weekly consistency credit strictly ignoring emergency stops (C3R-07) and zero-set sessions (C3R2 WP07)
+     - Weekly consistency credit strictly ignoring emergency stops (C3R-07) and zero-set/quit sessions (C3R2 WP07, F6)
      - `getNextRoutineCycle` deterministic A $\to$ B $\to$ C $\to$ A rotation (C3R-02)
      - `getLastWorkoutMuscleGroup` query (C3R2 WP02)
-     - `getRecentExerciseHistory` query (C3R2 WP06)
+     - `getRecentExerciseHistory` query (C3R2 WP06, F5)
   6. `test/widget_test.dart` (1 test passing):
      - First-time user launch into Onboarding flow
   7. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
@@ -84,7 +96,7 @@
 - **Suites:** 4/4 Passed Cleanly:
   1. `validate_fixtures.py`: 14 movements, 106 scenarios (59 positive, 47 negative) valid.
   2. `test_validation.py`: 21 mutation and negative tests passing.
-  3. `validate_links.py`: 50 markdown files checked, 0 broken relative links.
+  3. `validate_links.py`: 51 markdown files checked, 0 broken relative links.
   4. `check_hygiene.py`: Zero prohibited keys, secrets, private photos, or oversized git blobs.
 
 ---
@@ -92,8 +104,8 @@
 ## 3. Binary Build Artifact (WP31 / C3R2 WP09 Verification)
 
 - **Artifact Path:** `build/app/outputs/flutter-apk/app-debug.apk`
-- **File Size:** 209,969,680 bytes (~200.2 MB unstripped debug package)
-- **SHA256:** `9182AA180084D0F208BB1933F8B5DFE98D87F03E4A66790EED5CB387C99CF152`
+- **File Size:** 209,976,387 bytes (~200.2 MB unstripped debug package)
+- **SHA256:** `6508AB4A4D580C6F22E985E2B472FE147FB40E1C394D06675C74C00050C2A561`
 - **Security & Permissions Audit (Truthful Proof per WP08 / C3R2 WP09):**
   - Production manifest (`android/app/src/main/AndroidManifest.xml`) declares **0 permissions**.
   - Merged debug APK contains `android.permission.INTERNET` injected exclusively from `src/debug/AndroidManifest.xml` for local Flutter tooling, hot reload, and DevTools socket communication.

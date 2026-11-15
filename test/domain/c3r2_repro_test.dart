@@ -78,7 +78,7 @@ void main() {
       expect(credit, equals(0),
           reason: 'A session with 0 completed sets must earn 0 consistency credit');
 
-      // Now add a valid session with 1 completed non-pain set (reps > 0)
+      // Now add a valid session with >=3 completed non-pain sets for Standard mode (F6)
       final validSession = CompletedWorkoutSession(
         id: 'session_valid_1',
         scheduledSessionId: 'sched_valid_1',
@@ -93,6 +93,20 @@ void main() {
             exerciseId: 'pushup_standard',
             performedReps: 10,
             exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 20)),
+          ),
+          SetLog(
+            setIndex: 2,
+            exerciseId: 'pushup_standard',
+            performedReps: 10,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 15)),
+          ),
+          SetLog(
+            setIndex: 3,
+            exerciseId: 'pushup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
             completedAt: now.subtract(const Duration(minutes: 10)),
           ),
         ],
@@ -102,10 +116,10 @@ void main() {
 
       final creditAfterValid = await repo.getWeeklyConsistencyCredit();
       expect(creditAfterValid, equals(1),
-          reason: 'A session with at least 1 completed set must earn 1 consistency credit');
+          reason: 'A session with >=3 completed sets in Standard mode must earn 1 consistency credit');
     });
 
-    test('REPRO-03: Corrupt active session JSON must be safely recovered preserving isLiteMode & routine', () async {
+    test('REPRO-03 / F1: Corrupt active session JSON must be safely marked unrecoverable without fabricated exercises', () async {
       final repo = WorkoutRepository();
       final db = await DatabaseHelper.instance.database;
 
@@ -128,10 +142,224 @@ void main() {
       expect(snapshot!.sessionId, equals('corrupt_session_456'));
       expect(snapshot.routineName, equals('Routine B: Upper Push & Triceps'));
       expect(snapshot.isLiteMode, isTrue, reason: 'Lite mode flag must NEVER be mutated to standard on corrupt JSON');
-      expect(snapshot.scheduledSession, isNotNull);
-      expect(snapshot.scheduledSession!.targetMuscleGroup, equals('CHEST_TRICEPS'));
-      expect(snapshot.scheduledSession!.isLiteMode, isTrue);
-      expect(snapshot.scheduledSession!.exercises.isNotEmpty, isTrue);
+      // F1: Plan must be marked unrecoverable; repository must NEVER fabricate exercises
+      expect(snapshot.isPlanUnrecoverable, isTrue);
+      expect(snapshot.scheduledSession, isNull,
+          reason: 'Corrupt plan must result in null scheduledSession rather than fabricated exercises bypassing equipment/joint safety');
+    });
+
+    test('F1: Routine C corrupt snapshot with 0 sets does NOT return viable session with 0 exercises', () async {
+      final repo = WorkoutRepository();
+      final db = await DatabaseHelper.instance.database;
+
+      await db.insert('active_session_state', {
+        'session_id': 'corrupt_routine_c',
+        'routine_name': 'Routine C: Legs & Stability',
+        'routine_name_ar': 'التمرين الثالث',
+        'is_lite_mode': 0,
+        'started_at': DateTime.now().toIso8601String(),
+        'current_exercise_index': 0,
+        'current_set_index': 1,
+        'completed_sets_json': '[]',
+        'active_session_json': '{}', // Empty JSON
+      });
+
+      final snapshot = await repo.getActiveSessionState();
+      expect(snapshot, isNotNull);
+      expect(snapshot!.isPlanUnrecoverable, isTrue);
+      expect(snapshot.scheduledSession, isNull,
+          reason: 'Corrupt Routine C draft must never fabricate exercises or return viable session with 0 exercises');
+    });
+
+    test('F2: Corrupt entry in completed_sets_json preserves valid sets and flags hasCorruptSetLogs', () async {
+      final repo = WorkoutRepository();
+      final db = await DatabaseHelper.instance.database;
+      final now = DateTime.now();
+
+      final mixedSetsJson = '[{"setIndex":1,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"},{"corrupt_invalid_set": true},{"setIndex":2,"exerciseId":"pullup_standard","performedReps":7,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"}]';
+
+      await db.insert('active_session_state', {
+        'session_id': 'partial_corrupt_sets',
+        'routine_name': 'Routine A: Upper Pull & Biceps',
+        'routine_name_ar': 'التمرين الأول',
+        'is_lite_mode': 0,
+        'started_at': now.toIso8601String(),
+        'current_exercise_index': 0,
+        'current_set_index': 2,
+        'completed_sets_json': mixedSetsJson,
+        'active_session_json': '{}',
+      });
+
+      final snapshot = await repo.getActiveSessionState();
+      expect(snapshot, isNotNull);
+      expect(snapshot!.completedSets.length, equals(2),
+          reason: 'Valid sets must be preserved even if an adjacent array element is corrupted');
+      expect(snapshot.hasCorruptSetLogs, isTrue,
+          reason: 'Corrupt set logs must be flagged for safe diagnostic inspection');
+      expect(snapshot.rawCompletedSetsJson, equals(mixedSetsJson),
+          reason: 'Raw JSON bytes must be preserved for non-destructive recovery');
+    });
+
+    test('F3: Rapid A -> B -> C -> A within 36h identifies all groups fatigued and returns recovery session', () {
+      final now = DateTime(2026, 11, 15, 22, 0);
+      final engine = WorkoutEngine(inventory: inventory, profile: profile, now: now);
+
+      // All 3 groups trained recently:
+      // A (LATS_BICEPS) at 30h ago (<36h)
+      // B (CHEST_TRICEPS) at 18h ago (<36h)
+      // C (LEGS_GLUTES) at 6h ago (<36h)
+      final historyMap = {
+        'LATS_BICEPS': now.subtract(const Duration(hours: 30)),
+        'CHEST_TRICEPS': now.subtract(const Duration(hours: 18)),
+        'LEGS_GLUTES': now.subtract(const Duration(hours: 6)),
+      };
+
+      final session = engine.generateNextSession(
+        routineCycle: 'A',
+        lastWorkoutTimePerGroup: historyMap,
+        clock: now,
+      );
+
+      expect(session.isViable, isFalse,
+          reason: 'When all muscle groups are under 36h recovery window, no routine is viable without violating recovery');
+      expect(session.targetMuscleGroup, equals('RECOVERY'));
+      expect(session.unviableReason, contains('recovery'));
+    });
+
+    test('F5: Absence deload automatically integrates into planned volume after 8+ days missed', () {
+      final now = DateTime(2026, 11, 15, 10, 0);
+      final eightDaysAgo = now.subtract(const Duration(days: 8));
+      final engine = WorkoutEngine(inventory: inventory, profile: profile, now: now);
+
+      final session = engine.generateNextSession(
+        routineCycle: 'A',
+        lastWorkoutTime: eightDaysAgo,
+        clock: now,
+      );
+
+      expect(session.absenceDeloadResult, isNotNull,
+          reason: '8-day absence must trigger an AbsenceDeloadResult on the scheduled session');
+      expect(session.absenceDeloadResult!.action, equals(EngineAction.lightReentryDeload));
+      expect(session.absenceDeloadResult!.volumeReductionPercent, equals(25));
+      expect(session.absenceDeloadResult!.streakPenaltyApplied, isFalse);
+      expect(session.absenceDeloadResult!.guiltFreeMessaging, isTrue);
+
+      // With 25% deload on Standard mode, volume is reduced to 2 sets per exercise
+      for (final ex in session.exercises) {
+        expect(ex.sets.length, lessThanOrEqualTo(2),
+            reason: 'Volume must be reduced to <= 2 sets per exercise during light reentry deload');
+      }
+    });
+
+    test('F5: Progression evaluates latest session sets rather than 30-day pooled sets', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Session 1 (20 days ago): Low reps (e.g. 6 reps)
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_old_1',
+        scheduledSessionId: 'sched_old_1',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(days: 20)),
+        endedAt: now.subtract(const Duration(days: 20, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 6, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(days: 20))),
+          SetLog(setIndex: 2, exerciseId: 'pullup_standard', performedReps: 6, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(days: 20))),
+        ],
+      ));
+
+      // Session 2 (2 days ago): User hit ceiling (10 reps with easy reserve!)
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_recent_2',
+        scheduledSessionId: 'sched_recent_2',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(days: 2)),
+        endedAt: now.subtract(const Duration(days: 2, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 10, exertion: ExertionRating.easyReserve, completedAt: now.subtract(const Duration(days: 2))),
+          SetLog(setIndex: 2, exerciseId: 'pullup_standard', performedReps: 10, exertion: ExertionRating.easyReserve, completedAt: now.subtract(const Duration(days: 2))),
+        ],
+      ));
+
+      // Query recent exercise history: MUST contain only the latest session's sets!
+      final history = await repo.getRecentExerciseHistory();
+      expect(history['pullup_standard']!.length, equals(2));
+      expect(history['pullup_standard']!.every((s) => s.performedReps == 10), isTrue,
+          reason: 'History must isolate latest session sets so old sets do not block progression');
+
+      final engine = WorkoutEngine(inventory: inventory, profile: profile);
+      final session = engine.generateNextSession(
+        routineCycle: 'A',
+        exerciseHistory: history,
+      );
+
+      final pullupPlanned = session.exercises.firstWhere((e) => e.exercise.id == 'pullup_standard');
+      expect(pullupPlanned.sets.first.tempoCue, isNotNull,
+          reason: 'Hitting ceiling on recent session must advance progression with cadence pause tempo cue');
+    });
+
+    test('F6: Partially quit session (<2 sets Lite, <3 sets Standard) does NOT earn weekly credit', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Standard session with only 1 set completed out of planned sets -> Incomplete/quit!
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_partial_std',
+        scheduledSessionId: 'sched_p_std',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 5)),
+        endedAt: now,
+        totalDurationSeconds: 300,
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 5, exertion: ExertionRating.targetSweetspot, completedAt: now),
+        ],
+      ));
+
+      final credit1 = await repo.getWeeklyConsistencyCredit();
+      expect(credit1, equals(0),
+          reason: 'Standard session with only 1 set (< 3 threshold) must earn 0 consistency credit');
+
+      // Lite session with only 1 set completed (< 2 threshold) -> Incomplete/quit!
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_partial_lite',
+        scheduledSessionId: 'sched_p_lite',
+        routineName: 'Routine B: Upper Push & Triceps',
+        isLiteMode: true,
+        startedAt: now.subtract(const Duration(minutes: 5)),
+        endedAt: now,
+        totalDurationSeconds: 300,
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'pushup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now),
+        ],
+      ));
+
+      final credit2 = await repo.getWeeklyConsistencyCredit();
+      expect(credit2, equals(0),
+          reason: 'Lite session with only 1 set (< 2 threshold) must earn 0 consistency credit');
+
+      // Valid completed Lite session (>= 2 sets) -> Earns credit!
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_valid_lite',
+        scheduledSessionId: 'sched_v_lite',
+        routineName: 'Routine C: Legs & Stability',
+        isLiteMode: true,
+        startedAt: now.subtract(const Duration(minutes: 15)),
+        endedAt: now,
+        totalDurationSeconds: 900,
+        completedSets: [
+          SetLog(setIndex: 1, exerciseId: 'squat_bodyweight', performedReps: 12, exertion: ExertionRating.targetSweetspot, completedAt: now),
+          SetLog(setIndex: 2, exerciseId: 'lunge_reverse', performedReps: 10, exertion: ExertionRating.targetSweetspot, completedAt: now),
+        ],
+      ));
+
+      final credit3 = await repo.getWeeklyConsistencyCredit();
+      expect(credit3, equals(1),
+          reason: 'Valid Lite session with >= 2 sets must earn 1 consistency credit');
     });
 
     test('REPRO-04: Absence deload evaluates 0%, 25%, 40% volume reduction with zero streak penalty', () {
