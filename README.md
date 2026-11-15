@@ -1,44 +1,38 @@
 # HOMESETS
 
-**Private Android-only, offline-first Flutter home workout app.**
-**Current state:** Planning / foundation governance; no Flutter application or APK yet.
+Private, Android-only, offline-first Flutter home-workout app. No accounts, backend, online AI, public Play Store, paid service or recurring cost.
 
-## Source of truth — read these in order
-1. [Current verified status](docs/PROJECT_STATUS.md)
-2. [Autonomous Delivery Runbook — sequential campaigns](docs/AUTONOMOUS_DELIVERY_RUNBOOK.md)
-3. [Master Execution Plan — C0–C9](docs/MASTER_EXECUTION_PLAN.md)
-3. [Decision Register — GOV06–GOV11](docs/DECISION_REGISTER.md)
-3. [**Approved Antigravity autonomy / merge policy**](docs/AGENT_AUTONOMY_POLICY.md)
-4. [Current roadmap and gates](docs/ROADMAP.md)
-5. [Project rules](PROJECT_RULES.md) and [always-on workspace AGENTS.md](AGENTS.md)
-6. [Original Master Project Initialization Prompt (unchanged)](docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt)
-7. [Product brief](docs/PRODUCT_BRIEF.md)
-8. [Brand concept (preferred only, not final)](docs/BRAND_DIRECTION.md)
-9. [Asset manifest](docs/ASSET_MANIFEST.md)
+**Project stage (2026-11-15): C3-MEGA P0–P4 real Flutter implementation authorized but NOT YET EXECUTED.** No runtime Flutter app, APK or actual Flutter CI success should be claimed until observed.
 
-## Owners / execution
-- **Ahmed:** Product Owner. Approves major brand/product/safety choices and one final integrated phone acceptance. Not responsible for routine GitHub commands/uploads or repeated coding approvals.
-- **ChatGPT:** project management, documentation, architecture/design reviews, governance and independent QA.
-- **Antigravity:** scoped, potentially long autonomous campaigns with automated tests, branches, commits, pushes, PRs, and **ordinary code merges only after the entire exact-head CI / scope / critical quality checklist passes**. No blind merges or scope expansion.
-- **GitHub:** canonical decisions, provenance, code, review records.
-- **Physical phone:** Honor X9e Pro / Android 16 / MagicOS 10, **one final device acceptance** via wirelessly transferred APK (no USB). Earlier performance and behavior are unverified.
+## Canonical source of truth (current first)
+1. [Decision Register — latest approved GOV12–GOV19](docs/DECISION_REGISTER.md)
+2. [C3-MEGA approved launch & continuity brief](docs/campaigns/C3_APPROVED_LAUNCH_BRIEF.md)
+3. [C3-MEGA Issue #11 — 32 authorized work packages](https://github.com/abuhmaid28/homesets/issues/11)
+4. [Current Project Status](docs/PROJECT_STATUS.md)
+5. [Agent Autonomy and guarded merge policy](docs/AGENT_AUTONOMY_POLICY.md)
+6. [Project Rules](PROJECT_RULES.md) and [Agent workspace rules](AGENTS.md)
+7. [Master Execution Plan](docs/MASTER_EXECUTION_PLAN.md), [Autonomous Delivery Runbook](docs/AUTONOMOUS_DELIVERY_RUNBOOK.md), [Roadmap](docs/ROADMAP.md)
+8. [Original Master Project Initialization Prompt — immutable](docs/MASTER_PROJECT_INITIALIZATION_PROMPT.txt)
+9. [Brand Direction historical/preferred reference](docs/BRAND_DIRECTION.md) and [Asset Manifest](docs/ASSET_MANIFEST.md)
 
-## Product boundaries (unchanged)
-Offline Android APK, no accounts/backend/cloud/recurring spend; 15–30 min muscle building with pull-up bar and resistance bands, conservative progression and recovery, private photos and strength/weight progress; Arabic RTL first with English option.
+**Conflict resolution:** Historical entries that say C1/C2/C3 are not approved or Flutter coding is forbidden are **superseded within the explicit scope** by newer owner-approved GOV12–GOV19 (2026-11-15). This does NOT approve extra features, unknown dependencies, final logo/icon, signing keys or full release.
 
-## Brand status
-Working name **HOMESETS**; preferred Pull-Up Motion neon-lime-on-charcoal logo, `HOME` white and `SETS` lime. **This is preferred, not final approved**. Exact original image is **not currently committed** under `assets/brand/reference/homesets-pullup-preferred.png`; do not replace it with a similar-looking image.
+## Owner / execution split
+- **Ahmed (Product Owner):** approved Hybrid B Kinetic Depth warm charcoal + Performance Lime with Direction A tabular timers; bar+bands+bodyweight only with unverified anchor/furniture/neutral-grip capabilities disabled; pain STOP first; offline private data/manual backup later; conditional dependency allowlist; **C3 P0–P4 autonomous implementation and gated merges**. No routine Git commands or repeated approvals. Human Honor testing occurs once at final C9.
+- **ChatGPT:** project lead, documentation, GitHub governance and independent review.
+- **Antigravity:** scoped real Flutter coding, checks, test fixes, checkpoints, commits/PRs and normal guarded merge after actual **Flutter** exact-head CI; obey all stop conditions.
 
-## Current project task
-[G0-CAMPAIGN-01 — Autonomous Workspace/Foundation Verification](https://github.com/abuhmaid28/homesets/issues/2) is prepared, **not executed**. Verify exact Git origin, active project rules and permissions, and remaining blockers before starting app implementation.
+## Current real evidence
+- [Design Draft PR #5](https://github.com/abuhmaid28/homesets/pull/5): proposed A/B screens; owner has now chosen Hybrid B+A. Remains Draft/unmerged; use approved parts selectively.
+- [Architecture Draft PR #9](https://github.com/abuhmaid28/homesets/pull/9): domain spec, 106 fixture vectors and Foundation Python CI; corrected decision document committed at head `fc5187d7`, [CI SUCCESS on that head](https://github.com/abuhmaid28/homesets/actions/runs/43663431371). Still Draft/unmerged; **this is not real Flutter CI**.
+- [GOV12–GOV19](docs/DECISION_REGISTER.md) owner approval now permits actual C3 implementation without another owner gate for the same scope.
+- The exact user-selected preferred Pull-Up logo PNG is not in the GitHub repo (Issue #1); use a temporary neutral wordmark only, not a similar generated logo.
+- No app build/APK or phone test yet; Honor X9e Pro Android 16/MagicOS 10 behavior remains unverified.
 
-## Important technical gate
-At present there is **no Flutter application and no established GitHub Actions CI**. The owner's approval for guarded automatic merges **does not permit a runtime-code merge until the required CI actually exists and passes**. No owner phone test is required at each intermediate milestone; full phone acceptance is required at the end.
+## Scope wall
+**C3:** Android Flutter shell, approved design/AR+EN RTL, deterministic safe workout engine, offline profile/session/set persistence, Onboarding, Today, Workout, Rest, Lite and Summary with actual unit/widget/regression tests and `flutter analyze`/`flutter test`/`flutter build apk`, then proper Flutter PR CI.
 
-## Active next assignment
-- [C1-R extended campaign](https://github.com/abuhmaid28/homesets/issues/6) is **prepared but not run**; it expands the fix pass on the same Draft PR #5 into a substantive autonomous responsive design / visual QA sprint.
+**Not C3:** P5 progress photos/charts, P6 notifications/backup, P7/P8 final signing, Play Store, new training goals, new paid/cloud services, final device acceptance. No destructive operations, unapproved dependencies or blind merges.
 
-**Queue note:** Ahmed already sent the short C1 correction prompt. Do not start a competing agent run; extended C1-R Issue #6 begins only after verifying the updated PR #5 head. GitHub does not auto-start local Antigravity.
-
-## Next major autonomous assignment (prepared)
-[C2-MEGA Issue #8 — 28 engineering/quality work packages](https://github.com/abuhmaid28/homesets/issues/8). C1-V2 delivered but Draft PR #5 remains pending one owner visual/product gate. The next campaign can proceed **only within no-production-code architecture/specification/foundation CI scope** while that gate is open; do not assume Flutter code/dependency approval.
+## Agent launch
+Launch only in the verified HOMESETS Antigravity local workspace; read the [C3 launch brief](docs/campaigns/C3_APPROVED_LAUNCH_BRIEF.md) and [Issue #11](https://github.com/abuhmaid28/homesets/issues/11). These GitHub files **do not themselves start the local agent**. Checkpoint frequently so an interrupted session can resume without losing work.
