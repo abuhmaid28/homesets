@@ -26,13 +26,13 @@
 | | **WP10** | Safety & Pain STOP Semantics | **COMPLETE** | `docs/domain/SAFETY_INVARIANTS.md` |
 | | **WP11** | Lite Mode & Time-Feasibility Design | **COMPLETE** | `docs/domain/LITE_MODE_SPEC.md` |
 | | **WP12** | Comprehensive Test Vector Inventory (106 Scenarios) | **COMPLETE** | `docs/domain/fixtures/engine_scenarios.json` |
-| **Phase C** | **WP13** | Local DB Logical Schema & Migrations | *QUEUED* | `docs/architecture/LOCAL_DATABASE_SPEC.md` |
-| | **WP14** | Photo Privacy & Android OS Exposure Audit | *QUEUED* | `docs/architecture/PHOTO_PRIVACY_AUDIT.md` |
-| | **WP15** | Backup File Format & Zip-Slip Defense | *QUEUED* | `docs/architecture/BACKUP_FORMAT_SPEC.md` |
-| | **WP16** | Failure-Recoverable Restore Design | *QUEUED* | `docs/architecture/RESTORE_FAILURE_MODEL.md` |
-| | **WP17** | Android Notifications & Inexact Alarms | *QUEUED* | `docs/architecture/ANDROID_NOTIFICATIONS_GUIDE.md` |
-| | **WP18** | Android Signing & Wireless APK Upgrade Path | *QUEUED* | `docs/architecture/SIGNING_AND_UPGRADE_PATH.md` |
-| | **WP19** | Data Security Threat Model | *QUEUED* | `docs/architecture/DATA_SECURITY_THREAT_MODEL.md` |
+| **Phase C** | **WP13** | Local DB Logical Schema & Migrations | **COMPLETE** | `docs/architecture/LOCAL_DATABASE_SPEC.md` |
+| | **WP14** | Photo Privacy & Android OS Exposure Audit | **COMPLETE** | `docs/architecture/PHOTO_PRIVACY_AUDIT.md` |
+| | **WP15** | Backup File Format & Zip-Slip Defense | **COMPLETE** | `docs/architecture/BACKUP_FORMAT_SPEC.md` |
+| | **WP16** | Failure-Recoverable Restore Design | **COMPLETE** | `docs/architecture/RESTORE_FAILURE_MODEL.md` |
+| | **WP17** | Android Notifications & Inexact Alarms | **COMPLETE** | `docs/architecture/ANDROID_NOTIFICATIONS_GUIDE.md` |
+| | **WP18** | Android Signing & Wireless APK Upgrade Path | **COMPLETE** | `docs/architecture/SIGNING_AND_UPGRADE_PATH.md` |
+| | **WP19** | Data Security Threat Model | **COMPLETE** | `docs/architecture/DATA_SECURITY_THREAT_MODEL.md` |
 | **Phase D** | **WP20** | Reproducible Documentation & Fixture Quality Tooling | *QUEUED* | `tools/quality/` (Python stdlib scripts) |
 | | **WP21** | Foundational GitHub Actions Workflow | *QUEUED* | `.github/workflows/foundation.yml` |
 | | **WP22** | Exact-Head CI Run & Verification Evidence | *QUEUED* | Captured GitHub Actions run logs |
@@ -48,5 +48,6 @@
 ## 2. Checkpoint Verification Summary
 
 - **Phase A Completed & Pushed:** Commit `37f5897`.
-- **Phase B Completed:** WP06–WP12 complete with 106 validated scenarios generated.
+- **Phase B Completed & Pushed:** Commit `57479d0` (106 validated scenarios generated).
+- **Phase C Completed:** WP13–WP19 complete covering SQLite DDL, photo privacy, Zip-Slip defense, crash consistency, notifications, signing, and threat model.
 - **Policy Compliance:** Zero production Flutter files in `lib/` or `test/`. Zero unapproved packages in `pubspec.yaml`.
