@@ -11,11 +11,19 @@ import '../../l10n/app_localizations.dart';
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onCompleted;
   final WorkoutRepository repository;
+  final UserProfile? initialProfile;
+  final EquipmentInventory? initialInventory;
+  final bool isEditing;
+  final VoidCallback? onCancel;
 
   const OnboardingScreen({
     super.key,
     required this.onCompleted,
     required this.repository,
+    this.initialProfile,
+    this.initialInventory,
+    this.isEditing = false,
+    this.onCancel,
   });
 
   @override
@@ -35,10 +43,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   bool _isSaving = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialInventory != null) {
+      _hasPullUpBar = widget.initialInventory!.hasPullUpBar;
+      _hasBands = widget.initialInventory!.hasBands;
+      _hasDoorAnchor = widget.initialInventory!.hasDoorAnchor;
+      _hasSturdyTable = widget.initialInventory!.hasSturdyTable;
+      _hasParallelGrip = widget.initialInventory!.hasParallelGrip;
+    }
+    if (widget.initialProfile != null) {
+      _avoidedJoints.addAll(widget.initialProfile!.avoidedJoints);
+    }
+  }
+
   Future<void> _handleSave() async {
     setState(() => _isSaving = true);
 
-    const profile = UserProfile(
+    final baseProfile = widget.initialProfile ?? const UserProfile(
       id: 'primary_user',
       goal: 'MUSCLE_BUILDING',
       wakeTimeMinutes: 900, // 3:00 PM
@@ -46,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       targetWorkoutsPerWeek: 4,
     );
 
-    final updatedProfile = profile.copyWith(
+    final updatedProfile = baseProfile.copyWith(
       avoidedJoints: _avoidedJoints.toList(),
     );
 
@@ -68,20 +91,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
-      appBar: const HomesetsHeader(showTagline: true),
+      appBar: HomesetsHeader(
+        showTagline: !widget.isEditing,
+        actions: [
+          if (widget.onCancel != null)
+            IconButton(
+              icon: const Icon(Icons.close, color: HomesetsColors.textSecondary),
+              onPressed: widget.onCancel,
+            ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
             Text(
-              l10n.onboardingTitle,
+              widget.isEditing
+                  ? (isArabic ? 'تعديل الأدوات والمفاصل' : 'Edit Equipment & Joints')
+                  : l10n.onboardingTitle,
               style: HomesetsTypography.heading1,
             ),
             const SizedBox(height: 6),
             Text(
-              l10n.onboardingSubtitle,
+              widget.isEditing
+                  ? (isArabic
+                      ? 'حدّث الأدوات المتاحة أو المفاصل التي تتجنب إجهادها.'
+                      : 'Update available hardware or areas to avoid in your program.')
+                  : l10n.onboardingSubtitle,
               style: HomesetsTypography.bodyMedium,
             ),
             const SizedBox(height: 24),

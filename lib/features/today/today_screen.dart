@@ -48,16 +48,17 @@ class _TodayScreenState extends State<TodayScreen> {
     final activeSession = await widget.repository.getActiveSessionState();
     final credit = await widget.repository.getWeeklyConsistencyCredit();
     final lastWorkoutTime = await widget.repository.getLastWorkoutTime();
+    final nextCycle = await widget.repository.getNextRoutineCycle();
 
     if (profile != null) {
       final engine = WorkoutEngine(inventory: inventory, profile: profile);
       _standardSession = engine.generateNextSession(
-        routineCycle: 'A',
+        routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
         isLiteMode: false,
       );
       _liteSession = engine.generateNextSession(
-        routineCycle: 'A',
+        routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
         isLiteMode: true,
       );
@@ -171,7 +172,9 @@ class _TodayScreenState extends State<TodayScreen> {
                         label: isArabic ? 'استئناف التمرين' : 'Resume Workout',
                         icon: Icons.play_arrow,
                         onPressed: () {
-                          if (_standardSession != null) {
+                          if (_activeSession?.scheduledSession != null) {
+                            widget.onStartWorkout(_activeSession!.scheduledSession!, true);
+                          } else if (_standardSession != null) {
                             widget.onStartWorkout(_standardSession!, true);
                           }
                         },
@@ -186,79 +189,118 @@ class _TodayScreenState extends State<TodayScreen> {
               if (_standardSession != null) ...[
                 Text(l10n.todayTitle, style: HomesetsTypography.heading1),
                 const SizedBox(height: 12),
-                TactileCard(
-                  isHighlighted: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: HomesetsColors.surfaceElevated,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: HomesetsColors.borderSubtle),
-                            ),
-                            child: Text(
-                              '~${_standardSession!.estimatedDurationMinutes} MIN',
-                              style: HomesetsTypography.tabularBadge,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: HomesetsColors.lime.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              l10n.readyToTrain,
-                              style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.lime),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        isArabic ? _standardSession!.routineNameAr : _standardSession!.routineName,
-                        style: HomesetsTypography.heading2,
-                      ),
-                      const SizedBox(height: 16),
-                      // Exercise item previews
-                      ..._standardSession!.exercises.map((pEx) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
+                if (!_standardSession!.isViable) ...[
+                  TactileCard(
+                    borderColor: HomesetsColors.orange,
+                    isHighlighted: true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            const Icon(Icons.check_circle_outline, size: 18, color: HomesetsColors.lime),
-                            const SizedBox(width: 10),
+                            const Icon(Icons.health_and_safety_outlined, color: HomesetsColors.orange, size: 24),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                isArabic ? pEx.exercise.nameAr : pEx.exercise.nameEn,
-                                style: HomesetsTypography.bodyMedium.copyWith(color: HomesetsColors.textPrimary),
+                                isArabic ? 'لا توجد تمارين متوافقة بأمان' : 'No Safe Exercises Available',
+                                style: HomesetsTypography.heading3.copyWith(color: HomesetsColors.orange),
                               ),
-                            ),
-                            Text(
-                              '${pEx.sets.length}x${pEx.sets.first.targetMinReps}-${pEx.sets.first.targetMaxReps}',
-                              style: HomesetsTypography.tabularBadge.copyWith(color: HomesetsColors.textSecondary),
                             ),
                           ],
                         ),
-                      )),
-                      const SizedBox(height: 20),
-                      KineticButton(
-                        label: l10n.startWorkout,
-                        icon: Icons.play_arrow,
-                        onPressed: () => widget.onStartWorkout(_standardSession!, false),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Text(
+                          isArabic
+                              ? (_standardSession!.unviableReasonAr ?? 'جميع تمارين هذه الجولة تتطلب مفاصل مستبعدة أو أدوات غير متوفرة. سلامتك أولاً.')
+                              : (_standardSession!.unviableReason ?? 'All movements for this routine require unavailable equipment or avoided joints. Your joint health comes first.'),
+                          style: HomesetsTypography.bodyMedium,
+                        ),
+                        const SizedBox(height: 16),
+                        KineticButton(
+                          label: isArabic ? 'تعديل الأدوات والمفاصل' : 'Adjust Equipment & Joints',
+                          icon: Icons.tune,
+                          style: KineticButtonStyle.secondary,
+                          onPressed: widget.onOpenSettings,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
+                ] else ...[
+                  TactileCard(
+                    isHighlighted: true,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: HomesetsColors.surfaceElevated,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: HomesetsColors.borderSubtle),
+                              ),
+                              child: Text(
+                                '~${_standardSession!.estimatedDurationMinutes} MIN',
+                                style: HomesetsTypography.tabularBadge,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: HomesetsColors.lime.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                l10n.readyToTrain,
+                                style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.lime),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          isArabic ? _standardSession!.routineNameAr : _standardSession!.routineName,
+                          style: HomesetsTypography.heading2,
+                        ),
+                        const SizedBox(height: 16),
+                        // Exercise item previews
+                        ..._standardSession!.exercises.map((pEx) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_outline, size: 18, color: HomesetsColors.lime),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  isArabic ? pEx.exercise.nameAr : pEx.exercise.nameEn,
+                                  style: HomesetsTypography.bodyMedium.copyWith(color: HomesetsColors.textPrimary),
+                                ),
+                              ),
+                              Text(
+                                '${pEx.sets.length}x${pEx.sets.first.targetMinReps}-${pEx.sets.first.targetMaxReps}',
+                                style: HomesetsTypography.tabularBadge.copyWith(color: HomesetsColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        )),
+                        const SizedBox(height: 20),
+                        KineticButton(
+                          label: l10n.startWorkout,
+                          icon: Icons.play_arrow,
+                          onPressed: () => widget.onStartWorkout(_standardSession!, false),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ],
 
               // 4. Adaptive Lite Mode Card (D12, D15, WP28)
-              if (_liteSession != null) ...[
+              if (_liteSession != null && _liteSession!.isViable) ...[
                 TactileCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -28,6 +28,9 @@ class HomesetsApp extends StatefulWidget {
 class _HomesetsAppState extends State<HomesetsApp> {
   bool _isLoading = true;
   bool _hasProfile = false;
+  bool _isEditingSettings = false;
+  UserProfile? _currentProfile;
+  EquipmentInventory? _currentInventory;
   ScheduledSession? _activeSession;
   bool _isResume = false;
   CompletedWorkoutSession? _completedSession;
@@ -40,9 +43,12 @@ class _HomesetsAppState extends State<HomesetsApp> {
 
   Future<void> _checkInitialState() async {
     final profile = await widget.repository.getUserProfile();
+    final inventory = await widget.repository.getEquipmentInventory();
     if (!mounted) return;
     setState(() {
       _hasProfile = profile != null;
+      _currentProfile = profile;
+      _currentInventory = inventory;
       _isLoading = false;
     });
   }
@@ -50,6 +56,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
   void _onOnboardingComplete() {
     setState(() {
       _hasProfile = true;
+      _isEditingSettings = false;
     });
   }
 
@@ -72,6 +79,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
     setState(() {
       _activeSession = null;
       _completedSession = null;
+      _isEditingSettings = false;
     });
   }
 
@@ -105,9 +113,13 @@ class _HomesetsAppState extends State<HomesetsApp> {
       );
     }
 
-    if (!_hasProfile) {
+    if (!_hasProfile || _isEditingSettings) {
       return OnboardingScreen(
         repository: widget.repository,
+        initialProfile: _currentProfile,
+        initialInventory: _currentInventory,
+        isEditing: _isEditingSettings,
+        onCancel: _isEditingSettings ? () => setState(() => _isEditingSettings = false) : null,
         onCompleted: _onOnboardingComplete,
       );
     }
@@ -132,9 +144,14 @@ class _HomesetsAppState extends State<HomesetsApp> {
     return TodayScreen(
       repository: widget.repository,
       onStartWorkout: _onStartWorkout,
-      onOpenSettings: () {
-        // Toggle back to onboarding to adjust equipment/joints if desired
-        setState(() => _hasProfile = false);
+      onOpenSettings: () async {
+        final profile = await widget.repository.getUserProfile();
+        final inventory = await widget.repository.getEquipmentInventory();
+        setState(() {
+          _currentProfile = profile;
+          _currentInventory = inventory;
+          _isEditingSettings = true;
+        });
       },
     );
   }

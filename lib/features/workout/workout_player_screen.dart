@@ -36,6 +36,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   final List<SetLog> _completedSets = [];
   late DateTime _sessionStartTime;
 
+  bool _isSessionFinished = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,20 +48,39 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   Future<void> _initializeOrRestore() async {
     if (widget.isResume) {
       final snapshot = await widget.repository.getActiveSessionState();
+      if (!mounted) return;
       if (snapshot != null) {
         setState(() {
-          _exerciseIndex = snapshot.currentExerciseIndex;
-          _setIndex = snapshot.currentSetIndex;
+          _exerciseIndex = snapshot.currentExerciseIndex.clamp(0, widget.session.exercises.length - 1);
+          final maxSets = widget.session.exercises[_exerciseIndex].sets.length;
+          _setIndex = snapshot.currentSetIndex.clamp(1, maxSets);
           _completedSets.addAll(snapshot.completedSets);
           _sessionStartTime = snapshot.startedAt;
         });
       }
+    } else {
+      // Save initial active session state snapshot (WP22)
+      await widget.repository.saveActiveSessionState(ActiveSessionSnapshot(
+        sessionId: widget.session.id,
+        routineName: widget.session.routineName,
+        routineNameAr: widget.session.routineNameAr,
+        isLiteMode: widget.session.isLiteMode,
+        startedAt: _sessionStartTime,
+        currentExerciseIndex: 0,
+        currentSetIndex: 1,
+        completedSets: const [],
+        scheduledSession: widget.session,
+      ));
     }
 
-    final currentEx = widget.session.exercises[_exerciseIndex];
-    setState(() {
-      _currentReps = currentEx.sets.first.targetMinReps;
-    });
+    if (!mounted) return;
+    if (_exerciseIndex < widget.session.exercises.length) {
+      final currentEx = widget.session.exercises[_exerciseIndex];
+      final safeSetIndex = (_setIndex - 1).clamp(0, currentEx.sets.length - 1);
+      setState(() {
+        _currentReps = currentEx.sets[safeSetIndex].targetMinReps;
+      });
+    }
   }
 
   PlannedExercise get _currentPlannedExercise => widget.session.exercises[_exerciseIndex];
@@ -80,16 +101,24 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       _completedSets.add(log);
     });
 
-    // Immediate write to active session snapshot (WP21 crash recovery)
+    // Compute boundary transitions for next set / next exercise
+    final isLastSetOfExercise = _setIndex >= _totalSetsInExercise;
+    final nextExerciseIndex = isLastSetOfExercise
+        ? (_exerciseIndex + 1 < widget.session.exercises.length ? _exerciseIndex + 1 : _exerciseIndex)
+        : _exerciseIndex;
+    final nextSetIndex = isLastSetOfExercise ? 1 : _setIndex + 1;
+
+    // Immediate write to active session snapshot (WP21, WP04 crash recovery)
     final snapshot = ActiveSessionSnapshot(
       sessionId: widget.session.id,
       routineName: widget.session.routineName,
       routineNameAr: widget.session.routineNameAr,
       isLiteMode: widget.session.isLiteMode,
       startedAt: _sessionStartTime,
-      currentExerciseIndex: _exerciseIndex,
-      currentSetIndex: _setIndex + 1,
+      currentExerciseIndex: nextExerciseIndex,
+      currentSetIndex: nextSetIndex,
       completedSets: List.unmodifiable(_completedSets),
+      scheduledSession: widget.session,
     );
     await widget.repository.saveActiveSessionState(snapshot);
   }
@@ -99,6 +128,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       // Advance to next set in current exercise
       setState(() {
         _setIndex++;
+        final safeSetIndex = (_setIndex - 1).clamp(0, _currentPlannedExercise.sets.length - 1);
+        _currentReps = _currentPlannedExercise.sets[safeSetIndex].targetMinReps;
       });
     } else if (_exerciseIndex < widget.session.exercises.length - 1) {
       // Advance to next exercise
@@ -114,6 +145,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   }
 
   Future<void> _finalizeSession({required bool isEmergency, String? reason}) async {
+    _isSessionFinished = true;
     final now = DateTime.now();
     final durationSeconds = now.difference(_sessionStartTime).inSeconds;
 
@@ -134,9 +166,53 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     widget.onFinishSession(completedSession);
   }
 
-  void _triggerPainStop() {
+  Future<void> _triggerPainStop() async {
+    if (_isSessionFinished) return;
+    _isSessionFinished = true;
+
+    final now = DateTime.now();
+    // 1. Immediately log the emergency pain stop set
+    final painLog = SetLog(
+      setIndex: _setIndex,
+      exerciseId: _exercise.id,
+      performedReps: _currentReps,
+      exertion: ExertionRating.painStopped,
+      isPainStopped: true,
+      painNote: 'Acute joint pain stop (SAFE-01, GOV14)',
+      completedAt: now,
+    );
+    _completedSets.add(painLog);
+
+    // 2. Quarantine joint(s) in the user profile durably (C3R-04)
+    final profile = await widget.repository.getUserProfile();
+    if (profile != null && _exercise.jointStressTags.isNotEmpty) {
+      final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
+        ..addAll(_exercise.jointStressTags);
+      await widget.repository.saveUserProfile(
+        profile.copyWith(avoidedJoints: updatedAvoided.toList()),
+      );
+    }
+
+    // 3. Immediately finalize and persist session as emergency stopped
+    final durationSeconds = now.difference(_sessionStartTime).inSeconds;
+    final completedSession = CompletedWorkoutSession(
+      id: widget.session.id,
+      scheduledSessionId: widget.session.id,
+      routineName: widget.session.routineName,
+      isLiteMode: widget.session.isLiteMode,
+      startedAt: _sessionStartTime,
+      endedAt: now,
+      totalDurationSeconds: durationSeconds > 0 ? durationSeconds : 1,
+      completedSets: List.unmodifiable(_completedSets),
+      isEmergencyStopped: true,
+      emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
+    );
+    await widget.repository.saveCompletedSession(completedSession);
+
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    showDialog(
+    // 4. Show the post-freeze informational safety dialog
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -144,7 +220,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: HomesetsColors.orange, size: 28),
+            const Icon(Icons.shield, color: HomesetsColors.orange, size: 28),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -159,34 +235,14 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
           style: HomesetsTypography.bodyMedium,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              l10n.painStopCancel,
-              style: HomesetsTypography.buttonText.copyWith(color: HomesetsColors.textSecondary),
-            ),
-          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: HomesetsColors.orange,
               foregroundColor: Colors.white,
             ),
-            onPressed: () async {
+            onPressed: () {
               Navigator.of(ctx).pop();
-              // Log the pain stop set
-              _completedSets.add(SetLog(
-                setIndex: _setIndex,
-                exerciseId: _exercise.id,
-                performedReps: _currentReps,
-                exertion: ExertionRating.painStopped,
-                isPainStopped: true,
-                painNote: 'Joint discomfort report',
-                completedAt: DateTime.now(),
-              ));
-              await _finalizeSession(
-                isEmergency: true,
-                reason: 'Acute joint pain stop (SAFE-01)',
-              );
+              widget.onFinishSession(completedSession);
             },
             child: Text(l10n.painStopConfirm),
           ),

@@ -160,6 +160,48 @@ class Exercise {
     required this.cuesAr,
     required this.cuesEn,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'slug': slug,
+    'nameAr': nameAr,
+    'nameEn': nameEn,
+    'pattern': pattern.name,
+    'primaryMuscles': primaryMuscles,
+    'secondaryMuscles': secondaryMuscles,
+    'jointStressTags': jointStressTags.map((t) => t.name).toList(),
+    'requiredEquipment': requiredEquipment,
+    'optionalAccessories': optionalAccessories,
+    'supportsBandAssistance': supportsBandAssistance,
+    'supportsBandResistance': supportsBandResistance,
+    'unprovocativeAlternativeId': unprovocativeAlternativeId,
+    'skillPrerequisiteReps': skillPrerequisiteReps,
+    'cuesAr': cuesAr,
+    'cuesEn': cuesEn,
+  };
+
+  factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
+    id: json['id'] as String,
+    slug: json['slug'] as String,
+    nameAr: json['nameAr'] as String,
+    nameEn: json['nameEn'] as String,
+    pattern: MovementPattern.values.byName(json['pattern'] as String),
+    primaryMuscles: List<String>.from(json['primaryMuscles'] as List),
+    secondaryMuscles: List<String>.from(json['secondaryMuscles'] as List),
+    jointStressTags: (json['jointStressTags'] as List)
+        .map((t) => JointImpactTag.values.byName(t as String))
+        .toList(),
+    requiredEquipment: List<String>.from(json['requiredEquipment'] as List),
+    optionalAccessories: json['optionalAccessories'] != null
+        ? List<String>.from(json['optionalAccessories'] as List)
+        : const [],
+    supportsBandAssistance: json['supportsBandAssistance'] as bool,
+    supportsBandResistance: json['supportsBandResistance'] as bool,
+    unprovocativeAlternativeId: json['unprovocativeAlternativeId'] as String?,
+    skillPrerequisiteReps: (json['skillPrerequisiteReps'] as num).toInt(),
+    cuesAr: json['cuesAr'] as String,
+    cuesEn: json['cuesEn'] as String,
+  );
 }
 
 class PlannedSet {
@@ -178,6 +220,24 @@ class PlannedSet {
     this.tempoCue,
     this.targetRestSeconds = 90,
   });
+
+  Map<String, dynamic> toJson() => {
+    'setIndex': setIndex,
+    'targetMinReps': targetMinReps,
+    'targetMaxReps': targetMaxReps,
+    'prescribedBandRung': prescribedBandRung,
+    'tempoCue': tempoCue,
+    'targetRestSeconds': targetRestSeconds,
+  };
+
+  factory PlannedSet.fromJson(Map<String, dynamic> json) => PlannedSet(
+    setIndex: (json['setIndex'] as num).toInt(),
+    targetMinReps: (json['targetMinReps'] as num).toInt(),
+    targetMaxReps: (json['targetMaxReps'] as num).toInt(),
+    prescribedBandRung: json['prescribedBandRung'] as String?,
+    tempoCue: json['tempoCue'] as String?,
+    targetRestSeconds: (json['targetRestSeconds'] as num?)?.toInt() ?? 90,
+  );
 }
 
 class PlannedExercise {
@@ -188,6 +248,18 @@ class PlannedExercise {
     required this.exercise,
     required this.sets,
   });
+
+  Map<String, dynamic> toJson() => {
+    'exercise': exercise.toJson(),
+    'sets': sets.map((s) => s.toJson()).toList(),
+  };
+
+  factory PlannedExercise.fromJson(Map<String, dynamic> json) => PlannedExercise(
+    exercise: Exercise.fromJson(json['exercise'] as Map<String, dynamic>),
+    sets: (json['sets'] as List)
+        .map((s) => PlannedSet.fromJson(s as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class ScheduledSession {
@@ -198,6 +270,9 @@ class ScheduledSession {
   final bool isLiteMode;
   final int estimatedDurationMinutes;
   final String targetMuscleGroup;
+  final bool isViable;
+  final String? unviableReason;
+  final String? unviableReasonAr;
 
   const ScheduledSession({
     required this.id,
@@ -207,7 +282,61 @@ class ScheduledSession {
     this.isLiteMode = false,
     required this.estimatedDurationMinutes,
     required this.targetMuscleGroup,
+    this.isViable = true,
+    this.unviableReason,
+    this.unviableReasonAr,
   });
+
+  factory ScheduledSession.unviable({
+    required String id,
+    required String routineName,
+    required String routineNameAr,
+    required String targetMuscleGroup,
+    required bool isLiteMode,
+    String? reasonEn,
+    String? reasonAr,
+  }) {
+    return ScheduledSession(
+      id: id,
+      routineName: routineName,
+      routineNameAr: routineNameAr,
+      exercises: const [],
+      isLiteMode: isLiteMode,
+      estimatedDurationMinutes: 0,
+      targetMuscleGroup: targetMuscleGroup,
+      isViable: false,
+      unviableReason: reasonEn ?? 'No safe exercises available for your equipment and avoided joints.',
+      unviableReasonAr: reasonAr ?? 'لا توجد تمارين مناسبة للأدوات المتوفرة مع استبعاد المفاصل المجهدة.',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'routineName': routineName,
+    'routineNameAr': routineNameAr,
+    'exercises': exercises.map((e) => e.toJson()).toList(),
+    'isLiteMode': isLiteMode,
+    'estimatedDurationMinutes': estimatedDurationMinutes,
+    'targetMuscleGroup': targetMuscleGroup,
+    'isViable': isViable,
+    'unviableReason': unviableReason,
+    'unviableReasonAr': unviableReasonAr,
+  };
+
+  factory ScheduledSession.fromJson(Map<String, dynamic> json) => ScheduledSession(
+    id: json['id'] as String,
+    routineName: json['routineName'] as String,
+    routineNameAr: json['routineNameAr'] as String,
+    exercises: (json['exercises'] as List)
+        .map((e) => PlannedExercise.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    isLiteMode: json['isLiteMode'] as bool? ?? false,
+    estimatedDurationMinutes: (json['estimatedDurationMinutes'] as num).toInt(),
+    targetMuscleGroup: json['targetMuscleGroup'] as String,
+    isViable: json['isViable'] as bool? ?? true,
+    unviableReason: json['unviableReason'] as String?,
+    unviableReasonAr: json['unviableReasonAr'] as String?,
+  );
 }
 
 class SetLog {

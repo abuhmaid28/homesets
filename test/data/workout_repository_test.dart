@@ -97,7 +97,7 @@ void main() {
       final completed = CompletedWorkoutSession(
         id: 'session_active_123',
         scheduledSessionId: 'sched_123',
-        routineName: 'Routine A',
+        routineName: 'Routine A: Upper Pull',
         isLiteMode: false,
         startedAt: startTime,
         endedAt: DateTime.now(),
@@ -114,6 +114,130 @@ void main() {
       // Weekly consistency must now count 1 session
       final credit = await repo.getWeeklyConsistencyCredit();
       expect(credit, equals(1));
+    });
+
+    test('weekly consistency credit strictly ignores emergency stopped sessions (WP07, C3R-07)', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Save an emergency stopped session
+      final emergencySession = CompletedWorkoutSession(
+        id: 'emergency_session_1',
+        scheduledSessionId: 'sched_emg',
+        routineName: 'Routine A',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 5)),
+        endedAt: now,
+        totalDurationSeconds: 300,
+        completedSets: const [],
+        isEmergencyStopped: true,
+        emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
+      );
+      await repo.saveCompletedSession(emergencySession);
+
+      // Weekly consistency must NOT count emergency stop as completed workout
+      final creditAfterEmergency = await repo.getWeeklyConsistencyCredit();
+      expect(creditAfterEmergency, equals(0));
+
+      // Save a valid completed workout
+      final normalSession = CompletedWorkoutSession(
+        id: 'normal_session_1',
+        scheduledSessionId: 'sched_norm',
+        routineName: 'Routine A',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 30)),
+        endedAt: now,
+        totalDurationSeconds: 1800,
+        completedSets: const [],
+        isEmergencyStopped: false,
+      );
+      await repo.saveCompletedSession(normalSession);
+
+      final creditAfterNormal = await repo.getWeeklyConsistencyCredit();
+      expect(creditAfterNormal, equals(1));
+    });
+
+    test('getNextRoutineCycle deterministically cycles A -> B -> C -> A based on completed sessions (WP03, C3R-02)', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // No workouts: starts at A
+      final cycle0 = await repo.getNextRoutineCycle();
+      expect(cycle0, equals('A'));
+
+      // Finish Routine A: next is B
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_a',
+        scheduledSessionId: 'sched_a',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        startedAt: now.subtract(const Duration(days: 3)),
+        endedAt: now.subtract(const Duration(days: 3, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: const [],
+      ));
+      final cycle1 = await repo.getNextRoutineCycle();
+      expect(cycle1, equals('B'));
+
+      // Finish Routine B: next is C
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_b',
+        scheduledSessionId: 'sched_b',
+        routineName: 'Routine B: Upper Push & Triceps',
+        startedAt: now.subtract(const Duration(days: 2)),
+        endedAt: now.subtract(const Duration(days: 2, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: const [],
+      ));
+      final cycle2 = await repo.getNextRoutineCycle();
+      expect(cycle2, equals('C'));
+
+      // Finish Routine C: next is A
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_c',
+        scheduledSessionId: 'sched_c',
+        routineName: 'Routine C: Legs & Stability',
+        startedAt: now.subtract(const Duration(days: 1)),
+        endedAt: now.subtract(const Duration(days: 1, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: const [],
+      ));
+      final cycle3 = await repo.getNextRoutineCycle();
+      expect(cycle3, equals('A'));
+    });
+
+    test('recovers exact original ScheduledSession on crash resume (WP04, C3R-03)', () async {
+      final repo = WorkoutRepository();
+      final startTime = DateTime.now();
+      const scheduled = ScheduledSession(
+        id: 'custom_lite_session_456',
+        routineName: 'Routine B: Upper Push',
+        routineNameAr: 'التمرين الثاني',
+        isLiteMode: true,
+        estimatedDurationMinutes: 12,
+        targetMuscleGroup: 'CHEST_TRICEPS',
+        exercises: [],
+      );
+
+      final snapshot = ActiveSessionSnapshot(
+        sessionId: 'custom_lite_session_456',
+        routineName: 'Routine B: Upper Push',
+        routineNameAr: 'التمرين الثاني',
+        isLiteMode: true,
+        startedAt: startTime,
+        currentExerciseIndex: 1,
+        currentSetIndex: 2,
+        completedSets: const [],
+        scheduledSession: scheduled,
+      );
+
+      await repo.saveActiveSessionState(snapshot);
+
+      final recovered = await repo.getActiveSessionState();
+      expect(recovered, isNotNull);
+      expect(recovered!.scheduledSession, isNotNull);
+      expect(recovered.scheduledSession!.id, equals('custom_lite_session_456'));
+      expect(recovered.scheduledSession!.isLiteMode, isTrue);
+      expect(recovered.scheduledSession!.targetMuscleGroup, equals('CHEST_TRICEPS'));
     });
   });
 }

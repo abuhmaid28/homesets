@@ -12,6 +12,7 @@ class ActiveSessionSnapshot {
   final int currentExerciseIndex;
   final int currentSetIndex;
   final List<SetLog> completedSets;
+  final ScheduledSession? scheduledSession;
 
   const ActiveSessionSnapshot({
     required this.sessionId,
@@ -22,10 +23,11 @@ class ActiveSessionSnapshot {
     required this.currentExerciseIndex,
     required this.currentSetIndex,
     required this.completedSets,
+    this.scheduledSession,
   });
 }
 
-/// Offline Workout Repository managing SQLite data operations (WP21, WP22, WP23).
+/// Offline Workout Repository managing SQLite data operations (WP21, WP22, WP23, WP04, WP07).
 class WorkoutRepository {
   final DatabaseHelper _dbHelper;
 
@@ -135,6 +137,10 @@ class WorkoutRepository {
       'completedAt': s.completedAt.toIso8601String(),
     }).toList());
 
+    final sessionJson = snapshot.scheduledSession != null
+        ? jsonEncode(snapshot.scheduledSession!.toJson())
+        : '{}';
+
     await db.insert(
       'active_session_state',
       {
@@ -146,7 +152,7 @@ class WorkoutRepository {
         'current_exercise_index': snapshot.currentExerciseIndex,
         'current_set_index': snapshot.currentSetIndex,
         'completed_sets_json': setsJson,
-        'active_session_json': '{}',
+        'active_session_json': sessionJson,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -181,6 +187,14 @@ class WorkoutRepository {
       }
     } catch (_) {}
 
+    ScheduledSession? scheduledSession;
+    try {
+      final rawSession = row['active_session_json'] as String?;
+      if (rawSession != null && rawSession.isNotEmpty && rawSession != '{}') {
+        scheduledSession = ScheduledSession.fromJson(jsonDecode(rawSession) as Map<String, dynamic>);
+      }
+    } catch (_) {}
+
     return ActiveSessionSnapshot(
       sessionId: row['session_id'] as String,
       routineName: row['routine_name'] as String,
@@ -190,6 +204,7 @@ class WorkoutRepository {
       currentExerciseIndex: row['current_exercise_index'] as int,
       currentSetIndex: row['current_set_index'] as int,
       completedSets: setsList,
+      scheduledSession: scheduledSession,
     );
   }
 
@@ -241,26 +256,55 @@ class WorkoutRepository {
     });
   }
 
+  /// Calculates completed workout sessions in the rolling 7 days.
+  /// Strictly filters out emergency-stopped sessions (C3R-07): pain stops are NEVER
+  /// credited as completed workouts toward the weekly consistency goal.
   Future<int> getWeeklyConsistencyCredit() async {
     final db = await _dbHelper.database;
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
     final result = await db.rawQuery(
-      'SELECT COUNT(id) as count FROM workout_sessions WHERE ended_at >= ?',
+      'SELECT COUNT(id) as count FROM workout_sessions WHERE ended_at >= ? AND is_emergency_stopped = 0',
       [sevenDaysAgo],
     );
     if (result.isEmpty) return 0;
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
+  /// Returns the latest non-emergency workout completion time.
   Future<DateTime?> getLastWorkoutTime() async {
     final db = await _dbHelper.database;
     final result = await db.query(
       'workout_sessions',
       columns: ['ended_at'],
+      where: 'is_emergency_stopped = 0',
       orderBy: 'ended_at DESC',
       limit: 1,
     );
     if (result.isEmpty) return null;
     return DateTime.parse(result.first['ended_at'] as String);
+  }
+
+  /// Returns the next routine cycle (A -> B -> C -> A) deterministically based on
+  /// the latest completed non-emergency workout session (WP03, C3R-02).
+  Future<String> getNextRoutineCycle() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'workout_sessions',
+      columns: ['routine_name'],
+      where: 'is_emergency_stopped = 0',
+      orderBy: 'ended_at DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return 'A';
+
+    final lastRoutine = (rows.first['routine_name'] as String).toUpperCase();
+    if (lastRoutine.contains('ROUTINE A') || lastRoutine.contains('A:')) {
+      return 'B';
+    } else if (lastRoutine.contains('ROUTINE B') || lastRoutine.contains('B:')) {
+      return 'C';
+    } else if (lastRoutine.contains('ROUTINE C') || lastRoutine.contains('C:')) {
+      return 'A';
+    }
+    return 'A';
   }
 }

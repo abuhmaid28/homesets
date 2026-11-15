@@ -45,8 +45,10 @@ void main() {
       repository: repo,
       locale: const Locale('en'),
     ));
-    await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 150)));
-    await tester.pump();
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.text('Set Up Your Training'), findsOneWidget);
@@ -87,8 +89,14 @@ void main() {
     // Test SAFE-01: Tap 1-tap Emergency Pain Stop
     final painStopBtn = find.widgetWithText(KineticButton, '🛑 Joint Discomfort / Pain Stop');
     expect(painStopBtn, findsOneWidget);
-    await tester.tap(painStopBtn);
-    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(painStopBtn);
+      await Future.delayed(const Duration(milliseconds: 300));
+    });
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     // Confirm dialog appears
     expect(find.text('Safety Priority: Stop Exercise'), findsOneWidget);
@@ -132,8 +140,10 @@ void main() {
       repository: repo,
       locale: const Locale('ar'),
     ));
-    await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 150)));
-    await tester.pump();
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.text('تجهيز خطة تمرينك'), findsOneWidget);
@@ -175,8 +185,14 @@ void main() {
     // Tap 1-tap pain stop
     final painStopBtnAr = find.widgetWithText(KineticButton, '🛑 ألم أو انزعاج مفصلي (وقف التمرين)');
     expect(painStopBtnAr, findsOneWidget);
-    await tester.tap(painStopBtnAr);
-    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(painStopBtnAr);
+      await Future.delayed(const Duration(milliseconds: 300));
+    });
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     // Confirm dialog in Arabic
     expect(find.text('سلامة مفاصلك أولاً'), findsOneWidget);
@@ -220,8 +236,10 @@ void main() {
       repository: repo,
       locale: const Locale('en'),
     ));
-    await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 150)));
-    await tester.pump();
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     final startTrainingBtn = find.widgetWithText(KineticButton, 'Start Training');
     await tester.scrollUntilVisible(startTrainingBtn, 200);
@@ -314,8 +332,10 @@ void main() {
       repository: repo,
       locale: const Locale('en'),
     ));
-    await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 150)));
-    await tester.pump();
+    for (int i = 0; i < 6; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     final startTrainingBtn = find.widgetWithText(KineticButton, 'Start Training');
     await tester.scrollUntilVisible(startTrainingBtn, 200);
@@ -341,7 +361,10 @@ void main() {
       await tester.tap(startLiteBtn);
       await Future.delayed(const Duration(milliseconds: 300));
     });
-    await tester.pump();
+    for (int i = 0; i < 5; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     // WorkoutPlayer opened with Lite Mode session (2 sets total for first exercise)
     expect(find.byType(WorkoutPlayerScreen), findsOneWidget);

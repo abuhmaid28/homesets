@@ -48,7 +48,11 @@ void main() {
 
   group('WorkoutEngine Safety Invariants & Pain STOP (SAFE-01, GOV14)', () {
     test('strictly filters out exercises matching avoided joints in profile', () {
-      const inventory = EquipmentInventory(hasPullUpBar: true, hasBands: true);
+      const inventory = EquipmentInventory(
+        hasPullUpBar: true,
+        hasBands: true,
+        hasParallelGrip: true,
+      );
       const profile = UserProfile(
         id: 'user_1',
         avoidedJoints: [JointImpactTag.shoulderSubacromial],
@@ -62,6 +66,19 @@ void main() {
       expect(engine.isExerciseEligible(widePullup), isFalse);
       expect(engine.isExerciseEligible(standardPullup), isFalse);
       expect(engine.isExerciseEligible(chinup), isTrue);
+    });
+
+    test('strictly excludes chinup_neutral when parallel grip is absent (C3R-05)', () {
+      const inventory = EquipmentInventory(
+        hasPullUpBar: true,
+        hasBands: true,
+        hasParallelGrip: false,
+      );
+      const profile = UserProfile(id: 'user_1');
+      const engine = WorkoutEngine(inventory: inventory, profile: profile);
+
+      final chinup = ExerciseCatalog.getById('chinup_neutral');
+      expect(engine.isExerciseEligible(chinup), isFalse);
     });
 
     test('evaluates pain stop as immediate session termination without loaded substitute', () {
@@ -118,6 +135,82 @@ void main() {
           expect(s.targetRestSeconds, greaterThanOrEqualTo(90));
         }
       }
+    });
+  });
+
+  group('WorkoutEngine Empty-Catalog & Unviable Fallback (WP02, C3R-01)', () {
+    test('returns unviable session and does NOT throw RangeError when all movements are barred', () {
+      const inventory = EquipmentInventory(
+        hasPullUpBar: false,
+        hasBands: false,
+        hasDoorAnchor: false,
+        hasSturdyTable: false,
+        hasParallelGrip: false,
+      );
+      const profile = UserProfile(
+        id: 'user_injured',
+        avoidedJoints: JointImpactTag.values, // All joints avoided
+      );
+      const engine = WorkoutEngine(inventory: inventory, profile: profile);
+
+      // Standard mode
+      final stdSession = engine.generateNextSession(routineCycle: 'A', isLiteMode: false);
+      expect(stdSession.isViable, isFalse);
+      expect(stdSession.exercises, isEmpty);
+      expect(stdSession.unviableReason, isNotNull);
+
+      // Lite mode must NOT throw RangeError (Bad state: No element)
+      final liteSession = engine.generateNextSession(routineCycle: 'A', isLiteMode: true);
+      expect(liteSession.isViable, isFalse);
+      expect(liteSession.exercises, isEmpty);
+      expect(liteSession.unviableReason, isNotNull);
+    });
+  });
+
+  group('WorkoutEngine Deterministic Rotation & Clock Injection (WP03, C3R-02)', () {
+    test('rotates away from fatigued muscle group when < 36 hours elapsed', () {
+      const inventory = EquipmentInventory();
+      const profile = UserProfile(id: 'user_clock');
+      const engine = WorkoutEngine(inventory: inventory, profile: profile);
+
+      final t0 = DateTime(2026, 11, 15, 8, 0);
+
+      // Request Routine A with last workout completed 12 hours ago
+      final session12h = engine.generateNextSession(
+        routineCycle: 'A',
+        lastWorkoutTime: t0,
+        clock: t0.add(const Duration(hours: 12)),
+      );
+
+      // Must rotate to Routine B (CHEST_TRICEPS)
+      expect(session12h.targetMuscleGroup, equals('CHEST_TRICEPS'));
+      expect(session12h.routineName, contains('Routine B'));
+
+      // Request Routine A with last workout completed 40 hours ago (> 36h)
+      final session40h = engine.generateNextSession(
+        routineCycle: 'A',
+        lastWorkoutTime: t0,
+        clock: t0.add(const Duration(hours: 40)),
+      );
+
+      // Fatigue expired: Routine A is cleared
+      expect(session40h.targetMuscleGroup, equals('LATS_BICEPS'));
+      expect(session40h.routineName, contains('Routine A'));
+    });
+
+    test('progresses through A -> B -> C -> A 3-way rotation', () {
+      const inventory = EquipmentInventory();
+      const profile = UserProfile(id: 'user_rot');
+      const engine = WorkoutEngine(inventory: inventory, profile: profile);
+
+      final sessionA = engine.generateNextSession(routineCycle: 'A');
+      expect(sessionA.targetMuscleGroup, equals('LATS_BICEPS'));
+
+      final sessionB = engine.generateNextSession(routineCycle: 'B');
+      expect(sessionB.targetMuscleGroup, equals('CHEST_TRICEPS'));
+
+      final sessionC = engine.generateNextSession(routineCycle: 'C');
+      expect(sessionC.targetMuscleGroup, equals('LEGS_GLUTES'));
     });
   });
 
