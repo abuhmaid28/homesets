@@ -12,8 +12,9 @@ TOOLS_DIR = Path(__file__).resolve().parent
 
 SCRIPTS = [
     ("Fixture Schema & Integrity", TOOLS_DIR / "validate_fixtures.py"),
+    ("Validator Mutation & Negative Tests", TOOLS_DIR / "tests" / "test_validation.py"),
     ("Relative Markdown Links", TOOLS_DIR / "validate_links.py"),
-    ("Hygiene & Secret Exposure", TOOLS_DIR / "check_hygiene.py"),
+    ("Hygiene, Secrets & Media Scan", TOOLS_DIR / "check_hygiene.py"),
 ]
 
 def main():
@@ -37,7 +38,7 @@ def main():
         print(f"FAILED SUITES ({len(failed)}): {', '.join(failed)}")
         sys.exit(1)
     else:
-        print("ALL QUALITY SUITES PASSED CLEANLY (3/3)")
+        print(f"ALL QUALITY SUITES PASSED CLEANLY ({len(SCRIPTS)}/{len(SCRIPTS)})")
         sys.exit(0)
 
 if __name__ == "__main__":

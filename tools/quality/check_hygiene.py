@@ -3,21 +3,22 @@
 HOMESETS — Codebase Hygiene & Secret Exposure Checker (Zero Dependencies)
 Validates that:
 1. No secret keys, keystores, private photos, or credential files exist in git.
-2. No trailing whitespace or broken markdown code fences exist.
+2. No oversized binary blobs (> 1 MB) exist in the working tree.
+3. No trailing unclosed code fences exist in documentation.
 Exits 0 on clean tree, 1 on hygiene/security violation.
 """
 
 import sys
-import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-PROHIBITED_EXTENSIONS = [".jks", ".keystore", ".p12", ".pem", ".key"]
+PROHIBITED_EXTENSIONS = [".jks", ".keystore", ".p12", ".pem", ".key", ".raw", ".heic", ".cr2", ".nef"]
 PROHIBITED_FILENAMES = ["key.properties", ".env", "id_rsa", "id_ed25519"]
+MAX_ALLOWED_FILE_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB threshold for source repo
 
-def check_prohibited_files():
-    print("[CHECK] Scanning for prohibited sensitive files and keys...")
+def check_prohibited_files_and_sizes():
+    print("[CHECK] Scanning for prohibited sensitive files, keys, and oversized blobs...")
     violations = []
     
     for p in REPO_ROOT.rglob("*"):
@@ -27,7 +28,7 @@ def check_prohibited_files():
         if p.is_file():
             # Check prohibited extensions
             if p.suffix.lower() in PROHIBITED_EXTENSIONS:
-                violations.append(f"Prohibited key file found: {p.relative_to(REPO_ROOT)}")
+                violations.append(f"Prohibited sensitive/key file found: {p.relative_to(REPO_ROOT)}")
                 
             # Check prohibited filenames
             if p.name.lower() in PROHIBITED_FILENAMES:
@@ -37,19 +38,26 @@ def check_prohibited_files():
             if p.suffix.lower() in [".jpg", ".jpeg"]:
                 violations.append(f"JPEG file found in repository: {p.relative_to(REPO_ROOT)} (Physique photos strictly prohibited in Git)")
 
+            # Check oversized file size
+            try:
+                size = p.stat().st_size
+                if size > MAX_ALLOWED_FILE_SIZE_BYTES:
+                    violations.append(f"Oversized file detected (>1MB): {p.relative_to(REPO_ROOT)} ({size / (1024*1024):.2f} MB)")
+            except Exception as e:
+                pass
+
     if violations:
         for v in violations:
             print(f"[SECURITY VIOLATION] {v}")
         return False
         
-    print("[PASS] Zero prohibited secret keys or private photos found.")
+    print("[PASS] Zero prohibited secret keys, private photos, or oversized blobs found.")
     return True
 
 def check_code_fences_and_whitespace():
     print("[CHECK] Scanning text files for unclosed code fences and trailing whitespace...")
     scan_extensions = [".md", ".py", ".json", ".yml", ".yaml", ".sql"]
     fence_errors = 0
-    whitespace_errors = 0
     
     for p in REPO_ROOT.rglob("*"):
         if ".git" in p.parts:
@@ -64,17 +72,10 @@ def check_code_fences_and_whitespace():
             continue
             
         in_fence = False
-        fence_char = ""
         fence_start_line = 0
         
         for idx, line in enumerate(lines, start=1):
             stripped_line = line.strip()
-            # Trailing whitespace check (excluding blank lines and standard 2-space markdown breaks)
-            if line.endswith(" \n") or line.endswith("\t\n"):
-                # Markdown allows 2 spaces for line break
-                if not (line.endswith("  \n") and p.suffix.lower() == ".md"):
-                    # Log minor notice
-                    pass
 
             # Code fence matching for markdown
             if p.suffix.lower() == ".md":
@@ -96,7 +97,7 @@ def check_code_fences_and_whitespace():
     return True
 
 def main():
-    ok_secrets = check_prohibited_files()
+    ok_secrets = check_prohibited_files_and_sizes()
     ok_fences = check_code_fences_and_whitespace()
     
     if ok_secrets and ok_fences:
