@@ -57,6 +57,20 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
           _completedSets.addAll(snapshot.completedSets);
           _sessionStartTime = snapshot.startedAt;
         });
+
+        // WP-C: If session was interrupted after logging final set, route to clean finalization
+        final totalPlannedSets = widget.session.exercises.fold<int>(
+          0,
+          (sum, e) => sum + e.sets.length,
+        );
+        if ((snapshot.isPendingFinalization || _completedSets.length >= totalPlannedSets) && totalPlannedSets > 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_isSessionFinished) {
+              _finalizeSession(isEmergency: false);
+            }
+          });
+          return;
+        }
       }
     } else {
       // Save initial active session state snapshot (WP22)
@@ -104,12 +118,19 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
 
     // Compute boundary transitions for next set / next exercise
     final isLastSetOfExercise = _setIndex >= _totalSetsInExercise;
-    final nextExerciseIndex = isLastSetOfExercise
-        ? (_exerciseIndex + 1 < widget.session.exercises.length ? _exerciseIndex + 1 : _exerciseIndex)
-        : _exerciseIndex;
-    final nextSetIndex = isLastSetOfExercise ? 1 : _setIndex + 1;
+    final isLastExerciseOfSession = _exerciseIndex >= widget.session.exercises.length - 1;
+    final isSessionComplete = isLastSetOfExercise && isLastExerciseOfSession;
 
-    // Immediate write to active session snapshot (WP21, WP04 crash recovery)
+    final nextExerciseIndex = isSessionComplete
+        ? _exerciseIndex
+        : (isLastSetOfExercise
+            ? (_exerciseIndex + 1 < widget.session.exercises.length ? _exerciseIndex + 1 : _exerciseIndex)
+            : _exerciseIndex);
+    final nextSetIndex = isSessionComplete
+        ? _totalSetsInExercise
+        : (isLastSetOfExercise ? 1 : _setIndex + 1);
+
+    // Immediate write to active session snapshot (WP21, WP04, WP-C crash recovery)
     final snapshot = ActiveSessionSnapshot(
       sessionId: widget.session.id,
       routineName: widget.session.routineName,
@@ -120,6 +141,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       currentSetIndex: nextSetIndex,
       completedSets: List.unmodifiable(_completedSets),
       scheduledSession: widget.session,
+      isPendingFinalization: isSessionComplete,
     );
     await widget.repository.saveActiveSessionState(snapshot);
   }
@@ -199,19 +221,15 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
     );
 
-    // 2. Quarantine joint(s) and finalize session durably (C3R-04, C3R2 F4)
+    // 2. Quarantine joint(s) and finalize session atomically (WP-B, C3R-04, C3R2 F4)
     bool persistenceFailed = false;
     Future<bool> persistPainStop() async {
       try {
-        final profile = await widget.repository.getUserProfile();
-        if (profile != null && _exercise.jointStressTags.isNotEmpty) {
-          final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
-            ..addAll(_exercise.jointStressTags);
-          await widget.repository.saveUserProfile(
-            profile.copyWith(avoidedJoints: updatedAvoided.toList()),
-          );
-        }
-        await widget.repository.saveCompletedSession(completedSession);
+        await widget.repository.saveEmergencyPainStopSession(
+          session: completedSession,
+          avoidedJointTags: _exercise.jointStressTags,
+        );
+        persistenceFailed = false;
         return true;
       } catch (_) {
         persistenceFailed = true;
@@ -225,7 +243,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     final l10n = AppLocalizations.of(context)!;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-    // 3. Show the post-freeze informational safety dialog with retry on disk error (F4)
+    // 3. Show the post-freeze informational safety dialog with retry on disk error (WP-B, F4)
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -269,8 +287,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
                       Expanded(
                         child: Text(
                           isArabic
-                              ? 'تنبيه: تعذر حفظ استبعاد المفصل محلياً (خطأ قرص). اضغط إعادة المحاولة لحفظ السجل بأمان.'
-                              : 'Notice: Could not save joint quarantine to local storage (Disk/IO error). Tap Retry Save.',
+                              ? 'تنبيه: تعذر حفظ استبعاد المفصل وسجل التمرين محلياً (خطأ بالقرص). اضغط إعادة المحاولة لحفظ السجل بأمان.'
+                              : 'Persistence Alert: Could not save joint quarantine and session to local storage (Disk/IO error). Tap Retry Save.',
                           style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.orange),
                         ),
                       ),
@@ -281,27 +299,45 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
             ],
           ),
           actions: [
-            if (persistenceFailed)
+            if (persistenceFailed) ...[
               TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  // Acknowledged unsaved exit: explicitly navigates without falsely claiming persistence succeeded
+                  widget.onFinishSession(completedSession);
+                },
+                child: Text(
+                  isArabic ? 'خروج بدون حفظ (تأكيد)' : 'Exit Unsaved (Acknowledge Risk)',
+                  style: const TextStyle(color: HomesetsColors.textMuted),
+                ),
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: HomesetsColors.orange,
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.refresh, size: 18),
                 onPressed: () async {
                   final ok = await persistPainStop();
                   if (ok) {
-                    setDialogState(() => persistenceFailed = false);
+                    setDialogState(() {});
                   }
                 },
-                child: Text(isArabic ? 'إعادة محاولة الحفظ' : 'Retry Save'),
+                label: Text(isArabic ? 'إعادة محاولة الحفظ' : 'Retry Save'),
               ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: HomesetsColors.orange,
-                foregroundColor: Colors.white,
+            ] else ...[
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: HomesetsColors.orange,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  widget.onFinishSession(completedSession);
+                },
+                child: Text(l10n.painStopConfirm),
               ),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                widget.onFinishSession(completedSession);
-              },
-              child: Text(l10n.painStopConfirm),
-            ),
+            ],
           ],
         ),
       ),

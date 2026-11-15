@@ -222,7 +222,30 @@ class _TodayScreenState extends State<TodayScreen> {
                         style: HomesetsTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),
-                      if (_activeSession!.isPlanUnrecoverable ||
+                      if (_activeSession!.isPendingFinalization) ...[
+                        KineticButton(
+                          label: isArabic ? 'إنهاء وحفظ التمرين المكتمل' : 'Finish & Finalize Workout',
+                          icon: Icons.check_circle_outline,
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final duration = now.difference(_activeSession!.startedAt).inSeconds;
+                            final completed = CompletedWorkoutSession(
+                              id: _activeSession!.sessionId,
+                              scheduledSessionId: _activeSession!.sessionId,
+                              routineName: _activeSession!.routineName,
+                              isLiteMode: _activeSession!.isLiteMode,
+                              startedAt: _activeSession!.startedAt,
+                              endedAt: now,
+                              totalDurationSeconds: duration > 0 ? duration : 60,
+                              completedSets: _activeSession!.completedSets,
+                              isEmergencyStopped: false,
+                            );
+                            await widget.repository.saveCompletedSession(completed);
+                            await _loadData();
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ] else if (_activeSession!.isPlanUnrecoverable ||
                           _activeSession!.scheduledSession == null ||
                           _activeSession!.scheduledSession!.exercises.isEmpty) ...[
                         Container(
@@ -233,17 +256,23 @@ class _TodayScreenState extends State<TodayScreen> {
                             border: Border.all(color: HomesetsColors.orange.withValues(alpha: 0.5)),
                           ),
                           child: Text(
-                            isArabic
-                                ? 'تنبيه: تعذر استعادة خطة التمرين الأصلية بأمان. تم حفظ مجموعاتك المكتملة بدون تعديل لتجنب اقتراح تمارين غير متوافقة.'
-                                : 'Notice: Original workout plan could not be safely verified. Your completed sets are intact; no fabricated exercises will be prescribed.',
+                            _activeSession!.hasCorruptSetLogs
+                                ? (isArabic
+                                    ? 'تنبيه: مسودة التمرين تحتوي على بيانات تالفة جزئياً. تم استخراج ${_activeSession!.completedSets.length} مجموعة صالحة. سيتم أرشفة البيانات الأولية محلياً دون احتساب إنجاز غير مكتمل.'
+                                    : 'Notice: Draft contains corrupt entries. ${_activeSession!.completedSets.length} valid sets extracted. Raw data will be durably archived in local storage without false completion credit.')
+                                : (isArabic
+                                    ? 'تنبيه: تعذر استعادة خطة التمرين الأصلية بأمان. تم العثور على ${_activeSession!.completedSets.length} مجموعة مسجلة وسيتم أرشفتها كجلسة جزئية.'
+                                    : 'Notice: Original workout plan was unrecoverable. ${_activeSession!.completedSets.length} logged sets found and will be archived as a partial session.'),
                             style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.orange),
                           ),
                         ),
                         const SizedBox(height: 12),
                         if (_activeSession!.completedSets.isNotEmpty) ...[
                           KineticButton(
-                            label: isArabic ? 'حفظ المجموعات وإنهاء المسودة' : 'Save Logged Sets to History',
-                            icon: Icons.check,
+                            label: _activeSession!.hasCorruptSetLogs
+                                ? (isArabic ? 'أرشفة وحفظ المجموعات المستخرجة' : 'Archive Raw & Save Salvaged Sets')
+                                : (isArabic ? 'أرشفة وحفظ المجموعات الجزئية' : 'Archive Raw & Save Partial Sets'),
+                            icon: Icons.archive_outlined,
                             onPressed: () async {
                               final now = DateTime.now();
                               final duration = now.difference(_activeSession!.startedAt).inSeconds;
@@ -256,9 +285,17 @@ class _TodayScreenState extends State<TodayScreen> {
                                 endedAt: now,
                                 totalDurationSeconds: duration > 0 ? duration : 60,
                                 completedSets: _activeSession!.completedSets,
-                                isEmergencyStopped: false,
+                                isEmergencyStopped: true,
+                                emergencyStopReason: _activeSession!.hasCorruptSetLogs
+                                    ? 'Partial salvage from corrupt draft: raw logs archived (WP-A)'
+                                    : 'Draft plan unrecoverable: raw logs archived (WP-A)',
                               );
-                              await widget.repository.saveCompletedSession(completed);
+                              await widget.repository.salvageCorruptSession(
+                                session: completed,
+                                rawCompletedSetsJson: _activeSession!.rawCompletedSetsJson,
+                                rawActiveSessionJson: _activeSession!.rawActiveSessionJson,
+                                hasCorruptSetLogs: _activeSession!.hasCorruptSetLogs,
+                              );
                               await _loadData();
                             },
                           ),
