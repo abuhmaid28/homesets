@@ -45,3 +45,10 @@ Out: accounts, cloud/backend, online AI, billing, calories/macros, wearables, so
 Each campaign: clear goal, exact file areas, exclusions, preapproved dependencies, acceptance tests, stop conditions, branch/PR strategy and rollback. Internal small commits with raw `flutter analyze`, `flutter test` and build output where relevant. The agent continues autonomously after green checks, not after guessed success. No force pushes/destructive actions. ChatGPT independently reviews supplied evidence; agent self-reports are not proofs.
 
 **Open design conflict:** Original Master §5 says build-muscle goal only, while P8 mentions a friend selecting a different goal. More goals remain post-MVP until Ahmed changes scope.
+
+## 2026-11-15 — approved transition to real implementation (no new MVP scope)
+**Owner-approved gate:** GOV12–GOV19. C1 selected **Hybrid Direction B Kinetic Depth + A tabular timers** for P0–P4. C2 architecture policy approved with conservative equipment/pain guards and conditional minimum dependencies. P0–P4 implementation can start under [C3-MEGA Issue #11](https://github.com/abuhmaid28/homesets/issues/11) **without more routine approval**; use approved source as reference, not automatic wholesale acceptance of prior draft PRs.
+- First produce actual Flutter scaffold & **Flutter CI**; then widgets/AR-EN RTL, deterministic safe workout engine, local persistence and workout journey, backed by real tests/build/APK logs; incremental commits and guarded PR merges.
+- **Package gate:** Direct packages limited to GOV16 allowlist and installed only where P0–P4 requires. Actual license/SDK resolution/Gradle and offline checks mandatory. No unrelated package.
+- **Phone gate:** no device testing between P0–P4, one final physical Honor acceptance per GOV07; do not claim runtime device verification.
+- Remaining unapproved: exact original logo binary/launcher vector, P5–P8 details/extra dependencies, final signed package ID/release.
