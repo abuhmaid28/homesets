@@ -1,6 +1,6 @@
 # HOMESETS — Decision Register
 
-Last updated: 2026-11-14
+Last updated: 2026-11-15
 Status: **Living register — owner review required for newly proposed items**
 
 ## Authority and change control
@@ -102,3 +102,25 @@ Confirm the registry is faithful, then preserve the exact selected image in `ass
 **Operational source of truth:** [Approved Autonomy Policy](AGENT_AUTONOMY_POLICY.md) and [Updated Roadmap](ROADMAP.md). The original Master Prompt is retained verbatim for history; newer explicitly confirmed entries GOV07–GOV11 control the conflicting process rules.
 
 **Current blockers (unchanged):** Antigravity local origin/permissions unverified, preferred exact PNG missing from GitHub, CI not configured, brand and architecture approval incomplete. The authorization above is **policy**, not proof of an agent run, CI pass, APK, or merge.
+
+
+## GOV12–GOV19 — Owner-approved C3-MEGA implementation gate (2026-11-15)
+
+**[Confirmed] One grouped approval from Ahmed (Product Owner):** He explicitly approves the Hybrid C1 design, conservative hardware/safety defaults, private/offline data model, only the bounded dependency allowlist *after actual compatibility/license verification*, and execution of [C3-MEGA Issue #11](https://github.com/abuhmaid28/homesets/issues/11) for Flutter **P0–P4**, automated tests, exact-head CI and conditional normal merges without routine approvals. No destructive operation or unapproved MVP scope expansion. Real-phone acceptance stays **final only** per GOV07.
+
+**This is a newer explicit approval superseding earlier "preferred/unapproved" classifications solely for the choices enumerated below.** The original Master Prompt and historical B01–B03 entries are retained verbatim; no final approval is inferred for the still-missing exact logo binary, vector icon, font licensing or unreviewed dependencies.
+
+| ID | Decision | Status |
+| --- | --- | --- |
+| GOV12 | **Visual direction selected:** C1 **Hybrid B + A precision** — Direction B *Kinetic Depth* with warm charcoal, Performance Lime, rounded tactile cards/pills and restrained glow; borrow Direction A's tabular timers/counters. Use natural Egyptian Arabic RTL + English, light/dark and accessible responsive UI. **No orange/amber/teal substitution.** | **Confirmed — Owner approved 2026-11-15** |
+| GOV13 | **Hardware eligibility:** owner baseline remains pull-up bar + resistance bands + bodyweight; no dumbbells, weighted backpacks or presumed furniture/accessories. `pulldown_door_band` defaults unavailable without **explicit verified suitable overhead/door anchor**; `row_table_inverted` unavailable without **explicit verified load-bearing furniture**; neutral-grip handles not assumed. Exercise capability gates must be enforced by *real Dart code and tests*, not just display notices. | **Confirmed — Owner approved** |
+| GOV14 | **Safety:** immediate one-tap pain STOP preserving recorded sets, with **no loaded substitute automatically prescribed**, no diagnosis/shame. Recovery/progression and post-absence deload are adjustable conservative heuristics, not medically validated guarantees; never force a timed Lite workout to rush rest. | **Confirmed — Owner approved with conservative/adjustable guardrails** |
+| GOV15 | **Privacy/storage policy:** offline local app-private data/photos, no accounts/backend/online AI/telemetry/cloud sync. Manual explicit backup/export later, with sharing warning; Android backup/extraction and failure-recoverable restore are *planned and must be tested*, not guaranteed or already deployed. **C3 P0–P4 covers profile/session/set persistence only; photos and backup belong to later milestones.** | **Confirmed — Owner approved model, implementation unverified** |
+| GOV16 | **Conditional dependency allowlist only:** `drift` + `drift_flutter` as preferred persistence pair **OR** `sqflite` fallback (not both); `path_provider`, Flutter SDK localization plus `intl`, `uuid` (optional), `crypto`, `archive`, `flutter_local_notifications` only at their corresponding approved features/milestones. Check exact current package version, license, Dart/Flutter/Android/Gradle compatibility and actual `flutter pub get`/analyze/test/APK first; retain `pubspec.lock`. Do not adopt stale draft pinned numbers or add any other direct dependency without approval. Do not install archive/notifications merely for future P5/P6. | **Confirmed conditional authorization, versions & builds unverified** |
+| GOV17 | **C3-MEGA execution authorization:** Antigravity may autonomously implement the 32-WP **P0–P4** real Flutter Android foundation, theme/localization, safe deterministic workout engine, local persistence, onboarding → Today → Active Workout → Rest → Lite → Summary; run analyzer/tests/build and establish real exact-head Flutter CI; small commits, PRs and **normal merges only after all GOV08 gates pass**. No routine PO approvals or phone tests until final C9. | **Confirmed — authorized, not executed yet** |
+| GOV18 | **Brand scope boundary:** HOMESETS is the approved **working app name for implementation**, while the **exact preferred Pull-Up Motion PNG / final vector/adaptive launcher icon and license/visual validation remain OPEN** (Issue #1). Until exact asset is verifiably available, use a temporary neutral HOMESETS **wordmark only**, not a fabricated logo or final launcher claim. | **Confirmed interim implementation rule; final logo still open** |
+| GOV19 | **Remaining owner gates:** This approval covers C3 P0–P4 only; does not authorize P5–P8, new exercise goals, new subscriptions, paid CI, auto-backup, future user-data migration guarantees, final signing keys, repo/publication or irreversible changes. Record any provisional technical app ID and its upgrade implications; final signing/package ID release gate O08 still open. | **Confirmed limits** |
+
+**Decision provenance:** Ahmed's direct approval in the HOMESETS conversation on 2026-11-15; the previously proposed grouped policy is recorded in [C2R_OWNER_GATE_PACKAGE.md](https://github.com/abuhmaid28/homesets/blob/campaign/c2-mega-foundation/docs/reviews/C2R_OWNER_GATE_PACKAGE.md). Any agent claims of test success, repo merge, APK, package compatibility, or Honor behavior remain **UNVERIFIED until direct evidence**.
+
+**Current next step:** Update [Issue #11](https://github.com/abuhmaid28/homesets/issues/11) to authorized and hand one long Antigravity task to the verified HOMESETS workspace. User is not asked to operate routine Git commands. 
