@@ -17,12 +17,14 @@ PROHIBITED_EXTENSIONS = [".jks", ".keystore", ".p12", ".pem", ".key", ".raw", ".
 PROHIBITED_FILENAMES = ["key.properties", ".env", "id_rsa", "id_ed25519"]
 MAX_ALLOWED_FILE_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB threshold for source repo
 
+IGNORED_DIRS = {".git", "build", ".dart_tool", ".gradle", "__pycache__"}
+
 def check_prohibited_files_and_sizes():
     print("[CHECK] Scanning for prohibited sensitive files, keys, and oversized blobs...")
     violations = []
     
     for p in REPO_ROOT.rglob("*"):
-        if ".git" in p.parts:
+        if any(part in IGNORED_DIRS for part in p.parts):
             continue
             
         if p.is_file():
@@ -60,7 +62,7 @@ def check_code_fences_and_whitespace():
     fence_errors = 0
     
     for p in REPO_ROOT.rglob("*"):
-        if ".git" in p.parts:
+        if any(part in IGNORED_DIRS for part in p.parts):
             continue
         if not p.is_file() or p.suffix.lower() not in scan_extensions:
             continue

@@ -1,30 +1,41 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:homesets/main.dart';
+import 'package:homesets/data/database/database_helper.dart';
+import 'package:homesets/data/repositories/workout_repository.dart';
+import 'package:homesets/features/onboarding/onboarding_screen.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    DatabaseHelper.setCustomFactory(databaseFactoryFfi);
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  setUp(() async {
+    final db = await DatabaseHelper.instance.database;
+    await db.delete('user_profile');
+    await db.delete('equipment_inventory');
+    await db.delete('workout_sessions');
+    await db.delete('set_logs');
+    await db.delete('active_session_state');
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  tearDown(() async {
+    await DatabaseHelper.instance.close();
+  });
+
+  testWidgets('HomesetsApp initializes and presents OnboardingScreen for first-time user', (tester) async {
+    final repo = WorkoutRepository();
+
+    await tester.pumpWidget(HomesetsApp(repository: repo));
+    await tester.runAsync(() async {
+      await Future.delayed(const Duration(milliseconds: 150));
+    });
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify OnboardingScreen is shown
+    expect(find.byType(OnboardingScreen), findsOneWidget);
+    expect(find.text('HOMESETS'), findsOneWidget);
   });
 }
