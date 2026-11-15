@@ -115,6 +115,27 @@ class AbsenceDeloadResult {
     this.streakPenaltyApplied = false,
     this.guiltFreeMessaging = true,
   });
+
+  Map<String, dynamic> toJson() => {
+    'action': action.name,
+    'volumeReductionPercent': volumeReductionPercent,
+    'streakPenaltyApplied': streakPenaltyApplied,
+    'guiltFreeMessaging': guiltFreeMessaging,
+  };
+
+  factory AbsenceDeloadResult.fromJson(Map<String, dynamic> json) {
+    final actionStr = json['action'] as String? ?? 'normalRotationResume';
+    final action = EngineAction.values.firstWhere(
+      (a) => a.name == actionStr,
+      orElse: () => EngineAction.normalRotationResume,
+    );
+    return AbsenceDeloadResult(
+      action: action,
+      volumeReductionPercent: (json['volumeReductionPercent'] as num?)?.toInt() ?? 0,
+      streakPenaltyApplied: json['streakPenaltyApplied'] as bool? ?? false,
+      guiltFreeMessaging: json['guiltFreeMessaging'] as bool? ?? true,
+    );
+  }
 }
 
 class UserProfile {
@@ -334,6 +355,7 @@ class ScheduledSession {
   final bool isViable;
   final String? unviableReason;
   final String? unviableReasonAr;
+  final AbsenceDeloadResult? absenceDeloadResult;
 
   const ScheduledSession({
     required this.id,
@@ -346,6 +368,7 @@ class ScheduledSession {
     this.isViable = true,
     this.unviableReason,
     this.unviableReasonAr,
+    this.absenceDeloadResult,
   });
 
   factory ScheduledSession.unviable({
@@ -382,6 +405,7 @@ class ScheduledSession {
     'isViable': isViable,
     'unviableReason': unviableReason,
     'unviableReasonAr': unviableReasonAr,
+    'absenceDeloadResult': absenceDeloadResult?.toJson(),
   };
 
   factory ScheduledSession.fromJson(Map<String, dynamic> json) => ScheduledSession(
@@ -397,6 +421,9 @@ class ScheduledSession {
     isViable: json['isViable'] as bool? ?? true,
     unviableReason: json['unviableReason'] as String?,
     unviableReasonAr: json['unviableReasonAr'] as String?,
+    absenceDeloadResult: json['absenceDeloadResult'] != null
+        ? AbsenceDeloadResult.fromJson(json['absenceDeloadResult'] as Map<String, dynamic>)
+        : null,
   );
 }
 

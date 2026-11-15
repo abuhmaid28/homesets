@@ -81,6 +81,7 @@ class WorkoutEngine {
     required String routineCycle, // 'A', 'B', or 'C'
     DateTime? lastWorkoutTime,
     String? lastTargetMuscleGroup,
+    Map<String, DateTime>? lastWorkoutTimePerGroup,
     DateTime? clock,
     Map<String, List<SetLog>>? exerciseHistory,
     bool isLiteMode = false,
@@ -96,21 +97,54 @@ class WorkoutEngine {
       selectedCycle = 'A';
     }
 
-    // Check muscle recovery window (36 hours minimum per fatigued muscle group)
-    // CRITICAL FIX (C3R2 WP02): Rotation away from a routine is ONLY required if the
-    // proposed routine targets the SAME muscle group that was trained within the last 36 hours!
-    // Training an unfatigued group (e.g. chest/triceps 12h after lats/biceps) is fully permitted.
-    if (lastWorkoutTime != null) {
-      final hoursElapsed = effectiveNow.difference(lastWorkoutTime).inHours;
-      if (hoursElapsed < 36) {
+    // Check muscle recovery window (36 hours minimum per muscle group)
+    // CRITICAL FIX (C3R2 F3): Evaluate fatigue per muscle group across recent history
+    bool isGroupFatigued(String group) {
+      if (lastWorkoutTimePerGroup != null && lastWorkoutTimePerGroup.containsKey(group)) {
+        final lastTime = lastWorkoutTimePerGroup[group]!;
+        return effectiveNow.difference(lastTime).inHours < 36;
+      }
+      if (lastWorkoutTime != null) {
         final fatiguedGroup = lastTargetMuscleGroup ?? 'LATS_BICEPS';
-        if (targetGroupForCycle(selectedCycle) == fatiguedGroup) {
-          // Candidate routine targets the fatigued muscle group; rotate to next unfatigued routine
-          selectedCycle = nextCycleAfter(selectedCycle);
-          if (targetGroupForCycle(selectedCycle) == fatiguedGroup) {
-            selectedCycle = nextCycleAfter(selectedCycle);
-          }
+        if (group == fatiguedGroup) {
+          return effectiveNow.difference(lastWorkoutTime).inHours < 36;
         }
+      }
+      return false;
+    }
+
+    if (isGroupFatigued(targetGroupForCycle(selectedCycle))) {
+      final next1 = nextCycleAfter(selectedCycle);
+      if (!isGroupFatigued(targetGroupForCycle(next1))) {
+        selectedCycle = next1;
+      } else {
+        final next2 = nextCycleAfter(next1);
+        if (!isGroupFatigued(targetGroupForCycle(next2))) {
+          selectedCycle = next2;
+        } else {
+          // ALL 3 muscle groups fatigued within 36 hours! (C3R2 F3)
+          return ScheduledSession.unviable(
+            id: 'session_rest_${effectiveNow.millisecondsSinceEpoch}',
+            routineName: 'Full Joint & Muscle Recovery',
+            routineNameAr: 'راحة تامة وتعافي للمفاصل والعضلات',
+            targetMuscleGroup: 'RECOVERY',
+            isLiteMode: isLiteMode,
+            reasonEn: 'All muscle groups were trained within the last 36 hours. Full recovery is essential to prevent chronic joint fatigue and injury.',
+            reasonAr: 'تم تدريب جميع المجموعات العضلية خلال الـ 36 ساعة الماضية. الراحة التامة ضرورية لتجنب إجهاد المفاصل والإصابات.',
+          );
+        }
+      }
+    }
+
+    // Check absence deload status (C3R2 F5, D11, D15)
+    AbsenceDeloadResult? absenceDeloadResult;
+    if (lastWorkoutTime != null) {
+      final daysElapsed = effectiveNow.difference(lastWorkoutTime).inDays;
+      if (daysElapsed >= 6) {
+        absenceDeloadResult = evaluateAbsenceDeload(
+          daysSinceLastWorkout: daysElapsed,
+          plannedSetsBaseline: isLiteMode ? 2 : 3,
+        );
       }
     }
 
@@ -177,10 +211,11 @@ class WorkoutEngine {
       );
     }
 
-    // Build planned exercises & set counts with progressive overload applied (C3R2 WP06)
+    // Build planned exercises & set counts with progressive overload and absence deload applied (C3R2 F5)
     final plannedExercises = <PlannedExercise>[];
     if (isLiteMode) {
-      // Adaptive Lite Mode: Take up to 2 eligible exercises × 2 working sets (max 4 sets total, ~11-15m)
+      // Adaptive Lite Mode: Take up to 2 eligible exercises
+      final liteSetsCount = (absenceDeloadResult != null && absenceDeloadResult.volumeReductionPercent >= 25) ? 1 : 2;
       final liteEligible = eligibleExercises.take(2).toList();
       for (final ex in liteEligible) {
         int minReps = 8;
@@ -207,10 +242,16 @@ class WorkoutEngine {
 
         plannedExercises.add(PlannedExercise(
           exercise: ex,
-          sets: [
-            PlannedSet(setIndex: 1, targetMinReps: minReps, targetMaxReps: maxReps, tempoCue: tempoCue, targetRestSeconds: 90),
-            PlannedSet(setIndex: 2, targetMinReps: minReps, targetMaxReps: maxReps, tempoCue: tempoCue, targetRestSeconds: 90),
-          ],
+          sets: List.generate(
+            liteSetsCount,
+            (setIdx) => PlannedSet(
+              setIndex: setIdx + 1,
+              targetMinReps: minReps,
+              targetMaxReps: maxReps,
+              tempoCue: tempoCue,
+              targetRestSeconds: 90,
+            ),
+          ),
         ));
       }
     } else {
@@ -218,7 +259,14 @@ class WorkoutEngine {
       final count = eligibleExercises.length > 3 ? 3 : eligibleExercises.length;
       for (int i = 0; i < count; i++) {
         final ex = eligibleExercises[i];
-        final setsCount = (i == 0) ? 3 : 2;
+        int setsCount;
+        if (absenceDeloadResult != null && absenceDeloadResult.volumeReductionPercent >= 40) {
+          setsCount = (i == 0) ? 2 : 1;
+        } else if (absenceDeloadResult != null && absenceDeloadResult.volumeReductionPercent >= 25) {
+          setsCount = 2;
+        } else {
+          setsCount = (i == 0) ? 3 : 2;
+        }
 
         int minReps = 8;
         int maxReps = 10;
@@ -273,6 +321,7 @@ class WorkoutEngine {
       estimatedDurationMinutes: estimatedDuration,
       targetMuscleGroup: targetGroup,
       isViable: true,
+      absenceDeloadResult: absenceDeloadResult,
     );
   }
 

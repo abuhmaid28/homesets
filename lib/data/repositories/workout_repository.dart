@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
-import '../../domain/catalog/exercise_catalog.dart';
 import '../../domain/models/domain_models.dart';
 import '../database/database_helper.dart';
 
@@ -14,6 +13,9 @@ class ActiveSessionSnapshot {
   final int currentSetIndex;
   final List<SetLog> completedSets;
   final ScheduledSession? scheduledSession;
+  final bool hasCorruptSetLogs;
+  final String rawCompletedSetsJson;
+  final bool isPlanUnrecoverable;
 
   const ActiveSessionSnapshot({
     required this.sessionId,
@@ -25,6 +27,9 @@ class ActiveSessionSnapshot {
     required this.currentSetIndex,
     required this.completedSets,
     this.scheduledSession,
+    this.hasCorruptSetLogs = false,
+    this.rawCompletedSetsJson = '[]',
+    this.isPlanUnrecoverable = false,
   });
 }
 
@@ -166,106 +171,51 @@ class WorkoutRepository {
 
     final row = rows.first;
     final setsList = <SetLog>[];
+    bool hasCorruptSetLogs = false;
+    final rawSetsJson = row['completed_sets_json'] as String? ?? '[]';
+
+    // F2: Defensive item-by-item parsing so a single corrupt entry does NOT wipe valid set history
     try {
-      final decoded = jsonDecode(row['completed_sets_json'] as String) as List<dynamic>;
+      final decoded = jsonDecode(rawSetsJson) as List<dynamic>;
       for (final item in decoded) {
-        final m = item as Map<String, dynamic>;
-        ExertionRating rating = ExertionRating.targetSweetspot;
-        for (final r in ExertionRating.values) {
-          if (r.name == m['exertion']) rating = r;
+        try {
+          final m = item as Map<String, dynamic>;
+          ExertionRating rating = ExertionRating.targetSweetspot;
+          for (final r in ExertionRating.values) {
+            if (r.name == m['exertion']) rating = r;
+          }
+
+          setsList.add(SetLog(
+            setIndex: m['setIndex'] as int,
+            exerciseId: m['exerciseId'] as String,
+            performedReps: m['performedReps'] as int,
+            bandUsed: m['bandUsed'] as String?,
+            exertion: rating,
+            isPainStopped: m['isPainStopped'] as bool? ?? false,
+            painNote: m['painNote'] as String?,
+            completedAt: DateTime.parse(m['completedAt'] as String),
+          ));
+        } catch (_) {
+          hasCorruptSetLogs = true;
         }
-
-        setsList.add(SetLog(
-          setIndex: m['setIndex'] as int,
-          exerciseId: m['exerciseId'] as String,
-          performedReps: m['performedReps'] as int,
-          bandUsed: m['bandUsed'] as String?,
-          exertion: rating,
-          isPainStopped: m['isPainStopped'] as bool? ?? false,
-          painNote: m['painNote'] as String?,
-          completedAt: DateTime.parse(m['completedAt'] as String),
-        ));
-      }
-    } catch (_) {}
-
-    ScheduledSession? scheduledSession;
-    try {
-      final rawSession = row['active_session_json'] as String?;
-      if (rawSession != null && rawSession.isNotEmpty && rawSession != '{}') {
-        scheduledSession = ScheduledSession.fromJson(jsonDecode(rawSession) as Map<String, dynamic>);
       }
     } catch (_) {
-      // Corrupt JSON handled safely below
+      hasCorruptSetLogs = true;
     }
 
-    // WP04: If scheduledSession was missing or corrupt in SQLite, safely synthesize a fallback session
-    // that preserves the routine, isLiteMode, and exercises from completed sets/catalog
-    if (scheduledSession == null) {
-      final routine = row['routine_name'] as String;
-      final routineAr = row['routine_name_ar'] as String;
-      final isLite = (row['is_lite_mode'] as int) == 1;
+    ScheduledSession? scheduledSession;
+    bool isPlanUnrecoverable = false;
+    final rawSession = row['active_session_json'] as String?;
 
-      String targetGroup = 'LATS_BICEPS';
-      final upperRoutine = routine.toUpperCase();
-      if (upperRoutine.contains('ROUTINE B') || upperRoutine.contains('B:') || upperRoutine.contains('PUSH')) {
-        targetGroup = 'CHEST_TRICEPS';
-      } else if (upperRoutine.contains('ROUTINE C') || upperRoutine.contains('C:') || upperRoutine.contains('LEGS')) {
-        targetGroup = 'LEGS_GLUTES';
+    // F1: Safely deserialize original plan. NEVER fabricate fallback exercises on corrupt state!
+    if (rawSession != null && rawSession.isNotEmpty && rawSession != '{}') {
+      try {
+        scheduledSession = ScheduledSession.fromJson(jsonDecode(rawSession) as Map<String, dynamic>);
+      } catch (_) {
+        isPlanUnrecoverable = true;
       }
-
-      // Collect exercises from completed sets or fallback to catalog
-      final plannedExercises = <PlannedExercise>[];
-      final seenExerciseIds = <String>{};
-      for (final setLog in setsList) {
-        if (!seenExerciseIds.contains(setLog.exerciseId)) {
-          seenExerciseIds.add(setLog.exerciseId);
-          try {
-            final ex = ExerciseCatalog.getById(setLog.exerciseId);
-            plannedExercises.add(PlannedExercise(
-              exercise: ex,
-              sets: [
-                PlannedSet(setIndex: setLog.setIndex, targetMinReps: 8, targetMaxReps: 10, targetRestSeconds: 90),
-              ],
-            ));
-          } catch (_) {}
-        }
-      }
-
-      // If no sets logged yet or catalog lookup empty, fallback to catalog exercises for this routine
-      if (plannedExercises.isEmpty) {
-        final List<String> defaultIds;
-        if (targetGroup == 'CHEST_TRICEPS') {
-          defaultIds = isLite ? ['pushup_standard', 'overhead_press_band'] : ['pushup_standard', 'overhead_press_band', 'pushdown_triceps_band'];
-        } else if (targetGroup == 'LEGS_GLUTES') {
-          defaultIds = isLite ? ['squat_band_resisted', 'glute_bridge_single_leg'] : ['squat_band_resisted', 'split_squat_rear_foot_elevated', 'glute_bridge_single_leg'];
-        } else {
-          defaultIds = isLite ? ['pullup_standard', 'row_band_bent_over'] : ['pullup_standard', 'row_band_bent_over', 'bicep_curl_band'];
-        }
-
-        for (final id in defaultIds) {
-          try {
-            final ex = ExerciseCatalog.getById(id);
-            plannedExercises.add(PlannedExercise(
-              exercise: ex,
-              sets: List.generate(
-                isLite ? 2 : 3,
-                (i) => PlannedSet(setIndex: i + 1, targetMinReps: 8, targetMaxReps: 10, targetRestSeconds: 90),
-              ),
-            ));
-          } catch (_) {}
-        }
-      }
-
-      scheduledSession = ScheduledSession(
-        id: row['session_id'] as String,
-        routineName: routine,
-        routineNameAr: routineAr,
-        exercises: plannedExercises,
-        isLiteMode: isLite,
-        estimatedDurationMinutes: isLite ? 12 : 30,
-        targetMuscleGroup: targetGroup,
-        isViable: true,
-      );
+    } else {
+      isPlanUnrecoverable = true;
     }
 
     return ActiveSessionSnapshot(
@@ -278,6 +228,9 @@ class WorkoutRepository {
       currentSetIndex: row['current_set_index'] as int,
       completedSets: setsList,
       scheduledSession: scheduledSession,
+      hasCorruptSetLogs: hasCorruptSetLogs,
+      rawCompletedSetsJson: rawSetsJson,
+      isPlanUnrecoverable: isPlanUnrecoverable,
     );
   }
 
@@ -329,16 +282,20 @@ class WorkoutRepository {
     });
   }
 
-  /// Calculates completed workout sessions in the rolling 7 days.
-  /// Strictly filters out emergency-stopped sessions (C3R-07) and sessions without completed reps (C3R2 WP07):
-  /// pain stops and zero-set empty workouts are NEVER credited toward the weekly consistency goal.
+  /// Calculates completed workout sessions in the rolling 7 days (D11).
+  /// Strictly filters out emergency-stopped sessions (C3R-07) and partially abandoned workouts (C3R2 F6):
+  /// legitimate completion requires >= 2 sets for Lite mode (out of 4 planned), >= 3 sets for Standard mode.
   Future<int> getWeeklyConsistencyCredit() async {
     final db = await _dbHelper.database;
     final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).toIso8601String();
     final result = await db.rawQuery(
       'SELECT COUNT(ws.id) as count FROM workout_sessions ws '
       'WHERE ws.ended_at >= ? AND ws.is_emergency_stopped = 0 '
-      'AND EXISTS (SELECT 1 FROM set_logs sl WHERE sl.session_id = ws.id AND sl.is_pain_stopped = 0 AND sl.performed_reps > 0)',
+      'AND ('
+      '  (ws.is_lite_mode = 1 AND (SELECT COUNT(*) FROM set_logs sl WHERE sl.session_id = ws.id AND sl.is_pain_stopped = 0 AND sl.performed_reps > 0) >= 2) '
+      '  OR '
+      '  (ws.is_lite_mode = 0 AND (SELECT COUNT(*) FROM set_logs sl WHERE sl.session_id = ws.id AND sl.is_pain_stopped = 0 AND sl.performed_reps > 0) >= 3)'
+      ')',
       [sevenDaysAgo],
     );
     if (result.isEmpty) return 0;
@@ -368,36 +325,73 @@ class WorkoutRepository {
     return null;
   }
 
-  /// Returns recent completed sets per exerciseId within the last 30 days (C3R2 WP06).
+  /// Returns the latest completion timestamp per target muscle group across all non-emergency sessions (C3R2 F3).
+  Future<Map<String, DateTime>> getLastWorkoutTimePerMuscleGroup() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'workout_sessions',
+      columns: ['routine_name', 'ended_at'],
+      where: 'is_emergency_stopped = 0',
+      orderBy: 'ended_at DESC',
+    );
+
+    final result = <String, DateTime>{};
+    for (final row in rows) {
+      final routine = (row['routine_name'] as String).toUpperCase();
+      String? group;
+      if (routine.contains('ROUTINE A') || routine.contains('A:') || routine.contains('LATS') || routine.contains('PULL')) {
+        group = 'LATS_BICEPS';
+      } else if (routine.contains('ROUTINE B') || routine.contains('B:') || routine.contains('CHEST') || routine.contains('PUSH')) {
+        group = 'CHEST_TRICEPS';
+      } else if (routine.contains('ROUTINE C') || routine.contains('C:') || routine.contains('LEGS') || routine.contains('LOWER')) {
+        group = 'LEGS_GLUTES';
+      }
+      if (group != null && !result.containsKey(group)) {
+        result[group] = DateTime.parse(row['ended_at'] as String);
+      }
+    }
+    return result;
+  }
+
+  /// Returns recent completed sets per exerciseId from the latest completed session (C3R2 F5).
+  /// Isolates latest session sets so older sets from weeks prior do not permanently suppress progression.
   Future<Map<String, List<SetLog>>> getRecentExerciseHistory() async {
     final db = await _dbHelper.database;
-    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30)).toIso8601String();
     final rows = await db.rawQuery(
-      'SELECT sl.* FROM set_logs sl '
+      'SELECT sl.*, ws.ended_at FROM set_logs sl '
       'JOIN workout_sessions ws ON sl.session_id = ws.id '
-      'WHERE ws.ended_at >= ? AND ws.is_emergency_stopped = 0 '
-      'ORDER BY sl.completed_at ASC',
-      [thirtyDaysAgo],
+      'WHERE ws.is_emergency_stopped = 0 '
+      'ORDER BY ws.ended_at DESC, sl.set_index ASC',
     );
 
     final history = <String, List<SetLog>>{};
+    final seenSessionPerExercise = <String, String>{};
+
     for (final row in rows) {
       final exId = row['exercise_id'] as String;
-      ExertionRating rating = ExertionRating.targetSweetspot;
-      for (final r in ExertionRating.values) {
-        if (r.name == row['exertion']) rating = r;
+      final sessionId = row['session_id'] as String;
+
+      // Strictly isolate sets from the single latest session of this exercise
+      if (!seenSessionPerExercise.containsKey(exId)) {
+        seenSessionPerExercise[exId] = sessionId;
       }
-      final setLog = SetLog(
-        setIndex: row['set_index'] as int,
-        exerciseId: exId,
-        performedReps: row['performed_reps'] as int,
-        bandUsed: row['band_used'] as String?,
-        exertion: rating,
-        isPainStopped: (row['is_pain_stopped'] as int) == 1,
-        painNote: row['pain_note'] as String?,
-        completedAt: DateTime.parse(row['completed_at'] as String),
-      );
-      history.putIfAbsent(exId, () => []).add(setLog);
+      if (seenSessionPerExercise[exId] == sessionId) {
+        ExertionRating rating = ExertionRating.targetSweetspot;
+        for (final r in ExertionRating.values) {
+          if (r.name == row['exertion']) rating = r;
+        }
+        final setLog = SetLog(
+          setIndex: row['set_index'] as int,
+          exerciseId: exId,
+          performedReps: row['performed_reps'] as int,
+          bandUsed: row['band_used'] as String?,
+          exertion: rating,
+          isPainStopped: (row['is_pain_stopped'] as int) == 1,
+          painNote: row['pain_note'] as String?,
+          completedAt: DateTime.parse(row['completed_at'] as String),
+        );
+        history.putIfAbsent(exId, () => []).add(setLog);
+      }
     }
     return history;
   }
