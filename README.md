@@ -39,3 +39,6 @@ At present there is **no Flutter application and no established GitHub Actions C
 - [C1-R extended campaign](https://github.com/abuhmaid28/homesets/issues/6) is **prepared but not run**; it expands the fix pass on the same Draft PR #5 into a substantive autonomous responsive design / visual QA sprint.
 
 **Queue note:** Ahmed already sent the short C1 correction prompt. Do not start a competing agent run; extended C1-R Issue #6 begins only after verifying the updated PR #5 head. GitHub does not auto-start local Antigravity.
+
+## Next major autonomous assignment (prepared)
+[C2-MEGA Issue #8 — 28 engineering/quality work packages](https://github.com/abuhmaid28/homesets/issues/8). C1-V2 delivered but Draft PR #5 remains pending one owner visual/product gate. The next campaign can proceed **only within no-production-code architecture/specification/foundation CI scope** while that gate is open; do not assume Flutter code/dependency approval.
