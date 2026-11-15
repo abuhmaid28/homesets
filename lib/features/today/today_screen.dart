@@ -48,6 +48,8 @@ class _TodayScreenState extends State<TodayScreen> {
     final activeSession = await widget.repository.getActiveSessionState();
     final credit = await widget.repository.getWeeklyConsistencyCredit();
     final lastWorkoutTime = await widget.repository.getLastWorkoutTime();
+    final lastMuscleGroup = await widget.repository.getLastWorkoutMuscleGroup();
+    final exerciseHistory = await widget.repository.getRecentExerciseHistory();
     final nextCycle = await widget.repository.getNextRoutineCycle();
 
     if (profile != null) {
@@ -55,11 +57,15 @@ class _TodayScreenState extends State<TodayScreen> {
       _standardSession = engine.generateNextSession(
         routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
+        lastTargetMuscleGroup: lastMuscleGroup,
+        exerciseHistory: exerciseHistory,
         isLiteMode: false,
       );
       _liteSession = engine.generateNextSession(
         routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
+        lastTargetMuscleGroup: lastMuscleGroup,
+        exerciseHistory: exerciseHistory,
         isLiteMode: true,
       );
     }
@@ -175,9 +181,72 @@ class _TodayScreenState extends State<TodayScreen> {
                           if (_activeSession?.scheduledSession != null) {
                             widget.onStartWorkout(_activeSession!.scheduledSession!, true);
                           } else if (_standardSession != null) {
-                            widget.onStartWorkout(_standardSession!, true);
+                            // Safe fallback preserving active session isLiteMode & routine name (C3R2 WP04)
+                            final fallbackSession = ScheduledSession(
+                              id: _activeSession!.sessionId,
+                              routineName: _activeSession!.routineName,
+                              routineNameAr: _activeSession!.routineNameAr,
+                              exercises: _activeSession!.isLiteMode
+                                  ? (_liteSession?.exercises ?? _standardSession!.exercises)
+                                  : _standardSession!.exercises,
+                              isLiteMode: _activeSession!.isLiteMode,
+                              estimatedDurationMinutes: _activeSession!.isLiteMode ? 12 : 30,
+                              targetMuscleGroup: _standardSession!.targetMuscleGroup,
+                              isViable: true,
+                            );
+                            widget.onStartWorkout(fallbackSession, true);
                           }
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            foregroundColor: HomesetsColors.textMuted,
+                          ),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: Text(
+                            isArabic ? 'إلغاء المسودة المحفوظة' : 'Discard In-Progress Draft',
+                            style: HomesetsTypography.bodySmall,
+                          ),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: HomesetsColors.surfaceElevated,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                title: Text(
+                                  isArabic ? 'إلغاء المسودة' : 'Discard Draft?',
+                                  style: HomesetsTypography.heading3,
+                                ),
+                                content: Text(
+                                  isArabic
+                                      ? 'هل أنت متأكد من رغبتك في إلغاء هذا التمرين غير المكتمل؟ سيتم حذف التقدم المؤقت.'
+                                      : 'Are you sure you want to discard this in-progress workout? Unfinished progress will be cleared.',
+                                  style: HomesetsTypography.bodyMedium,
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: Text(isArabic ? 'تراجع' : 'Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: HomesetsColors.orange,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: Text(isArabic ? 'تأكيد الحذف' : 'Discard'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await widget.repository.clearActiveSessionState();
+                              await _loadData();
+                            }
+                          },
+                        ),
                       ),
                     ],
                   ),

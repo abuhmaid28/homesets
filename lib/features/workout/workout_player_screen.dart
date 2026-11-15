@@ -88,6 +88,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   int get _totalSetsInExercise => _currentPlannedExercise.sets.length;
 
   Future<void> _handleLogSet(ExertionRating exertion) async {
+    if (_isSessionFinished) return;
     final now = DateTime.now();
     final log = SetLog(
       setIndex: _setIndex,
@@ -124,6 +125,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
   }
 
   Future<void> _advanceAfterRest() async {
+    if (_isSessionFinished) return;
     if (_setIndex < _totalSetsInExercise) {
       // Advance to next set in current exercise
       setState(() {
@@ -171,11 +173,11 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     _isSessionFinished = true;
 
     final now = DateTime.now();
-    // 1. Immediately log the emergency pain stop set
+    // 1. Immediately log the emergency pain stop set with 0 reps (C3R2 WP05)
     final painLog = SetLog(
       setIndex: _setIndex,
       exerciseId: _exercise.id,
-      performedReps: _currentReps,
+      performedReps: 0,
       exertion: ExertionRating.painStopped,
       isPainStopped: true,
       painNote: 'Acute joint pain stop (SAFE-01, GOV14)',
@@ -184,13 +186,17 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     _completedSets.add(painLog);
 
     // 2. Quarantine joint(s) in the user profile durably (C3R-04)
-    final profile = await widget.repository.getUserProfile();
-    if (profile != null && _exercise.jointStressTags.isNotEmpty) {
-      final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
-        ..addAll(_exercise.jointStressTags);
-      await widget.repository.saveUserProfile(
-        profile.copyWith(avoidedJoints: updatedAvoided.toList()),
-      );
+    try {
+      final profile = await widget.repository.getUserProfile();
+      if (profile != null && _exercise.jointStressTags.isNotEmpty) {
+        final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
+          ..addAll(_exercise.jointStressTags);
+        await widget.repository.saveUserProfile(
+          profile.copyWith(avoidedJoints: updatedAvoided.toList()),
+        );
+      }
+    } catch (_) {
+      // Disk failure must not trap the user
     }
 
     // 3. Immediately finalize and persist session as emergency stopped
@@ -207,7 +213,11 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       isEmergencyStopped: true,
       emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
     );
-    await widget.repository.saveCompletedSession(completedSession);
+    try {
+      await widget.repository.saveCompletedSession(completedSession);
+    } catch (_) {
+      // Disk failure must not trap the user
+    }
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
@@ -458,6 +468,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
 
     if (confirmed == true) {
+      if (_isSessionFinished) return;
       await _handleLogSet(selected);
 
       // Check if session is completely finished
@@ -467,7 +478,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       }
 
       // Transition to rest screen
-      if (mounted) {
+      if (mounted && !_isSessionFinished) {
         final restDuration = _currentPlannedExercise.sets.first.targetRestSeconds;
         await Navigator.of(context).push(
           MaterialPageRoute(
@@ -477,6 +488,7 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
             ),
           ),
         );
+        if (_isSessionFinished) return;
         await _advanceAfterRest();
       }
     }
