@@ -139,7 +139,7 @@ void main() {
       final creditAfterEmergency = await repo.getWeeklyConsistencyCredit();
       expect(creditAfterEmergency, equals(0));
 
-      // Save a valid completed workout
+      // Save a valid completed workout with completed sets
       final normalSession = CompletedWorkoutSession(
         id: 'normal_session_1',
         scheduledSessionId: 'sched_norm',
@@ -148,7 +148,15 @@ void main() {
         startedAt: now.subtract(const Duration(minutes: 30)),
         endedAt: now,
         totalDurationSeconds: 1800,
-        completedSets: const [],
+        completedSets: [
+          SetLog(
+            setIndex: 1,
+            exerciseId: 'pullup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 10)),
+          ),
+        ],
         isEmergencyStopped: false,
       );
       await repo.saveCompletedSession(normalSession);
@@ -238,6 +246,70 @@ void main() {
       expect(recovered.scheduledSession!.id, equals('custom_lite_session_456'));
       expect(recovered.scheduledSession!.isLiteMode, isTrue);
       expect(recovered.scheduledSession!.targetMuscleGroup, equals('CHEST_TRICEPS'));
+    });
+
+    test('getLastWorkoutMuscleGroup returns target group of latest completed workout (WP02)', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      final group0 = await repo.getLastWorkoutMuscleGroup();
+      expect(group0, isNull);
+
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_group_b',
+        scheduledSessionId: 'sched_group_b',
+        routineName: 'Routine B: Upper Push & Triceps',
+        startedAt: now.subtract(const Duration(hours: 5)),
+        endedAt: now.subtract(const Duration(hours: 4)),
+        totalDurationSeconds: 1800,
+        completedSets: [
+          SetLog(
+            setIndex: 1,
+            exerciseId: 'pushup_standard',
+            performedReps: 10,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(hours: 4)),
+          ),
+        ],
+      ));
+
+      final group1 = await repo.getLastWorkoutMuscleGroup();
+      expect(group1, equals('CHEST_TRICEPS'));
+    });
+
+    test('getRecentExerciseHistory retrieves completed sets grouped by exerciseId (WP06)', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      await repo.saveCompletedSession(CompletedWorkoutSession(
+        id: 'sess_hist_1',
+        scheduledSessionId: 'sched_hist_1',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        startedAt: now.subtract(const Duration(days: 1)),
+        endedAt: now.subtract(const Duration(days: 1, minutes: -30)),
+        totalDurationSeconds: 1800,
+        completedSets: [
+          SetLog(
+            setIndex: 1,
+            exerciseId: 'pullup_standard',
+            performedReps: 10,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(days: 1)),
+          ),
+          SetLog(
+            setIndex: 2,
+            exerciseId: 'pullup_standard',
+            performedReps: 10,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(days: 1)),
+          ),
+        ],
+      ));
+
+      final history = await repo.getRecentExerciseHistory();
+      expect(history.containsKey('pullup_standard'), isTrue);
+      expect(history['pullup_standard']!.length, equals(2));
+      expect(history['pullup_standard']!.first.performedReps, equals(10));
     });
   });
 }
