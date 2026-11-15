@@ -19,6 +19,9 @@ class ActiveSessionSnapshot {
   final bool isPlanUnrecoverable;
   final bool isPendingFinalization;
 
+  bool get isDraftDamaged =>
+      hasCorruptSetLogs || isPlanUnrecoverable || scheduledSession == null || scheduledSession!.exercises.isEmpty;
+
   const ActiveSessionSnapshot({
     required this.sessionId,
     required this.routineName,
@@ -150,6 +153,25 @@ class WorkoutRepository {
     final sessionJson = snapshot.scheduledSession != null
         ? jsonEncode(snapshot.scheduledSession!.toJson())
         : '{}';
+
+    // Defense-in-depth (GATE-A): If snapshot has corrupt set logs and raw bytes were retained,
+    // archive them to session_salvage_archive BEFORE updating active_session_state so raw data is never lost.
+    if (snapshot.hasCorruptSetLogs && snapshot.rawCompletedSetsJson.isNotEmpty) {
+      await db.insert(
+        'session_salvage_archive',
+        {
+          'id': 'salvage_auto_${snapshot.sessionId}_${DateTime.now().millisecondsSinceEpoch}',
+          'session_id': snapshot.sessionId,
+          'routine_name': snapshot.routineName,
+          'salvaged_at': DateTime.now().toIso8601String(),
+          'parsed_sets_count': snapshot.completedSets.length,
+          'has_corrupt_logs': 1,
+          'raw_completed_sets_json': snapshot.rawCompletedSetsJson,
+          'raw_active_session_json': snapshot.rawActiveSessionJson,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
 
     await db.insert(
       'active_session_state',

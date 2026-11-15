@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:homesets/domain/engine/workout_engine.dart';
@@ -547,42 +548,281 @@ void main() {
       expect(credit, equals(0));
     });
 
-    test('WP-C: Final set interruption flags isPendingFinalization and avoids replaying final exercise set 1', () async {
+    test('GATE-A: Valid plan + partially corrupt set logs flags hasCorruptSetLogs and auto-salvages raw bytes defensively', () async {
+      final repo = WorkoutRepository();
+      final db = await DatabaseHelper.instance.database;
+      final now = DateTime.now();
+
+      // 1. Valid scheduled plan
+      const validScheduled = ScheduledSession(
+        id: 'sched_gate_a_repro',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        routineNameAr: 'التمرين الأول',
+        isLiteMode: false,
+        estimatedDurationMinutes: 30,
+        targetMuscleGroup: 'LATS_BICEPS',
+        exercises: [
+          PlannedExercise(
+            exercise: Exercise(
+              id: 'pullup_standard',
+              slug: 'pullup_standard',
+              nameAr: 'عقلة قياسية',
+              nameEn: 'Standard Pull-Up',
+              pattern: MovementPattern.verticalPull,
+              primaryMuscles: ['latissimus_dorsi', 'biceps_brachii'],
+              secondaryMuscles: ['rhomboids'],
+              jointStressTags: [JointImpactTag.shoulderAnterior],
+              requiredEquipment: ['pull_up_bar'],
+              supportsBandAssistance: true,
+              supportsBandResistance: false,
+              skillPrerequisiteReps: 0,
+              cuesAr: 'مسار مستقيم',
+              cuesEn: 'Full ROM',
+            ),
+            sets: [
+              PlannedSet(setIndex: 1, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+              PlannedSet(setIndex: 2, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+            ],
+          ),
+        ],
+      );
+
+      // 2. Insert valid plan + 2 valid sets + 1 malformed non-JSON token
+      final corruptRawBytes = '[{"setIndex":1,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"},"__CORRUPT_MALFORMED_TOKEN__",{"setIndex":2,"exerciseId":"pullup_standard","performedReps":8,"exertion":"targetSweetspot","completedAt":"${now.toIso8601String()}"}]';
+      await db.insert('active_session_state', {
+        'session_id': 'sess_gate_a_corrupt_logs',
+        'routine_name': 'Routine A: Upper Pull & Biceps',
+        'routine_name_ar': 'التمرين الأول',
+        'is_lite_mode': 0,
+        'started_at': now.subtract(const Duration(minutes: 20)).toIso8601String(),
+        'current_exercise_index': 0,
+        'current_set_index': 2,
+        'completed_sets_json': corruptRawBytes,
+        'active_session_json': jsonEncode(validScheduled.toJson()),
+      });
+
+      // 3. Verify getActiveSessionState detects corrupt logs while preserving valid plan and valid sets
+      final snapshot = await repo.getActiveSessionState();
+      expect(snapshot, isNotNull);
+      expect(snapshot!.hasCorruptSetLogs, isTrue, reason: 'Must detect corrupt set log entry');
+      expect(snapshot.scheduledSession, isNotNull, reason: 'Plan is valid and uncorrupted');
+      expect(snapshot.completedSets.length, equals(2), reason: 'Two valid sets parsed');
+      expect(snapshot.rawCompletedSetsJson, equals(corruptRawBytes));
+
+      // 4. Test defensive auto-salvage: Calling saveActiveSessionState must not overwrite bad bytes without archiving
+      await repo.saveActiveSessionState(snapshot);
+      final defensiveArchive = await repo.getSalvagedSessionArchive();
+      expect(defensiveArchive.length, equals(1));
+      expect(defensiveArchive.first['raw_completed_sets_json'], equals(corruptRawBytes),
+          reason: 'Raw corrupt JSON must be defensively preserved before active state write');
+
+      // 5. Test explicit salvageCorruptSession: Archives raw bytes, saves valid sets, purges active state
+      await repo.salvageCorruptSession(
+        session: CompletedWorkoutSession(
+          id: snapshot.sessionId,
+          scheduledSessionId: snapshot.sessionId,
+          routineName: snapshot.routineName,
+          isLiteMode: snapshot.isLiteMode,
+          startedAt: snapshot.startedAt,
+          endedAt: now,
+          totalDurationSeconds: 1200,
+          completedSets: snapshot.completedSets,
+        ),
+        rawCompletedSetsJson: snapshot.rawCompletedSetsJson,
+        rawActiveSessionJson: snapshot.rawActiveSessionJson,
+        hasCorruptSetLogs: snapshot.hasCorruptSetLogs,
+      );
+
+      final fullArchive = await repo.getSalvagedSessionArchive();
+      expect(fullArchive.isNotEmpty, isTrue);
+      expect(fullArchive.any((r) => r['raw_completed_sets_json'] == corruptRawBytes), isTrue);
+
+      // Verify consistency credit is 0
+      final credit = await repo.getWeeklyConsistencyCredit();
+      expect(credit, equals(0), reason: 'Corrupt draft salvage must earn 0 consistency credit');
+
+      // Verify active state is cleared
+      final active = await repo.getActiveSessionState();
+      expect(active, isNull);
+    });
+
+    test('GATE-B: Unsaved Pain STOP exit sets isPersisted: false and does not write to database', () async {
       final repo = WorkoutRepository();
       final now = DateTime.now();
 
-      // Create snapshot representing completion of the final set of the final exercise
-      final finalSetSnapshot = ActiveSessionSnapshot(
-        sessionId: 'session_final_interrupted',
+      final unsavedSession = CompletedWorkoutSession(
+        id: 'sess_unsaved_pain_stop',
+        scheduledSessionId: 'sched_unsaved',
+        routineName: 'Routine B: Upper Push',
+        isLiteMode: false,
+        startedAt: now.subtract(const Duration(minutes: 10)),
+        endedAt: now,
+        totalDurationSeconds: 600,
+        completedSets: [
+          SetLog(
+            setIndex: 1,
+            exerciseId: 'pushup_standard',
+            performedReps: 8,
+            exertion: ExertionRating.targetSweetspot,
+            completedAt: now.subtract(const Duration(minutes: 5)),
+          ),
+          SetLog(
+            setIndex: 2,
+            exerciseId: 'pushup_standard',
+            performedReps: 0,
+            exertion: ExertionRating.painStopped,
+            isPainStopped: true,
+            painNote: 'Pain STOP',
+            completedAt: now,
+          ),
+        ],
+        isEmergencyStopped: true,
+        emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
+        isPersisted: false,
+      );
+
+      expect(unsavedSession.isPersisted, isFalse);
+
+      // Verify no records exist in DB
+      final db = await DatabaseHelper.instance.database;
+      final sessions = await db.query('workout_sessions', where: 'id = ?', whereArgs: [unsavedSession.id]);
+      expect(sessions, isEmpty, reason: 'Unsaved exit must not have written to workout_sessions');
+
+      final credit = await repo.getWeeklyConsistencyCredit();
+      expect(credit, equals(0), reason: 'Unsaved exit must have 0 consistency credit');
+    });
+
+    test('GATE-C: Real nonempty workout plan final-set interruption integration test in SQLite', () async {
+      final repo = WorkoutRepository();
+      final now = DateTime.now();
+
+      // Real nonempty scheduled workout: 2 exercises x 3 sets = 6 sets total
+      final realScheduled = ScheduledSession(
+        id: 'sched_gate_c_full',
+        routineName: 'Routine A: Upper Pull & Biceps',
+        routineNameAr: 'التمرين الأول',
+        isLiteMode: false,
+        estimatedDurationMinutes: 25,
+        targetMuscleGroup: 'LATS_BICEPS',
+        exercises: [
+          PlannedExercise(
+            exercise: const Exercise(
+              id: 'pullup_standard',
+              slug: 'pullup_standard',
+              nameAr: 'عقلة قياسية',
+              nameEn: 'Standard Pull-Up',
+              pattern: MovementPattern.verticalPull,
+              primaryMuscles: ['latissimus_dorsi', 'biceps_brachii'],
+              secondaryMuscles: ['rhomboids'],
+              jointStressTags: [JointImpactTag.shoulderAnterior],
+              requiredEquipment: ['pull_up_bar'],
+              supportsBandAssistance: true,
+              supportsBandResistance: false,
+              skillPrerequisiteReps: 0,
+              cuesAr: 'مسار مستقيم',
+              cuesEn: 'Full ROM',
+            ),
+            sets: [
+              const PlannedSet(setIndex: 1, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+              const PlannedSet(setIndex: 2, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+              const PlannedSet(setIndex: 3, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+            ],
+          ),
+          PlannedExercise(
+            exercise: const Exercise(
+              id: 'chinup_standard',
+              slug: 'chinup_standard',
+              nameAr: 'عقلة أمامية',
+              nameEn: 'Standard Chin-Up',
+              pattern: MovementPattern.verticalPull,
+              primaryMuscles: ['biceps_brachii', 'latissimus_dorsi'],
+              secondaryMuscles: ['brachialis'],
+              jointStressTags: [JointImpactTag.shoulderAnterior],
+              requiredEquipment: ['pull_up_bar'],
+              supportsBandAssistance: true,
+              supportsBandResistance: false,
+              skillPrerequisiteReps: 0,
+              cuesAr: 'قبضة عكسية',
+              cuesEn: 'Supinated grip',
+            ),
+            sets: [
+              const PlannedSet(setIndex: 1, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+              const PlannedSet(setIndex: 2, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+              const PlannedSet(setIndex: 3, targetMinReps: 6, targetMaxReps: 10, targetRestSeconds: 90),
+            ],
+          ),
+        ],
+      );
+
+      final completedAllSets = <SetLog>[
+        SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 20))),
+        SetLog(setIndex: 2, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 16))),
+        SetLog(setIndex: 3, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 12))),
+        SetLog(setIndex: 1, exerciseId: 'chinup_standard', performedReps: 7, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 8))),
+        SetLog(setIndex: 2, exerciseId: 'chinup_standard', performedReps: 7, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 4))),
+        SetLog(setIndex: 3, exerciseId: 'chinup_standard', performedReps: 7, exertion: ExertionRating.targetSweetspot, completedAt: now),
+      ];
+
+      // Save crash state right at final set completion
+      await repo.saveActiveSessionState(ActiveSessionSnapshot(
+        sessionId: 'sess_crash_nonempty_final',
         routineName: 'Routine A: Upper Pull & Biceps',
         routineNameAr: 'التمرين الأول',
         isLiteMode: false,
         startedAt: now.subtract(const Duration(minutes: 25)),
-        currentExerciseIndex: 1, // Final exercise index
-        currentSetIndex: 3,     // Final set
-        completedSets: [
-          SetLog(setIndex: 1, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 15))),
-          SetLog(setIndex: 2, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 10))),
-          SetLog(setIndex: 3, exerciseId: 'pullup_standard', performedReps: 8, exertion: ExertionRating.targetSweetspot, completedAt: now.subtract(const Duration(minutes: 5))),
-        ],
-        scheduledSession: const ScheduledSession(
-          id: 'session_final_interrupted',
-          routineName: 'Routine A: Upper Pull & Biceps',
-          routineNameAr: 'التمرين الأول',
-          isLiteMode: false,
-          estimatedDurationMinutes: 25,
-          targetMuscleGroup: 'LATS_BICEPS',
-          exercises: [],
-        ),
+        currentExerciseIndex: 1,
+        currentSetIndex: 3,
+        completedSets: completedAllSets,
+        scheduledSession: realScheduled,
         isPendingFinalization: true,
-      );
+      ));
 
-      await repo.saveActiveSessionState(finalSetSnapshot);
-
+      // 1. Recover snapshot from SQLite and verify isPendingFinalization reconstruction
       final recovered = await repo.getActiveSessionState();
       expect(recovered, isNotNull);
-      expect(recovered!.currentSetIndex, equals(3),
-          reason: 'Final set index must stay on final set and not reset to 1');
+      expect(recovered!.isPendingFinalization, isTrue,
+          reason: 'GATE-C: Must reconstruct isPendingFinalization == true when all planned sets logged');
+      expect(recovered.currentExerciseIndex, equals(1));
+      expect(recovered.currentSetIndex, equals(3), reason: 'Must NOT reset set index to 1');
+      expect(recovered.completedSets.length, equals(6));
+
+      // 2. Save completed session
+      final completed = CompletedWorkoutSession(
+        id: recovered.sessionId,
+        scheduledSessionId: recovered.sessionId,
+        routineName: recovered.routineName,
+        isLiteMode: recovered.isLiteMode,
+        startedAt: recovered.startedAt,
+        endedAt: now,
+        totalDurationSeconds: 1500,
+        completedSets: recovered.completedSets,
+        isEmergencyStopped: false,
+      );
+      await repo.saveCompletedSession(completed);
+
+      // 3. Verify SQLite database: exactly 1 workout session, exactly 6 sets, 1 consistency credit
+      final db = await DatabaseHelper.instance.database;
+      final savedSessions = await db.query('workout_sessions');
+      expect(savedSessions.length, equals(1), reason: 'Exactly one finalized workout session');
+
+      final savedSets = await db.query('set_logs', where: 'session_id = ?', whereArgs: ['sess_crash_nonempty_final']);
+      expect(savedSets.length, equals(6), reason: 'All 6 sets saved without duplication');
+
+      final credit = await repo.getWeeklyConsistencyCredit();
+      expect(credit, equals(1), reason: 'Exactly one weekly consistency credit awarded');
+
+      // Active state cleared
+      final active = await repo.getActiveSessionState();
+      expect(active, isNull);
+
+      // 4. Idempotent finalization: Saving again does not duplicate session or sets
+      await repo.saveCompletedSession(completed);
+      final savedSessionsAfter = await db.query('workout_sessions');
+      expect(savedSessionsAfter.length, equals(1), reason: 'Idempotent save: exactly one session');
+      final savedSetsAfter = await db.query('set_logs', where: 'session_id = ?', whereArgs: ['sess_crash_nonempty_final']);
+      expect(savedSetsAfter.length, equals(6), reason: 'Idempotent save: exactly 6 sets');
+      final creditAfter = await repo.getWeeklyConsistencyCredit();
+      expect(creditAfter, equals(1), reason: 'Idempotent save: exactly 1 credit');
     });
   });
 }

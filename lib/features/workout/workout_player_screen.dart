@@ -303,8 +303,8 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.of(ctx).pop();
-                  // Acknowledged unsaved exit: explicitly navigates without falsely claiming persistence succeeded
-                  widget.onFinishSession(completedSession);
+                  // Acknowledged unsaved exit: explicitly marks isPersisted: false so Summary never falsely claims saved
+                  widget.onFinishSession(completedSession.copyWith(isPersisted: false));
                 },
                 child: Text(
                   isArabic ? 'خروج بدون حفظ (تأكيد)' : 'Exit Unsaved (Acknowledge Risk)',

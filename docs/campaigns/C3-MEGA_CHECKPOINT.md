@@ -34,17 +34,20 @@
 | **WP-A** | Lossless corrupt-session recovery & SQLite raw archiving | **DONE** | `session_salvage_archive` table, `salvageCorruptSession()`, partial session credit exclusion |
 | **WP-B** | Truthful and atomic Pain STOP persistence | **DONE** | `saveEmergencyPainStopSession()` atomic transaction, explicit unsaved state & retry in UI |
 | **WP-C** | Final set interruption & crash recovery | **DONE** | Preserves final set index, sets `isPendingFinalization`, immediate finalization upon restart |
+| **GATE-A** | Prevent corrupt set logs from being overwritten when plan is valid | **DONE** | `isDraftDamaged` blocks normal Resume in `TodayScreen`; auto-archives raw logs defensively |
+| **GATE-B** | Truthful summary & consistency exclusion for unsaved exits | **DONE** | `isPersisted: false` flag, explicit unsaved notice in `SummaryScreen`, credit badge hidden |
+| **GATE-C** | Nonempty scheduled workout final-set interruption integration test | **DONE** | Multi-exercise SQLite integration test in `c3r2_gate_integration_test.dart` (5 tests passing) |
 
 ---
 
 ## 2. Test Verification Ledger
 
 ### Flutter Test Suite (`flutter test`)
-- **Total Tests:** 48
-- **Passing:** 48 (100%)
+- **Total Tests:** 55
+- **Passing:** 55 (100%)
 - **Failing:** 0
 - **Suites:**
-  1. `test/domain/c3r2_repro_test.dart` (15 tests passing):
+  1. `test/domain/c3r2_repro_test.dart` (17 tests passing):
      - REPRO-01: Rotation double-skip bug resolved (12h gap after A does not skip B)
      - REPRO-02: Zero-set session does not earn consistency credit
      - REPRO-03 / F1: Corrupt active session JSON recovered preserving `isLiteMode` and marked unrecoverable without fabricated exercises
@@ -60,10 +63,18 @@
      - WP-A / CORE-FINAL-01: Corrupt session salvage durably archives raw bytes in SQLite and earns 0 weekly credit
      - WP-B / CORE-FINAL-02: Atomic emergency pain stop executes atomically and does not create partial state
      - WP-C: Final set interruption flags `isPendingFinalization` and avoids replaying final exercise set 1
-     - REPRO-06: Integrated cycle flow across consecutive days and short/long gaps
-  2. `test/domain/fixture_engine_test.dart` (2 tests, 106 data-driven fixture scenarios passing):
+     - GATE-A: Partially corrupt set logs auto-archive defensively
+     - GATE-B: Unsaved Pain STOP exit marks `isPersisted: false`
+     - GATE-C: Nonempty workout plan final set interruption preserves index and avoids duplicate sets
+  2. `test/features/c3r2_gate_integration_test.dart` (5 tests passing):
+     - GATE-A: Corrupt set logs with valid scheduled plan blocks Resume and shows Archive Raw & Save Salvaged Sets
+     - GATE-B: Unsaved Pain STOP exit shows explicit unsaved summary notice and hides consistency credit badge
+     - GATE-B: Legitimate completed workout session earns consistency credit badge
+     - GATE-B: Emergency pain stop session hides consistency credit badge and shows joint protection card
+     - GATE-C: Nonempty scheduled workout crash recovery integration test in SQLite
+  3. `test/domain/fixture_engine_test.dart` (2 tests, 106 data-driven fixture scenarios passing):
      - All 106 scenarios from `engine_scenarios.json` dynamically executed against production domain engine methods
-  3. `test/domain/workout_engine_test.dart` (12 tests passing):
+  4. `test/domain/workout_engine_test.dart` (12 tests passing):
      - Equipment eligibility predicates (GOV13)
      - Strict exclusion of `chinup_neutral` without parallel grip (C3R-05)
      - Exclusion of `pulldown_door_band` without door anchor
@@ -74,12 +85,12 @@
      - Deterministic rotation & clock injection (C3R-02)
      - Double progression rep bracket expansion & advancing
      - Cadence pause overload ceiling when hitting 3x10
-  4. `test/ui/design_system_test.dart` (6 tests passing):
+  5. `test/ui/design_system_test.dart` (6 tests passing):
      - Contrast ratio verification ($\ge 4.5:1$ WCAG AA, $\ge 7:1$ WCAG AAA)
      - Direction A tabular figures on timer and rep stepper
      - Tactile card & Kinetic button state rendering
      - RTL layout direction alignment
-  5. `test/data/workout_repository_test.dart` (8 tests passing):
+  6. `test/data/workout_repository_test.dart` (8 tests passing):
      - User profile persistence with avoided joints
      - Hardware inventory persistence
      - Active session crash recovery state machine and purge on completion
@@ -88,9 +99,9 @@
      - `getNextRoutineCycle` deterministic A $\to$ B $\to$ C $\to$ A rotation (C3R-02)
      - `getLastWorkoutMuscleGroup` query (C3R2 WP02)
      - `getRecentExerciseHistory` query (C3R2 WP06, F5)
-  6. `test/widget_test.dart` (1 test passing):
+  7. `test/widget_test.dart` (1 test passing):
      - First-time user launch into Onboarding flow
-  7. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
+  8. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
      - Complete End-to-End User Flow with Pain Stop (English)
      - Complete End-to-End User Flow with Pain Stop (Egyptian Arabic RTL)
      - Workout Player: Rep Stepper, Log Set, Exertion Rating, and Rest Timer Flow
@@ -111,8 +122,8 @@
 ## 3. Binary Build Artifact (WP31 / C3R2 WP09 Verification)
 
 - **Artifact Path:** `build/app/outputs/flutter-apk/app-debug.apk`
-- **File Size:** 209,984,523 bytes (~200.2 MB unstripped debug package)
-- **SHA256:** `89E569EAB7D7C67BA3CF99E9F3F64B51FD360A95A2729941969DB159B2EE5CED`
+- **File Size:** 209,988,589 bytes (~200.3 MB unstripped debug package)
+- **SHA256:** `7BB85960E731DEA7245349AEBEC594E45BCE0ED8C94518B787886627EED4DFF9`
 - **Security & Permissions Audit (Truthful Proof per WP08 / C3R2 WP09):**
   - Production manifest (`android/app/src/main/AndroidManifest.xml`) declares **0 permissions**.
   - Merged debug APK contains `android.permission.INTERNET` injected exclusively from `src/debug/AndroidManifest.xml` for local Flutter tooling, hot reload, and DevTools socket communication.
@@ -151,79 +162,12 @@
 | | **WP27** | Active workout player (exercise card, rep stepper, 1-tap pain STOP) | **DONE** | `WorkoutPlayerScreen` with 1-tap emergency stop modal and quit guard |
 | | **WP28** | Rest timer & exertion feedback (countdown, +30s, cultural RPE) | **DONE** | Modal bottom sheet for exertion rating + `_RestTimerView` with countdown |
 | | **WP29** | Adaptive Lite mode (~15m estimate, 4 working sets) & Workout Summary | **DONE** | `SummaryScreen` with joint safety badge and consistency credit |
-| **Phase 6** | **WP30** | Quality hardening (`flutter analyze`, unit, widget & domain tests) | **DONE** | `flutter analyze` 0 issues; all 22 Flutter tests passing cleanly (100%) |
-| | **WP31** | Production debug APK build verification & binary inspection | **DONE** | `build/app/outputs/flutter-apk/app-debug.apk` (181.76 MB, SHA256 verified) |
-| | **WP32** | Flutter CI workflow proposal, exact-head verification & final handoff | **DONE** | Workflow spec created at `docs/quality/workflows/flutter_ci.yml` |
-
----
-
-## 2. Test Verification Ledger
-
-### Flutter Test Suite (`flutter test`)
-- **Total Tests:** 31
-- **Passing:** 31 (100%)
-- **Failing:** 0
-- **Suites:**
-  1. `test/domain/fixture_engine_test.dart` (2 tests, 106 data-driven fixture scenarios passing):
-     - All 106 scenarios from `engine_scenarios.json` (59 positive, 47 negative) dynamically executed
-     - Validates double progression, cadence pause, band assistance/resistance, pain stop precedence, equipment fallbacks, recovery spacing, absence deload, Lite mode, and shift work boundaries
-  2. `test/domain/workout_engine_test.dart` (12 tests passing):
-     - Equipment eligibility predicates (GOV13)
-     - Strict exclusion of `chinup_neutral` without parallel grip (C3R-05)
-     - Exclusion of `pulldown_door_band` without door anchor
-     - Exclusion of `row_table_inverted` without sturdy table
-     - SAFE-01 1-tap emergency pain STOP precedence and termination without loaded substitute
-     - Adaptive Lite Mode synthesis ($\le 15$ minutes, 4 working sets total)
-     - Empty-catalog & unviable fallback returning safe session without RangeError (C3R-01)
-     - Deterministic rotation & clock injection (C3R-02)
-     - Double progression rep bracket expansion & advancing
-     - Cadence pause overload ceiling when hitting 3x10
-  3. `test/ui/design_system_test.dart` (6 tests passing):
-     - Contrast ratio verification ($\ge 4.5:1$ WCAG AA, $\ge 7:1$ WCAG AAA)
-     - Direction A tabular figures on timer and rep stepper
-     - Tactile card & Kinetic button state rendering
-     - RTL layout direction alignment
-  4. `test/data/workout_repository_test.dart` (7 tests passing):
-     - User profile persistence with avoided joints
-     - Hardware inventory persistence
-     - Active session crash recovery state machine and purge on completion
-     - Exact original `ScheduledSession` recovery on crash resume (C3R-03)
-     - Weekly consistency credit strictly ignoring emergency stops (C3R-07)
-     - `getNextRoutineCycle` deterministic A $\to$ B $\to$ C $\to$ A rotation (C3R-02)
-  5. `test/widget_test.dart` (1 test passing):
-     - First-time user launch into Onboarding flow
-  6. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
-     - Complete End-to-End User Flow with Pain Stop (English)
-     - Complete End-to-End User Flow with Pain Stop (Egyptian Arabic RTL)
-     - Workout Player: Rep Stepper, Log Set, Exertion Rating, and Rest Timer Flow
-     - Adaptive Lite Mode Launch and Verification
-
-### Static Analysis (`flutter analyze`)
-- **Status:** Clean (0 errors, 0 warnings, 0 lints)
-
-### Python Quality Assurance Suite (`python tools/quality/run_all_checks.py`)
-- **Suites:** 4/4 Passed Cleanly:
-  1. `validate_fixtures.py`: 14 movements, 106 scenarios (59 positive, 47 negative) valid.
-  2. `test_validation.py`: 21 mutation and negative tests passing.
-  3. `validate_links.py`: 49 markdown files checked, 0 broken relative links.
-  4. `check_hygiene.py`: Zero prohibited keys, secrets, private photos, or oversized git blobs.
-
----
-
-## 3. Binary Build Artifact (WP31 / C3R-08 Verification)
-
-- **Artifact Path:** `build/app/outputs/flutter-apk/app-debug.apk`
-- **File Size:** 209,954,855 bytes (~200.2 MB unstripped debug package)
-- **SHA256:** `3BD6F75FCACF90850D3FBF69923A53668E119C66B02BDC6CF22D774A99917FD6`
-- **Security & Permissions Audit (Truthful Proof per WP08 / C3R-08):**
-  - Production manifest (`android/app/src/main/AndroidManifest.xml`) declares **0 permissions**.
-  - Merged debug APK contains `android.permission.INTERNET` injected exclusively from `src/debug/AndroidManifest.xml` for local Flutter tooling, hot reload, and DevTools socket communication.
-  - `android:allowBackup="false"` and `android:fullBackupContent="false"` enforce local private storage.
-  - Zero network, analytics, cloud sync, or external backend services exist.
-  - Physical phone test: Marked **UNVERIFIED** (deferred to C9 per GOV09).
+| **Phase 6** | **WP30** | Quality hardening (`flutter analyze`, unit, widget & domain tests) | **DONE** | `flutter analyze` 0 issues; all 55 Flutter tests passing cleanly (100%) |
+| | **WP31** | Production debug APK build verification & binary inspection | **DONE** | `build/app/outputs/flutter-apk/app-debug.apk` (209.98 MB, SHA256 verified) |
+| | **WP32** | Flutter CI workflow proposal, exact-head verification & final handoff | **DONE** | Live Flutter CI workflow active under `.github/workflows/flutter.yml` |
 
 ---
 
 ## 4. Proposed CI Workflow (WP32)
 
-Documented in `docs/quality/workflows/flutter_ci.yml` for ChatGPT or the repository administrator to place under `.github/workflows/flutter.yml`. Runs `tools/quality/run_all_checks.py`, `flutter analyze`, `flutter test`, `flutter build apk --debug`, and automated `grep` validation on `AndroidManifest.xml` asserting zero `INTERNET` permission.
+Documented in `docs/quality/workflows/flutter_ci.yml` and live in `.github/workflows/flutter.yml`. Runs `tools/quality/run_all_checks.py`, `flutter analyze --fatal-infos`, `flutter test`, `flutter build apk --debug --no-pub`, and automated manifest validation asserting zero production permissions.

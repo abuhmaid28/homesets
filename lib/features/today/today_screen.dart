@@ -43,43 +43,47 @@ class _TodayScreenState extends State<TodayScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
-    final profile = await widget.repository.getUserProfile();
-    final inventory = await widget.repository.getEquipmentInventory();
-    final activeSession = await widget.repository.getActiveSessionState();
-    final credit = await widget.repository.getWeeklyConsistencyCredit();
-    final lastWorkoutTime = await widget.repository.getLastWorkoutTime();
-    final lastMuscleGroup = await widget.repository.getLastWorkoutMuscleGroup();
-    final lastMuscleGroups = await widget.repository.getLastWorkoutTimePerMuscleGroup();
-    final exerciseHistory = await widget.repository.getRecentExerciseHistory();
-    final nextCycle = await widget.repository.getNextRoutineCycle();
+    try {
+      final profile = await widget.repository.getUserProfile();
+      final inventory = await widget.repository.getEquipmentInventory();
+      final activeSession = await widget.repository.getActiveSessionState();
+      final credit = await widget.repository.getWeeklyConsistencyCredit();
+      final lastWorkoutTime = await widget.repository.getLastWorkoutTime();
+      final lastMuscleGroup = await widget.repository.getLastWorkoutMuscleGroup();
+      final lastMuscleGroups = await widget.repository.getLastWorkoutTimePerMuscleGroup();
+      final exerciseHistory = await widget.repository.getRecentExerciseHistory();
+      final nextCycle = await widget.repository.getNextRoutineCycle();
 
-    if (profile != null) {
-      final engine = WorkoutEngine(inventory: inventory, profile: profile);
-      _standardSession = engine.generateNextSession(
-        routineCycle: nextCycle,
-        lastWorkoutTime: lastWorkoutTime,
-        lastTargetMuscleGroup: lastMuscleGroup,
-        lastWorkoutTimePerGroup: lastMuscleGroups,
-        exerciseHistory: exerciseHistory,
-        isLiteMode: false,
-      );
-      _liteSession = engine.generateNextSession(
-        routineCycle: nextCycle,
-        lastWorkoutTime: lastWorkoutTime,
-        lastTargetMuscleGroup: lastMuscleGroup,
-        lastWorkoutTimePerGroup: lastMuscleGroups,
-        exerciseHistory: exerciseHistory,
-        isLiteMode: true,
-      );
+      if (profile != null) {
+        final engine = WorkoutEngine(inventory: inventory, profile: profile);
+        _standardSession = engine.generateNextSession(
+          routineCycle: nextCycle,
+          lastWorkoutTime: lastWorkoutTime,
+          lastTargetMuscleGroup: lastMuscleGroup,
+          lastWorkoutTimePerGroup: lastMuscleGroups,
+          exerciseHistory: exerciseHistory,
+          isLiteMode: false,
+        );
+        _liteSession = engine.generateNextSession(
+          routineCycle: nextCycle,
+          lastWorkoutTime: lastWorkoutTime,
+          lastTargetMuscleGroup: lastMuscleGroup,
+          lastWorkoutTimePerGroup: lastMuscleGroups,
+          exerciseHistory: exerciseHistory,
+          isLiteMode: true,
+        );
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _activeSession = activeSession;
+        _weeklyCredit = credit;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (!mounted) return;
-    setState(() {
-      _profile = profile;
-      _activeSession = activeSession;
-      _weeklyCredit = credit;
-      _isLoading = false;
-    });
   }
 
   @override
@@ -179,11 +183,11 @@ class _TodayScreenState extends State<TodayScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // 2. Active Interrupted Workout Banner (Crash Recovery WP22, F1, F2)
+              // 2. Active Interrupted Workout Banner (Crash Recovery WP22, F1, F2, GATE-A)
               if (_activeSession != null) ...[
                 TactileCard(
                   isHighlighted: true,
-                  borderColor: (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                  borderColor: _activeSession!.isDraftDamaged
                       ? HomesetsColors.orange
                       : HomesetsColors.lime,
                   child: Column(
@@ -192,19 +196,21 @@ class _TodayScreenState extends State<TodayScreen> {
                       Row(
                         children: [
                           Icon(
-                            (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                            _activeSession!.isDraftDamaged
                                 ? Icons.warning_amber_rounded
                                 : Icons.play_circle_fill,
-                            color: (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                            color: _activeSession!.isDraftDamaged
                                 ? HomesetsColors.orange
                                 : HomesetsColors.lime,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
-                                ? (isArabic ? 'مسودة تمرين تحتاج إجراء' : 'Draft Plan Unrecoverable')
-                                : (isArabic ? 'تمرين قيد التقدم (محفوظ)' : 'In-Progress Workout (Recovered)'),
+                            _activeSession!.hasCorruptSetLogs
+                                ? (isArabic ? 'مسودة تحتوي بيانات تالفة' : 'Draft Contains Corrupt Logs')
+                                : (_activeSession!.isDraftDamaged
+                                    ? (isArabic ? 'مسودة تمرين تحتاج إجراء' : 'Draft Plan Unrecoverable')
+                                    : (isArabic ? 'تمرين قيد التقدم (محفوظ)' : 'In-Progress Workout (Recovered)')),
                             style: HomesetsTypography.tabularBadge,
                           ),
                         ],
@@ -222,7 +228,7 @@ class _TodayScreenState extends State<TodayScreen> {
                         style: HomesetsTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),
-                      if (_activeSession!.isPendingFinalization) ...[
+                      if (_activeSession!.isPendingFinalization && !_activeSession!.hasCorruptSetLogs) ...[
                         KineticButton(
                           label: isArabic ? 'إنهاء وحفظ التمرين المكتمل' : 'Finish & Finalize Workout',
                           icon: Icons.check_circle_outline,
@@ -245,9 +251,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                      ] else if (_activeSession!.isPlanUnrecoverable ||
-                          _activeSession!.scheduledSession == null ||
-                          _activeSession!.scheduledSession!.exercises.isEmpty) ...[
+                      ] else if (_activeSession!.isDraftDamaged) ...[
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -267,7 +271,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        if (_activeSession!.completedSets.isNotEmpty) ...[
+                        if (_activeSession!.completedSets.isNotEmpty || _activeSession!.hasCorruptSetLogs) ...[
                           KineticButton(
                             label: _activeSession!.hasCorruptSetLogs
                                 ? (isArabic ? 'أرشفة وحفظ المجموعات المستخرجة' : 'Archive Raw & Save Salvaged Sets')

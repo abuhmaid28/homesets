@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -40,7 +39,7 @@ class DatabaseHelper {
       );
     } else {
       final docsDir = await getApplicationDocumentsDirectory();
-      dbPath = join(docsDir.path, _dbName);
+      dbPath = '${docsDir.path}/$_dbName';
       return await openDatabase(
         dbPath,
         version: _dbVersion,

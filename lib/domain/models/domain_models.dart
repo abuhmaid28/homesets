@@ -460,6 +460,7 @@ class CompletedWorkoutSession {
   final List<SetLog> completedSets;
   final bool isEmergencyStopped;
   final String? emergencyStopReason;
+  final bool isPersisted;
 
   const CompletedWorkoutSession({
     required this.id,
@@ -472,5 +473,34 @@ class CompletedWorkoutSession {
     required this.completedSets,
     this.isEmergencyStopped = false,
     this.emergencyStopReason,
+    this.isPersisted = true,
   });
+
+  CompletedWorkoutSession copyWith({
+    String? id,
+    String? scheduledSessionId,
+    String? routineName,
+    bool? isLiteMode,
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? totalDurationSeconds,
+    List<SetLog>? completedSets,
+    bool? isEmergencyStopped,
+    String? emergencyStopReason,
+    bool? isPersisted,
+  }) {
+    return CompletedWorkoutSession(
+      id: id ?? this.id,
+      scheduledSessionId: scheduledSessionId ?? this.scheduledSessionId,
+      routineName: routineName ?? this.routineName,
+      isLiteMode: isLiteMode ?? this.isLiteMode,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
+      completedSets: completedSets ?? this.completedSets,
+      isEmergencyStopped: isEmergencyStopped ?? this.isEmergencyStopped,
+      emergencyStopReason: emergencyStopReason ?? this.emergencyStopReason,
+      isPersisted: isPersisted ?? this.isPersisted,
+    );
+  }
 }

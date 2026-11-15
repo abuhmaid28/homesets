@@ -12,13 +12,15 @@
 
 ## 1. Executive Summary & Verification Acceptance
 
-All 10 Work Packages (WP01 through WP10), all 6 Follow-up Findings (F1 through F6), and all 3 Final Closeout Work Packages (WP-A, WP-B, WP-C) in GitHub Issue #14 have been implemented, verified, and backed with automated test suites:
-- **Flutter Test Suite:** 48 tests passing (100%), 0 failures across all unit, repository, domain, and widget suites (`flutter test`).
-- **Reproduction Test Suite:** 15 explicit behavior-driven regression tests passing in `test/domain/c3r2_repro_test.dart` (including failing red-before-green reproductions for WP-A, WP-B, WP-C).
+All 10 Work Packages (WP01 through WP10), all 6 Follow-up Findings (F1 through F6), all 3 Final Closeout Work Packages (WP-A, WP-B, WP-C), and all 3 Final P0–P4 Integration Acceptance Gates (GATE-A, GATE-B, GATE-C) in GitHub Issue #14 have been implemented, verified, and backed with automated test suites:
+- **Flutter Test Suite:** 55 tests passing (100%), 0 failures across all unit, repository, domain, and widget suites (`flutter test`).
+- **Reproduction Test Suite:** 17 explicit behavior-driven regression tests passing in `test/domain/c3r2_repro_test.dart` (including failing red-before-green reproductions for WP-A, WP-B, WP-C, and GATE-A through GATE-C).
+- **Dedicated Gate Integration Suite:** 5 comprehensive integration and widget tests in `test/features/c3r2_gate_integration_test.dart` verifying corrupt set log blocking, unsaved pain stop exit cards, and consistency credit badge exclusivity.
 - **Domain Fixture Runner:** All 106 fixture scenarios (59 positive, 47 negative) executed dynamically against pure-Dart domain logic (`test/domain/fixture_engine_test.dart`).
 - **Static Analysis:** `flutter analyze --fatal-infos` reported **0 issues** (clean code quality).
 - **Python Quality QA:** 4/4 suites passing (`python tools/quality/run_all_checks.py`).
-- **Android Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` built successfully (`89E569EAB7D7C67BA3CF99E9F3F64B51FD360A95A2729941969DB159B2EE5CED`, 209,984,523 bytes).
+- **Android Debug APK:** `build/app/outputs/flutter-apk/app-debug.apk` built successfully (`7BB85960E731DEA7245349AEBEC594E45BCE0ED8C94518B787886627EED4DFF9`, 209,988,589 bytes).
+- **Dependency Reconciliation:** Direct `dependencies` in `pubspec.yaml` strictly contains only the 5 approved runtime packages from GOV16 (`flutter`, `flutter_localizations`, `intl`, `sqflite`, `path_provider`). Direct `path: ^1.9.1` removed.
 - **Physical Phone Status:** Explicitly marked **UNVERIFIED** (deferred to C9 final phone acceptance per GOV09).
 
 ---
@@ -67,16 +69,18 @@ Following independent review [#5908980367](https://github.com/abuhmaid28/homeset
 
 ---
 
-## 5. Dependency Ledger & Version Reconcile (WP08)
+## 5. Dependency Ledger & Version Reconcile (WP08 & Final Gate Reconciliation)
 
-| Package Name | Type | Current Version in pubspec.yaml | Status under GOV16 | Justification & Note |
+| Package Name | Type | Current Version in pubspec.yaml | Status under GOV16 | Justification & Grouped Rationale |
 | :--- | :--- | :--- | :--- | :--- |
 | `intl` | Dependency | `^0.20.1` | **Explicitly Authorized** | Localization, pluralization, and date formatting. |
 | `sqflite` | Dependency | `^2.4.6` | **Explicitly Authorized** | Authorized SQLite local persistence engine. |
 | `path_provider` | Dependency | `^2.1.6` | **Explicitly Authorized** | Resolves local app-private database directory. |
-| `path` | Dependency | `^1.9.1` | **Essential Companion** | Official `dart.dev` path utility for safe cross-platform path joining (`join(dbPath, 'homesets_local.db')`). |
-| `flutter_lints` | Dev Dependency | `^6.0.0` | **Development Only** | Official Flutter lint rules for static analysis. |
-| `sqflite_common_ffi` | Dev Dependency | `^2.4.7` | **Development Only** | Enables headless SQLite unit & repository tests on CI and desktop runners without an attached Android emulator. |
+| `flutter_lints` | Dev Dependency | `^6.0.0` | **Development Only (Test/CI)** | Official Flutter recommended lint rules for static analysis. Excluded from release APK compilation. |
+| `sqflite_common_ffi` | Dev Dependency | `^2.4.7` | **Development Only (Test/CI)** | Enables headless pure-Dart SQLite repository tests on CI and desktop runners without an attached Android emulator. Excluded from release APK compilation. |
+
+> [!NOTE]
+> **GOV16 Dependency Clean-up:** Direct `path: ^1.9.1` was removed from `pubspec.yaml` `dependencies`. Path joining in `DatabaseHelper` now uses string interpolation (`'${docsDir.path}/$_dbName'`), which functions identically across Android/Linux. As a result, `pubspec.yaml` `dependencies` strictly contains only the 5 approved packages from GOV16 (`flutter`, `flutter_localizations`, `intl`, `sqflite`, `path_provider`). The two dev dependencies (`flutter_lints` and `sqflite_common_ffi`) are strictly test-harness utilities never packaged into production release binaries.
 
 ---
 
@@ -84,8 +88,8 @@ Following independent review [#5908980367](https://github.com/abuhmaid28/homeset
 
 ### Compiled Debug APK Details
 - **Artifact File:** `build/app/outputs/flutter-apk/app-debug.apk`
-- **File Size:** `209,984,523` bytes (~200.2 MB uncompressed debug bundle with symbols & all ABIs)
-- **SHA-256 Hash:** `89E569EAB7D7C67BA3CF99E9F3F64B51FD360A95A2729941969DB159B2EE5CED`
+- **File Size:** `209,988,589` bytes (~200.3 MB uncompressed debug bundle with symbols & all ABIs)
+- **SHA-256 Hash:** `7BB85960E731DEA7245349AEBEC594E45BCE0ED8C94518B787886627EED4DFF9`
 
 ### Permission Audit
 1. **Release Manifest (`android/app/src/main/AndroidManifest.xml`):**
@@ -104,14 +108,15 @@ Following independent review [#5908980367](https://github.com/abuhmaid28/homeset
 
 | Test Suite | File | Tests | Results |
 | :--- | :--- | :--- | :--- |
-| **C3R2 Repro & Regression** | `test/domain/c3r2_repro_test.dart` | 15 | **ALL PASS** (1.0s) |
+| **C3R2 Repro & Regression** | `test/domain/c3r2_repro_test.dart` | 17 | **ALL PASS** (0.9s) |
+| **Gate Integration & Widget** | `test/features/c3r2_gate_integration_test.dart` | 5 | **ALL PASS** (2.0s) |
 | **Domain Fixture Runner** | `test/domain/fixture_engine_test.dart` | 2 (106 scenarios) | **ALL PASS** (0.9s) |
 | **Workout Engine Pure-Dart** | `test/domain/workout_engine_test.dart` | 12 | **ALL PASS** (0.9s) |
 | **Repository Integration** | `test/data/workout_repository_test.dart` | 8 | **ALL PASS** (1.2s) |
 | **Design System / Widget** | `test/ui/design_system_test.dart` | 6 | **ALL PASS** (1.5s) |
 | **Widget Smoke Test** | `test/widget_test.dart` | 1 | **ALL PASS** (1.0s) |
 | **E2E Flow (LTR & Arabic RTL)** | `test/features/workout_flow_test.dart` | 4 | **ALL PASS** (13.5s) |
-| **Total Flutter Test Suite** | | **48** | **ALL PASS (100%)** |
+| **Total Flutter Test Suite** | | **55** | **ALL PASS (100%)** |
 
 ### Python QA Suites (`python tools/quality/run_all_checks.py`)
 1. `validate_fixtures.py`: Exercise catalog (14 movements) and engine scenarios (106 total: 59 positive, 47 negative) verified.
@@ -125,3 +130,15 @@ Following independent review [#5908980367](https://github.com/abuhmaid28/homeset
 - **PR #12:** Kept in **DRAFT** status on branch `campaign/c3-flutter-core`.
 - **Merge Gate:** Will not be merged until exact-head GitHub Actions CI completes and independent lead review confirms all acceptance gates.
 - **Recommended Next Campaign:** Campaign C4 (Localization & Visual Refinement) or C5 (Advanced Audio / Haptics / Rest Timer hardening).
+
+---
+
+## 9. Final P0–P4 Integration Gate Resolution (GATE-A, GATE-B, GATE-C)
+
+Following independent review [#5909069257](https://github.com/abuhmaid28/homesets/pull/12#pullrequestreview-5909069257), three targeted final integration gates were resolved, regression-tested, and verified end-to-end:
+
+| Gate | Severity | Defect & Root Cause | Modified Files | Resolution & Implementation Evidence | Verification Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **GATE-A** | **HIGH** | Corrupt set logs with valid scheduled plan allowed normal "Resume Workout", risking overwriting raw corrupt logs on resume save. | `lib/data/repositories/workout_repository.dart`<br>`lib/features/today/today_screen.dart`<br>`test/domain/c3r2_repro_test.dart`<br>`test/features/c3r2_gate_integration_test.dart` | 1) In `ActiveSessionSnapshot`, added `isDraftDamaged` getter checking `hasCorruptSetLogs || isPlanUnrecoverable || scheduledSession == null`.<br>2) In `TodayScreen`, normal "Resume Workout" is strictly blocked whenever `isDraftDamaged` is true (even if `scheduledSession` is valid). Shows amber warning card and "Archive Raw & Save Salvaged Sets" button.<br>3) In `WorkoutRepository.saveActiveSessionState`, added defensive pre-archive into `session_salvage_archive` whenever `hasCorruptSetLogs && rawCompletedSetsJson.isNotEmpty` before active state writes. | **RESOLVED & VERIFIED**<br>Tested in `c3r2_repro_test.dart` and `c3r2_gate_integration_test.dart` (widget test). |
+| **GATE-B** | **HIGH** | Unsaved Pain STOP exit showed saved summary with "Completed sets preserved" and consistency credit badge. | `lib/domain/models/domain_models.dart`<br>`lib/features/workout/workout_player_screen.dart`<br>`lib/features/summary/summary_screen.dart`<br>`test/domain/c3r2_repro_test.dart`<br>`test/features/c3r2_gate_integration_test.dart` | 1) Added `isPersisted` boolean (default `true`) and `copyWith` to `CompletedWorkoutSession`.<br>2) In `WorkoutPlayerScreen`, when user exits unsaved via "Exit Unsaved (Acknowledge Risk)", passes `completedSession.copyWith(isPersisted: false)` to `onFinishSession`.<br>3) In `SummaryScreen`, checks `isPersisted`: if false, shows warning icon, title "Session Ended (Unsaved)", explicit disk notice, and hides "Completed sets preserved".<br>4) Computes `earnsConsistencyCredit = session.isPersisted && !session.isEmergencyStopped && validSetsCount >= minSetsForCredit`. Emergency stops and unsaved exits NEVER receive the lime consistency badge. | **RESOLVED & VERIFIED**<br>Tested in `c3r2_repro_test.dart` and `c3r2_gate_integration_test.dart` (widget test). |
+| **GATE-C** | **MEDIUM** | Final-set crash replay needed verification on a nonempty scheduled workout with planned sets and real SQLite state. | `test/domain/c3r2_repro_test.dart`<br>`test/features/c3r2_gate_integration_test.dart` | Added integration tests executing a real 2-exercise $\times$ 3-set plan (6 sets total) up to final set completion. Interrupted and verified that crash snapshot sets `isPendingFinalization = true`, preserves `currentExerciseIndex = 1` and `currentSetIndex = 3` (does not reset to set 1), and finalization saves exactly 6 set logs without duplicate entries or duplicate credits. | **RESOLVED & VERIFIED**<br>Tested in `c3r2_repro_test.dart` and `c3r2_gate_integration_test.dart`. |
