@@ -185,21 +185,6 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
     );
     _completedSets.add(painLog);
 
-    // 2. Quarantine joint(s) in the user profile durably (C3R-04)
-    try {
-      final profile = await widget.repository.getUserProfile();
-      if (profile != null && _exercise.jointStressTags.isNotEmpty) {
-        final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
-          ..addAll(_exercise.jointStressTags);
-        await widget.repository.saveUserProfile(
-          profile.copyWith(avoidedJoints: updatedAvoided.toList()),
-        );
-      }
-    } catch (_) {
-      // Disk failure must not trap the user
-    }
-
-    // 3. Immediately finalize and persist session as emergency stopped
     final durationSeconds = now.difference(_sessionStartTime).inSeconds;
     final completedSession = CompletedWorkoutSession(
       id: widget.session.id,
@@ -213,50 +198,112 @@ class _WorkoutPlayerScreenState extends State<WorkoutPlayerScreen> {
       isEmergencyStopped: true,
       emergencyStopReason: 'Acute joint pain stop (SAFE-01)',
     );
-    try {
-      await widget.repository.saveCompletedSession(completedSession);
-    } catch (_) {
-      // Disk failure must not trap the user
+
+    // 2. Quarantine joint(s) and finalize session durably (C3R-04, C3R2 F4)
+    bool persistenceFailed = false;
+    Future<bool> persistPainStop() async {
+      try {
+        final profile = await widget.repository.getUserProfile();
+        if (profile != null && _exercise.jointStressTags.isNotEmpty) {
+          final updatedAvoided = Set<JointImpactTag>.from(profile.avoidedJoints)
+            ..addAll(_exercise.jointStressTags);
+          await widget.repository.saveUserProfile(
+            profile.copyWith(avoidedJoints: updatedAvoided.toList()),
+          );
+        }
+        await widget.repository.saveCompletedSession(completedSession);
+        return true;
+      } catch (_) {
+        persistenceFailed = true;
+        return false;
+      }
     }
+
+    await persistPainStop();
 
     if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
-    // 4. Show the post-freeze informational safety dialog
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+
+    // 3. Show the post-freeze informational safety dialog with retry on disk error (F4)
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: HomesetsColors.surfaceElevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            const Icon(Icons.shield, color: HomesetsColors.orange, size: 28),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                l10n.painStopDialogTitle,
-                style: HomesetsTypography.heading3.copyWith(color: HomesetsColors.orange),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: HomesetsColors.surfaceElevated,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.shield, color: HomesetsColors.orange, size: 28),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.painStopDialogTitle,
+                  style: HomesetsTypography.heading3.copyWith(color: HomesetsColors.orange),
+                ),
               ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.painStopDialogBody,
+                style: HomesetsTypography.bodyMedium,
+              ),
+              if (persistenceFailed) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: HomesetsColors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: HomesetsColors.orange),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: HomesetsColors.orange, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isArabic
+                              ? 'تنبيه: تعذر حفظ استبعاد المفصل محلياً (خطأ قرص). اضغط إعادة المحاولة لحفظ السجل بأمان.'
+                              : 'Notice: Could not save joint quarantine to local storage (Disk/IO error). Tap Retry Save.',
+                          style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.orange),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            if (persistenceFailed)
+              TextButton(
+                onPressed: () async {
+                  final ok = await persistPainStop();
+                  if (ok) {
+                    setDialogState(() => persistenceFailed = false);
+                  }
+                },
+                child: Text(isArabic ? 'إعادة محاولة الحفظ' : 'Retry Save'),
+              ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HomesetsColors.orange,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                widget.onFinishSession(completedSession);
+              },
+              child: Text(l10n.painStopConfirm),
             ),
           ],
         ),
-        content: Text(
-          l10n.painStopDialogBody,
-          style: HomesetsTypography.bodyMedium,
-        ),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: HomesetsColors.orange,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              widget.onFinishSession(completedSession);
-            },
-            child: Text(l10n.painStopConfirm),
-          ),
-        ],
       ),
     );
   }

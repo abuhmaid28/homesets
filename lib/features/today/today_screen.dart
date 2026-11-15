@@ -49,6 +49,7 @@ class _TodayScreenState extends State<TodayScreen> {
     final credit = await widget.repository.getWeeklyConsistencyCredit();
     final lastWorkoutTime = await widget.repository.getLastWorkoutTime();
     final lastMuscleGroup = await widget.repository.getLastWorkoutMuscleGroup();
+    final lastMuscleGroups = await widget.repository.getLastWorkoutTimePerMuscleGroup();
     final exerciseHistory = await widget.repository.getRecentExerciseHistory();
     final nextCycle = await widget.repository.getNextRoutineCycle();
 
@@ -58,6 +59,7 @@ class _TodayScreenState extends State<TodayScreen> {
         routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
         lastTargetMuscleGroup: lastMuscleGroup,
+        lastWorkoutTimePerGroup: lastMuscleGroups,
         exerciseHistory: exerciseHistory,
         isLiteMode: false,
       );
@@ -65,6 +67,7 @@ class _TodayScreenState extends State<TodayScreen> {
         routineCycle: nextCycle,
         lastWorkoutTime: lastWorkoutTime,
         lastTargetMuscleGroup: lastMuscleGroup,
+        lastWorkoutTimePerGroup: lastMuscleGroups,
         exerciseHistory: exerciseHistory,
         isLiteMode: true,
       );
@@ -143,20 +146,65 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 2. Active Interrupted Workout Banner (Crash Recovery WP22)
+              // Absence Deload Banner (C3R2 F5, D11, D15)
+              if (_standardSession?.absenceDeloadResult != null &&
+                  _standardSession!.absenceDeloadResult!.action != EngineAction.normalRotationResume) ...[
+                TactileCard(
+                  borderColor: HomesetsColors.lime,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, color: HomesetsColors.lime, size: 28),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isArabic ? 'تعديل تدريجي للعودة بعد الغياب' : 'Gentle Re-entry Deload Active',
+                              style: HomesetsTypography.heading3.copyWith(fontSize: 16, color: HomesetsColors.lime),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              isArabic
+                                  ? 'تم تخفيف حجم التمرين بنسبة ${_standardSession!.absenceDeloadResult!.volumeReductionPercent}٪ لحماية الأوتار والمفاصل. لا توجد أي عقوبات على الاستمرارية.'
+                                  : 'Volume is tapered by ${_standardSession!.absenceDeloadResult!.volumeReductionPercent}% to safely recondition tendons and joints. Zero streak penalties, zero guilt.',
+                              style: HomesetsTypography.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // 2. Active Interrupted Workout Banner (Crash Recovery WP22, F1, F2)
               if (_activeSession != null) ...[
                 TactileCard(
                   isHighlighted: true,
-                  borderColor: HomesetsColors.lime,
+                  borderColor: (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                      ? HomesetsColors.orange
+                      : HomesetsColors.lime,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.play_circle_fill, color: HomesetsColors.lime, size: 20),
+                          Icon(
+                            (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                                ? Icons.warning_amber_rounded
+                                : Icons.play_circle_fill,
+                            color: (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                                ? HomesetsColors.orange
+                                : HomesetsColors.lime,
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
-                            isArabic ? 'تمرين قيد التقدم (محفوظ)' : 'In-Progress Workout (Recovered)',
+                            (_activeSession!.isPlanUnrecoverable || _activeSession!.scheduledSession == null)
+                                ? (isArabic ? 'مسودة تمرين تحتاج إجراء' : 'Draft Plan Unrecoverable')
+                                : (isArabic ? 'تمرين قيد التقدم (محفوظ)' : 'In-Progress Workout (Recovered)'),
                             style: HomesetsTypography.tabularBadge,
                           ),
                         ],
@@ -169,35 +217,63 @@ class _TodayScreenState extends State<TodayScreen> {
                       const SizedBox(height: 4),
                       Text(
                         isArabic
-                            ? 'تم إكمال ${_activeSession!.completedSets.length} مجموعات. يمكنك المتابعة من حيث توقفت.'
-                            : '${_activeSession!.completedSets.length} sets logged. Resume seamlessly from where you left off.',
+                            ? 'تم إكمال ${_activeSession!.completedSets.length} مجموعات محفوظة بأمان.'
+                            : '${_activeSession!.completedSets.length} sets logged and safely preserved.',
                         style: HomesetsTypography.bodySmall,
                       ),
                       const SizedBox(height: 16),
-                      KineticButton(
-                        label: isArabic ? 'استئناف التمرين' : 'Resume Workout',
-                        icon: Icons.play_arrow,
-                        onPressed: () {
-                          if (_activeSession?.scheduledSession != null) {
+                      if (_activeSession!.isPlanUnrecoverable ||
+                          _activeSession!.scheduledSession == null ||
+                          _activeSession!.scheduledSession!.exercises.isEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: HomesetsColors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: HomesetsColors.orange.withValues(alpha: 0.5)),
+                          ),
+                          child: Text(
+                            isArabic
+                                ? 'تنبيه: تعذر استعادة خطة التمرين الأصلية بأمان. تم حفظ مجموعاتك المكتملة بدون تعديل لتجنب اقتراح تمارين غير متوافقة.'
+                                : 'Notice: Original workout plan could not be safely verified. Your completed sets are intact; no fabricated exercises will be prescribed.',
+                            style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.orange),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_activeSession!.completedSets.isNotEmpty) ...[
+                          KineticButton(
+                            label: isArabic ? 'حفظ المجموعات وإنهاء المسودة' : 'Save Logged Sets to History',
+                            icon: Icons.check,
+                            onPressed: () async {
+                              final now = DateTime.now();
+                              final duration = now.difference(_activeSession!.startedAt).inSeconds;
+                              final completed = CompletedWorkoutSession(
+                                id: _activeSession!.sessionId,
+                                scheduledSessionId: _activeSession!.sessionId,
+                                routineName: _activeSession!.routineName,
+                                isLiteMode: _activeSession!.isLiteMode,
+                                startedAt: _activeSession!.startedAt,
+                                endedAt: now,
+                                totalDurationSeconds: duration > 0 ? duration : 60,
+                                completedSets: _activeSession!.completedSets,
+                                isEmergencyStopped: false,
+                              );
+                              await widget.repository.saveCompletedSession(completed);
+                              await _loadData();
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ] else ...[
+                        KineticButton(
+                          label: isArabic ? 'استئناف التمرين' : 'Resume Workout',
+                          icon: Icons.play_arrow,
+                          onPressed: () {
                             widget.onStartWorkout(_activeSession!.scheduledSession!, true);
-                          } else if (_standardSession != null) {
-                            // Safe fallback preserving active session isLiteMode & routine name (C3R2 WP04)
-                            final fallbackSession = ScheduledSession(
-                              id: _activeSession!.sessionId,
-                              routineName: _activeSession!.routineName,
-                              routineNameAr: _activeSession!.routineNameAr,
-                              exercises: _activeSession!.isLiteMode
-                                  ? (_liteSession?.exercises ?? _standardSession!.exercises)
-                                  : _standardSession!.exercises,
-                              isLiteMode: _activeSession!.isLiteMode,
-                              estimatedDurationMinutes: _activeSession!.isLiteMode ? 12 : 30,
-                              targetMuscleGroup: _standardSession!.targetMuscleGroup,
-                              isViable: true,
-                            );
-                            widget.onStartWorkout(fallbackSession, true);
-                          }
-                        },
-                      ),
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       const SizedBox(height: 8),
                       Center(
                         child: TextButton.icon(
