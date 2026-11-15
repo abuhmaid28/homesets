@@ -1,0 +1,89 @@
+{
+  "@@locale": "en",
+  "appTitle": "HOMESETS",
+  "wordmark": "HOMESETS",
+  "tagline": "Private Calisthenics & Band Tracker",
+
+  "onboardingTitle": "Set Up Your Training",
+  "onboardingSubtitle": "Tailored for your equipment, schedule, and recovery.",
+  "goalTitle": "Primary Focus",
+  "goalMuscleBuilding": "Natural Muscle Growth & Strength",
+  "equipmentTitle": "Available Hardware",
+  "pullUpBar": "Doorway Pull-Up Bar",
+  "resistanceBands": "Resistance Loop Bands",
+  "doorAnchor": "Door Anchor Accessory",
+  "doorAnchorNote": "Unchecked = Floor/bent-over exercises only",
+  "sturdyTable": "Sturdy Heavy Table",
+  "sturdyTableNote": "Solid wood for inverted rows",
+  "neutralGripAvailable": "Parallel / Neutral Grip Handles",
+  "scheduleTitle": "Shift Work Hours",
+  "wakeTimeLabel": "Typical Wake Time",
+  "shiftStartLabel": "Shift Start",
+  "targetWorkoutsLabel": "Target Workouts per Week",
+  "fourSessionsPerWeek": "4 Sessions / Week (Recommended)",
+  "threeSessionsPerWeek": "3 Sessions / Week",
+  "saveAndContinue": "Start Training",
+
+  "todayTitle": "Today",
+  "nextSessionHeading": "Next Up",
+  "estimatedTimeLabel": "Estimated Time",
+  "liteModeHeading": "⚡ Quick Lite Mode (~15 min)",
+  "liteModeSubtitle": "High-yield core sets for tired shift days",
+  "startWorkout": "Start Workout",
+  "startLiteWorkout": "Start Lite Workout",
+  "recoveryActiveNotice": "Muscle Recovery in Progress",
+  "readyToTrain": "Muscles Cleared & Ready",
+  "weeklyProgress": "Weekly Consistency",
+
+  "activeWorkout": "Active Workout",
+  "setCounter": "Set {current} of {total}",
+  "@setCounter": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "targetReps": "Target: {min}–{max} reps",
+  "@targetReps": {
+    "placeholders": {
+      "min": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "repsCompleted": "Reps Completed",
+  "logSet": "Log Set & Rest",
+  "painStopButton": "🛑 Joint Discomfort / Pain Stop",
+  "painStopDialogTitle": "Safety Priority: Stop Exercise",
+  "painStopDialogBody": "Training through joint pain causes injury. Your logged sets are preserved, and this exercise will be quarantined from your upcoming sessions.",
+  "painStopConfirm": "Stop Exercise Now",
+  "painStopCancel": "Continue Set",
+
+  "restTitle": "Rest Interval",
+  "restSeconds": "{seconds}s",
+  "@restSeconds": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "addThirtySeconds": "+30s Rest",
+  "skipRest": "Skip Rest",
+  "effortPrompt": "How did that set feel?",
+  "effortEasy": "Easy Reserve 💪",
+  "effortEasyDesc": "3+ reps in reserve",
+  "effortSweetspot": "Perfect Stimulus 👍",
+  "effortSweetspotDesc": "1–2 reps in reserve",
+  "effortMax": "Max Effort 🔥",
+  "effortMaxDesc": "0 reps left in tank",
+
+  "summaryTitle": "Session Complete",
+  "summarySubtitle": "Solid effort. Recovery is where growth happens.",
+  "durationLabel": "Total Duration",
+  "setsLoggedLabel": "Sets Logged",
+  "consistencyAdded": "+1 Weekly Consistency Credit",
+  "finishWorkout": "Back to Today",
+
+  "quitDialogTitle": "Quit Workout?",
+  "quitDialogBody": "Sets you have already logged will be saved. You can resume or start fresh later.",
+  "resumeWorkout": "Resume Workout",
+  "quitWorkout": "Save & Exit"
+}

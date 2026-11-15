@@ -1,0 +1,512 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'app_localizations_ar.dart';
+import 'app_localizations_en.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
+    Locale('en'),
+  ];
+
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS'**
+  String get appTitle;
+
+  /// No description provided for @wordmark.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS'**
+  String get wordmark;
+
+  /// No description provided for @tagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Private Calisthenics & Band Tracker'**
+  String get tagline;
+
+  /// No description provided for @onboardingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Up Your Training'**
+  String get onboardingTitle;
+
+  /// No description provided for @onboardingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailored for your equipment, schedule, and recovery.'**
+  String get onboardingSubtitle;
+
+  /// No description provided for @goalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Focus'**
+  String get goalTitle;
+
+  /// No description provided for @goalMuscleBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Natural Muscle Growth & Strength'**
+  String get goalMuscleBuilding;
+
+  /// No description provided for @equipmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Available Hardware'**
+  String get equipmentTitle;
+
+  /// No description provided for @pullUpBar.
+  ///
+  /// In en, this message translates to:
+  /// **'Doorway Pull-Up Bar'**
+  String get pullUpBar;
+
+  /// No description provided for @resistanceBands.
+  ///
+  /// In en, this message translates to:
+  /// **'Resistance Loop Bands'**
+  String get resistanceBands;
+
+  /// No description provided for @doorAnchor.
+  ///
+  /// In en, this message translates to:
+  /// **'Door Anchor Accessory'**
+  String get doorAnchor;
+
+  /// No description provided for @doorAnchorNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Unchecked = Floor/bent-over exercises only'**
+  String get doorAnchorNote;
+
+  /// No description provided for @sturdyTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sturdy Heavy Table'**
+  String get sturdyTable;
+
+  /// No description provided for @sturdyTableNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid wood for inverted rows'**
+  String get sturdyTableNote;
+
+  /// No description provided for @neutralGripAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Parallel / Neutral Grip Handles'**
+  String get neutralGripAvailable;
+
+  /// No description provided for @scheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Work Hours'**
+  String get scheduleTitle;
+
+  /// No description provided for @wakeTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Typical Wake Time'**
+  String get wakeTimeLabel;
+
+  /// No description provided for @shiftStartLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift Start'**
+  String get shiftStartLabel;
+
+  /// No description provided for @targetWorkoutsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Workouts per Week'**
+  String get targetWorkoutsLabel;
+
+  /// No description provided for @fourSessionsPerWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'4 Sessions / Week (Recommended)'**
+  String get fourSessionsPerWeek;
+
+  /// No description provided for @threeSessionsPerWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'3 Sessions / Week'**
+  String get threeSessionsPerWeek;
+
+  /// No description provided for @saveAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Training'**
+  String get saveAndContinue;
+
+  /// No description provided for @todayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayTitle;
+
+  /// No description provided for @nextSessionHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Up'**
+  String get nextSessionHeading;
+
+  /// No description provided for @estimatedTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Time'**
+  String get estimatedTimeLabel;
+
+  /// No description provided for @liteModeHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'⚡ Quick Lite Mode (~15 min)'**
+  String get liteModeHeading;
+
+  /// No description provided for @liteModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'High-yield core sets for tired shift days'**
+  String get liteModeSubtitle;
+
+  /// No description provided for @startWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Workout'**
+  String get startWorkout;
+
+  /// No description provided for @startLiteWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Lite Workout'**
+  String get startLiteWorkout;
+
+  /// No description provided for @recoveryActiveNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle Recovery in Progress'**
+  String get recoveryActiveNotice;
+
+  /// No description provided for @readyToTrain.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscles Cleared & Ready'**
+  String get readyToTrain;
+
+  /// No description provided for @weeklyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Consistency'**
+  String get weeklyProgress;
+
+  /// No description provided for @activeWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Workout'**
+  String get activeWorkout;
+
+  /// No description provided for @setCounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {current} of {total}'**
+  String setCounter(int current, int total);
+
+  /// No description provided for @targetReps.
+  ///
+  /// In en, this message translates to:
+  /// **'Target: {min}–{max} reps'**
+  String targetReps(int min, int max);
+
+  /// No description provided for @repsCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Reps Completed'**
+  String get repsCompleted;
+
+  /// No description provided for @logSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Set & Rest'**
+  String get logSet;
+
+  /// No description provided for @painStopButton.
+  ///
+  /// In en, this message translates to:
+  /// **'🛑 Joint Discomfort / Pain Stop'**
+  String get painStopButton;
+
+  /// No description provided for @painStopDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Safety Priority: Stop Exercise'**
+  String get painStopDialogTitle;
+
+  /// No description provided for @painStopDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Training through joint pain causes injury. Your logged sets are preserved, and this exercise will be quarantined from your upcoming sessions.'**
+  String get painStopDialogBody;
+
+  /// No description provided for @painStopConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Exercise Now'**
+  String get painStopConfirm;
+
+  /// No description provided for @painStopCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Set'**
+  String get painStopCancel;
+
+  /// No description provided for @restTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest Interval'**
+  String get restTitle;
+
+  /// No description provided for @restSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s'**
+  String restSeconds(int seconds);
+
+  /// No description provided for @addThirtySeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'+30s Rest'**
+  String get addThirtySeconds;
+
+  /// No description provided for @skipRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Rest'**
+  String get skipRest;
+
+  /// No description provided for @effortPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'How did that set feel?'**
+  String get effortPrompt;
+
+  /// No description provided for @effortEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy Reserve 💪'**
+  String get effortEasy;
+
+  /// No description provided for @effortEasyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'3+ reps in reserve'**
+  String get effortEasyDesc;
+
+  /// No description provided for @effortSweetspot.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect Stimulus 👍'**
+  String get effortSweetspot;
+
+  /// No description provided for @effortSweetspotDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'1–2 reps in reserve'**
+  String get effortSweetspotDesc;
+
+  /// No description provided for @effortMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Max Effort 🔥'**
+  String get effortMax;
+
+  /// No description provided for @effortMaxDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'0 reps left in tank'**
+  String get effortMaxDesc;
+
+  /// No description provided for @summaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session Complete'**
+  String get summaryTitle;
+
+  /// No description provided for @summarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Solid effort. Recovery is where growth happens.'**
+  String get summarySubtitle;
+
+  /// No description provided for @durationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Duration'**
+  String get durationLabel;
+
+  /// No description provided for @setsLoggedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets Logged'**
+  String get setsLoggedLabel;
+
+  /// No description provided for @consistencyAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'+1 Weekly Consistency Credit'**
+  String get consistencyAdded;
+
+  /// No description provided for @finishWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Today'**
+  String get finishWorkout;
+
+  /// No description provided for @quitDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit Workout?'**
+  String get quitDialogTitle;
+
+  /// No description provided for @quitDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets you have already logged will be saved. You can resume or start fresh later.'**
+  String get quitDialogBody;
+
+  /// No description provided for @resumeWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume Workout'**
+  String get resumeWorkout;
+
+  /// No description provided for @quitWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Save & Exit'**
+  String get quitWorkout;
+}
+
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['ar', 'en'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'en':
+      return AppLocalizationsEn();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

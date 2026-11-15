@@ -1,0 +1,89 @@
+{
+  "@@locale": "ar",
+  "appTitle": "هوم سيتس",
+  "wordmark": "HOMESETS",
+  "tagline": "تمرينك المنزلي بهدوء وبدون تعقيد",
+
+  "onboardingTitle": "تجهيز خطة تمرينك",
+  "onboardingSubtitle": "مصمم خصيصاً لأدواتك، وقت دوامك، واستشفاء عضلاتك.",
+  "goalTitle": "الهدف الأساسي",
+  "goalMuscleBuilding": "بناء عضل وزيادة قوة طبيعية",
+  "equipmentTitle": "الأدوات المتوفرة عندك",
+  "pullUpBar": "عقلة باب أو حائط",
+  "resistanceBands": "أحبال مقاومة مطاطية",
+  "doorAnchor": "ملحق تثبيت الباب للأحبال",
+  "doorAnchorNote": "لو مش موجود = تمارين أرضية وسحب واقف فقط",
+  "sturdyTable": "طاولة ثقيلة وخشب صلب",
+  "sturdyTableNote": "لتمرين السحب العكسي بأمان",
+  "neutralGripAvailable": "مقابض متوازية في العقلة",
+  "scheduleTitle": "مواعيد الدوام والنوم",
+  "wakeTimeLabel": "بتصحى الساعة كام تقريباً؟",
+  "shiftStartLabel": "بداية الشيفت",
+  "targetWorkoutsLabel": "هدف التمارين في الأسبوع",
+  "fourSessionsPerWeek": "٤ تمارين أسبوعياً (مثالي)",
+  "threeSessionsPerWeek": "٣ تمارين أسبوعياً",
+  "saveAndContinue": "ابدأ على بركة الله",
+
+  "todayTitle": "النهاردة",
+  "nextSessionHeading": "تمرينك الجاي",
+  "estimatedTimeLabel": "الوقت المتوقع",
+  "liteModeHeading": "⚡ تمرين سريع (~١٥ دقيقة)",
+  "liteModeSubtitle": "تركيز على المجاميع الأساسية لأيام الإرهاق",
+  "startWorkout": "ابدأ التمرين الكامل",
+  "startLiteWorkout": "ابدأ التمرين السريع",
+  "recoveryActiveNotice": "استشفاء العضلات جاري",
+  "readyToTrain": "العضلات جاهزة ومرتاحة",
+  "weeklyProgress": "الاستمرارية الأسبوعية",
+
+  "activeWorkout": "التمرين شغال",
+  "setCounter": "مجموعة {current} من {total}",
+  "@setCounter": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "targetReps": "الهدف: {min}–{max} عدات",
+  "@targetReps": {
+    "placeholders": {
+      "min": { "type": "int" },
+      "max": { "type": "int" }
+    }
+  },
+  "repsCompleted": "جبت كام عدة؟",
+  "logSet": "تسجيل المجموعة وبدء الراحة",
+  "painStopButton": "🛑 ألم أو انزعاج مفصلي (وقف التمرين)",
+  "painStopDialogTitle": "سلامة مفاصلك أولاً",
+  "painStopDialogBody": "التمرين على وجع المفاصل بيسبب إصابات. مجموعاتك اللي عملتها مسجلة ومحفوظة، والتمرين ده هيتم استبعاده تلقائياً من الجولات القادمة.",
+  "painStopConfirm": "وقف التمرين فوراً",
+  "painStopCancel": "إلغاء ومتابعة المجموعة",
+
+  "restTitle": "وقت الراحة والاستشفاء",
+  "restSeconds": "{seconds} ثانية",
+  "@restSeconds": {
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+  "addThirtySeconds": "+٣٠ ثانية راحة إضافية",
+  "skipRest": "جاهز، عدي الراحة",
+  "effortPrompt": "حسيت بالمجموعة إزاي؟",
+  "effortEasy": "فاضل طاقة (سهل) 💪",
+  "effortEasyDesc": "كان ممكن تجيب ٣ عدات كمان أو أكتر",
+  "effortSweetspot": "مظبوط ومثالي 👍",
+  "effortSweetspotDesc": "فاضل عدة أو اتنين في التانك (التحفيز المطلوب)",
+  "effortMax": "على الآخر (أقصى مجهود) 🔥",
+  "effortMaxDesc": "جبت آخرك بالظبط بصعوبة",
+
+  "summaryTitle": "عاش يا بطل! خلصت التمرين",
+  "summarySubtitle": "مجهود ممتاز. العضلات بتكبر في وقت الراحة والأكل الصح.",
+  "durationLabel": "مدة التمرين الفعلي",
+  "setsLoggedLabel": "المجاميع المسجلة",
+  "consistencyAdded": "+١ لرصيد التزامك الأسبوعي",
+  "finishWorkout": "رجوع للرئيسية",
+
+  "quitDialogTitle": "تأكيد إنهاء التمرين؟",
+  "quitDialogBody": "المجموعات اللي سجلتها هتفضل محفوظة في سجلاتك. تقدر تكمل في أي وقت.",
+  "resumeWorkout": "متابعة التمرين",
+  "quitWorkout": "حفظ وخروج"
+}

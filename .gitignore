@@ -1,0 +1,29 @@
+# Flutter & Dart artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+l10n_untranslated.txt
+
+# IDE & Editor files
+.idea/
+.vscode/
+
+# Android artifacts
+android/.gradle/
+android/local.properties
+android/app/release/
+android/key.properties
+*.keystore
+*.jks
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS artifacts
+.DS_Store
+Thumbs.db
