@@ -23,3 +23,6 @@ No unrelated repositories, global file access, destructive actions, force push, 
 Deliver actual branch/commit/PR links, full analyzer/test/build logs with exit codes, file diffs, known issues, and next action. Never claim a passing test, successful merge, generated APK or phone test without observed evidence.
 
 This file is intentionally short and always-on; use linked policy documents for details.
+
+## Latest owner gate — 2026-11-15
+**GOV12–GOV19 in `docs/DECISION_REGISTER.md` explicitly authorize C3-MEGA Issue #11 P0–P4 real Flutter implementation, Hybrid B charcoal/Performance Lime with A tabular timers, verified-equipment-only training, 1-tap pain STOP, local private storage and bounded dependency allowlist after compatibility/license checks.** This supersedes older "C1/C2 not approved; no Flutter implementation" statements for **these exact choices only**. Don't re-ask the owner for C3 approval. Continue a long scoped campaign through all small internal WPs and tests; source of truth and checkpoint on each phase. No Flutter implementation merge until **real exact-head Flutter CI**, not only Foundation CI. Final logo/vector and P5+ decisions remain unapproved.
