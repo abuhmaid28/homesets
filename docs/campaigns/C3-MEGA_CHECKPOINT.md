@@ -51,30 +51,39 @@
 ## 2. Test Verification Ledger
 
 ### Flutter Test Suite (`flutter test`)
-- **Total Tests:** 22
-- **Passing:** 22 (100%)
+- **Total Tests:** 31
+- **Passing:** 31 (100%)
 - **Failing:** 0
 - **Suites:**
-  1. `test/domain/workout_engine_test.dart` (8 tests passing):
+  1. `test/domain/fixture_engine_test.dart` (2 tests, 106 data-driven fixture scenarios passing):
+     - All 106 scenarios from `engine_scenarios.json` (59 positive, 47 negative) dynamically executed
+     - Validates double progression, cadence pause, band assistance/resistance, pain stop precedence, equipment fallbacks, recovery spacing, absence deload, Lite mode, and shift work boundaries
+  2. `test/domain/workout_engine_test.dart` (12 tests passing):
      - Equipment eligibility predicates (GOV13)
+     - Strict exclusion of `chinup_neutral` without parallel grip (C3R-05)
      - Exclusion of `pulldown_door_band` without door anchor
      - Exclusion of `row_table_inverted` without sturdy table
-     - SAFE-01 1-tap emergency pain STOP precedence
+     - SAFE-01 1-tap emergency pain STOP precedence and termination without loaded substitute
      - Adaptive Lite Mode synthesis ($\le 15$ minutes, 4 working sets total)
+     - Empty-catalog & unviable fallback returning safe session without RangeError (C3R-01)
+     - Deterministic rotation & clock injection (C3R-02)
      - Double progression rep bracket expansion & advancing
      - Cadence pause overload ceiling when hitting 3x10
-  2. `test/ui/design_system_test.dart` (6 tests passing):
+  3. `test/ui/design_system_test.dart` (6 tests passing):
      - Contrast ratio verification ($\ge 4.5:1$ WCAG AA, $\ge 7:1$ WCAG AAA)
      - Direction A tabular figures on timer and rep stepper
      - Tactile card & Kinetic button state rendering
      - RTL layout direction alignment
-  3. `test/data/workout_repository_test.dart` (3 tests passing):
+  4. `test/data/workout_repository_test.dart` (7 tests passing):
      - User profile persistence with avoided joints
      - Hardware inventory persistence
      - Active session crash recovery state machine and purge on completion
-  4. `test/widget_test.dart` (1 test passing):
+     - Exact original `ScheduledSession` recovery on crash resume (C3R-03)
+     - Weekly consistency credit strictly ignoring emergency stops (C3R-07)
+     - `getNextRoutineCycle` deterministic A $\to$ B $\to$ C $\to$ A rotation (C3R-02)
+  5. `test/widget_test.dart` (1 test passing):
      - First-time user launch into Onboarding flow
-  5. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
+  6. `test/features/workout_flow_test.dart` (4 comprehensive end-to-end tests passing):
      - Complete End-to-End User Flow with Pain Stop (English)
      - Complete End-to-End User Flow with Pain Stop (Egyptian Arabic RTL)
      - Workout Player: Rep Stepper, Log Set, Exertion Rating, and Rest Timer Flow
@@ -92,16 +101,17 @@
 
 ---
 
-## 3. Binary Build Artifact (WP31)
+## 3. Binary Build Artifact (WP31 / C3R-08 Verification)
 
 - **Artifact Path:** `build/app/outputs/flutter-apk/app-debug.apk`
-- **File Size:** 181.76 MB (unstripped multi-ABI debug package)
-- **SHA256:** `48A2CAF6E8196CDFA5A409083A64E6310F3B00F64CFF17C83F90BF37562C917F`
-- **Security Audit:**
-  - `android:allowBackup="false"`
-  - `android:fullBackupContent="false"`
-  - Zero `<uses-permission android:name="android.permission.INTERNET" />`
-  - Zero network, analytics, or cloud sync code.
+- **File Size:** 209,954,855 bytes (~200.2 MB unstripped debug package)
+- **SHA256:** `3BD6F75FCACF90850D3FBF69923A53668E119C66B02BDC6CF22D774A99917FD6`
+- **Security & Permissions Audit (Truthful Proof per WP08 / C3R-08):**
+  - Production manifest (`android/app/src/main/AndroidManifest.xml`) declares **0 permissions**.
+  - Merged debug APK contains `android.permission.INTERNET` injected exclusively from `src/debug/AndroidManifest.xml` for local Flutter tooling, hot reload, and DevTools socket communication.
+  - `android:allowBackup="false"` and `android:fullBackupContent="false"` enforce local private storage.
+  - Zero network, analytics, cloud sync, or external backend services exist.
+  - Physical phone test: Marked **UNVERIFIED** (deferred to C9 per GOV09).
 
 ---
 
