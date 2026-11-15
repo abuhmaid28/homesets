@@ -72,5 +72,5 @@ When life or work forces an extended absence, commercial apps punish the user by
 Last Workout Logged:
  ├── 1–6 Days Ago:   Normal rotation resumes without penalty.
  ├── 7–13 Days Ago:  "إعادة تنشيط خفيف" -> Total sets reduced by 25%; top rep bracket -1 rep.
- └── 14+ Days Ago:   "إعادة تنشيط وتكيف" -> Total sets reduced by 35–50%; target RPE capped at 1-2 RIR to prevent severe DOMS (delayed onset muscle soreness).
+ └── 14+ Days Ago:   "إعادة تنشيط وتكيف" -> Total sets reduced by ~30–40%; target exertion capped at 1-2 RIR to mitigate severe post-absence soreness and prevent acute mechanical fatigue, pending qualified review.
 ```
