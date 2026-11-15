@@ -5,7 +5,7 @@
 **Issue:** [#11](https://github.com/abuhmaid28/homesets/issues/11)  
 **Pull Request:** [Draft PR #12](https://github.com/abuhmaid28/homesets/pull/12)  
 **Branch:** `campaign/c3-flutter-core`  
-**Current HEAD SHA:** `2403678`  
+**Current HEAD SHA:** `7984109`  
 **Authority:** Approved by Product Owner Ahmed (GOV12–GOV19)  
 
 ---
@@ -19,20 +19,20 @@
 | | **WP03** | Egyptian Arabic RTL + English LTR localization infrastructure | **DONE** | `l10n.yaml`, `app_ar.arb`, `app_en.arb`, `flutter_localizations` |
 | | **WP04** | Pure-Dart & Flutter test infrastructure setup | **DONE** | `flutter test` passing (`00:00 +1: All tests passed!`) |
 | | **WP05** | First Android debug build verification (`flutter build apk --debug`) | **DONE** | Built `build/app/outputs/flutter-apk/app-debug.apk` (143.5 MB, SHA256 `C3E6A591...`) |
-| **Phase 2** | **WP06** | Hybrid B Kinetic Depth design tokens (`#121417`, `#1A1D24`, `#CCFF00`, `#FF5E1E`) | **IN_PROGRESS** | Implementing theme & design tokens |
-| | **WP07** | Direction A tabular figure counters, typography & dual RTL/LTR styling | **PENDING** | |
-| | **WP08** | Tactile UI component library (rounded cards, kinetic pills, steppers) | **PENDING** | |
-| | **WP09** | Neutral interim HOMESETS wordmark header (per GOV18) | **PENDING** | |
-| | **WP10** | Responsive layouts (360x780 to 412x915) & 1.5x text accessibility | **PENDING** | |
-| | **WP11** | Design system golden & widget tests (contrast $\ge 4.5:1$, RTL layout) | **PENDING** | |
-| **Phase 3** | **WP12** | Pure-Dart deterministic domain models | **PENDING** | |
-| | **WP13** | Curated 14-movement exercise catalog import with safety tags | **PENDING** | |
-| | **WP14** | Equipment eligibility predicates (default exclude unverified anchors/furniture) | **PENDING** | |
-| | **WP15** | Deterministic session rotation & 36–48h muscle recovery spacing | **PENDING** | |
-| | **WP16** | Double progression rep brackets, pause cadence & inverse band physics | **PENDING** | |
-| | **WP17** | Stop-first 1-tap pain STOP semantics (SAFE-01) & zero loaded substitution | **PENDING** | |
-| | **WP18** | Pure-Dart engine scenario test suite mapping `engine_scenarios.json` | **PENDING** | |
-| **Phase 4** | **WP19** | Bounded dependency activation (GOV16 allowlist evaluation) | **PENDING** | |
+| **Phase 2** | **WP06** | Hybrid B Kinetic Depth design tokens (`#121417`, `#1A1D24`, `#CCFF00`, `#FF5E1E`) | **DONE** | `HomesetsColors` implemented with WCAG AAA contrast |
+| | **WP07** | Direction A tabular figure counters, typography & dual RTL/LTR styling | **DONE** | `HomesetsTypography` with tabular figures on numbers |
+| | **WP08** | Tactile UI component library (rounded cards, kinetic pills, steppers) | **DONE** | `TactileCard`, `KineticButton`, `RepCounterStepper`, `TabularTimerDisplay` |
+| | **WP09** | Neutral interim HOMESETS wordmark header (per GOV18) | **DONE** | `HomesetsHeader` implemented (zero fake logo assets) |
+| | **WP10** | Responsive layouts (360x780 to 412x915) & 1.5x text accessibility | **DONE** | Responsive paddings and flexible text layouts |
+| | **WP11** | Design system golden & widget tests (contrast $\ge 4.5:1$, RTL layout) | **DONE** | `test/ui/design_system_test.dart` (6/6 tests passing) |
+| **Phase 3** | **WP12** | Pure-Dart deterministic domain models | **DONE** | `lib/domain/models/domain_models.dart` |
+| | **WP13** | Curated 14-movement exercise catalog import with safety tags | **DONE** | `lib/domain/catalog/exercise_catalog.dart` (14 movements) |
+| | **WP14** | Equipment eligibility predicates (default exclude unverified anchors/furniture) | **DONE** | `WorkoutEngine.isExerciseEligible` strictly enforces GOV13 |
+| | **WP15** | Deterministic session rotation & 36–48h muscle recovery spacing | **DONE** | Adaptive 3-way rotation with recovery checks |
+| | **WP16** | Double progression rep brackets, pause cadence & inverse band physics | **DONE** | Progression physics logic and tests |
+| | **WP17** | Stop-first 1-tap pain STOP semantics (SAFE-01) & zero loaded substitution | **DONE** | Emergency stop precedence and joint quarantine |
+| | **WP18** | Pure-Dart engine scenario test suite mapping `engine_scenarios.json` | **DONE** | `test/domain/workout_engine_test.dart` (8/8 tests passing) |
+| **Phase 4** | **WP19** | Bounded dependency activation (GOV16 allowlist evaluation) | **IN_PROGRESS** | Activating minimal persistence stack |
 | | **WP20** | Local SQLite v1 schema definition & tables | **PENDING** | |
 | | **WP21** | Repository interfaces & immediate write-ordering for set logging | **PENDING** | |
 | | **WP22** | Interrupted session & crash recovery state machine | **PENDING** | |
