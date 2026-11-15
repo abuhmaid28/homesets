@@ -1,0 +1,51 @@
+name: HOMESETS Foundation Quality CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundation-audit:
+    name: Docs, Fixtures & Security Hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Display CI Boundary Disclaimer
+        run: |
+          echo "============================================================"
+          echo "HOMESETS FOUNDATION QUALITY CI"
+          echo "NOTE: THIS IS A DOCS/FIXTURE/HYGIENE CI — NOT A FLUTTER APP CI."
+          echo "This run verifies documentation links, secret hygiene, and"
+          echo "the 100+ domain scenario fixtures before any Flutter code."
+          echo "============================================================"
+
+      - name: Validate Fixture Schemas (100+ Scenarios & Catalog)
+        run: python tools/quality/validate_fixtures.py
+
+      - name: Validate Markdown Relative Links
+        run: python tools/quality/validate_links.py
+
+      - name: Verify Secret Hygiene & Zero-Photo Policy
+        run: python tools/quality/check_hygiene.py
+
+      - name: Run Master Quality Suite
+        run: python tools/quality/run_all_checks.py

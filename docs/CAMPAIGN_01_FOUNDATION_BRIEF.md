@@ -3,7 +3,7 @@
 # G0-CAMPAIGN-01 — Antigravity autonomous HOMESETS foundation verification
 
 **Status: Authorized owner-approved campaign brief; NOT YET EXECUTED.**
-**Current approved policy:** [docs/AGENT_AUTONOMY_POLICY.md](../blob/main/docs/AGENT_AUTONOMY_POLICY.md), [GOV06–GOV11](../blob/main/docs/DECISION_REGISTER.md). Ahmed is Product Owner, not operator.
+**Current approved policy:** [docs/AGENT_AUTONOMY_POLICY.md](AGENT_AUTONOMY_POLICY.md), [GOV06–GOV11](DECISION_REGISTER.md). Ahmed is Product Owner, not operator.
 
 ## Goal
 In one uninterrupted Antigravity campaign, verify that the selected local **homesets** workspace is attached only to the correct private GitHub repository, all persistent rules load, and the docs/quality foundation is consistent. Complete all safe internal substeps without asking Ahmed to approve each ordinary operation. **No Flutter product code or APK yet.**
@@ -11,7 +11,7 @@ In one uninterrupted Antigravity campaign, verify that the selected local **home
 ## Context
 - Exact remote: `https://github.com/abuhmaid28/homesets.git`, expected `main`.
 - `AGENTS.md` and `PROJECT_RULES.md` now exist on GitHub.
-- Master, decisions, [Roadmap](../blob/main/docs/ROADMAP.md), Brand Direction and Current Status already exist.
+- Master, decisions, [Roadmap](ROADMAP.md), Brand Direction and Current Status already exist.
 - Manual phone testing is now **final-only**; ignore old superseded instructions that require a physical test after each small milestone.
 - Code merges may be automatic **only** after actual CI is operational and all exact-head checks pass; there is no established CI yet, so **do not merge any app runtime code**.
 - Exact owner-preferred PNG has a fingerprint in Asset Manifest, but is **not** yet available in GitHub. Do not substitute any similar image or claim it was uploaded.
