@@ -123,4 +123,14 @@ Confirm the registry is faithful, then preserve the exact selected image in `ass
 
 **Decision provenance:** Ahmed's direct approval in the HOMESETS conversation on 2026-11-15; the previously proposed grouped policy is recorded in [C2R_OWNER_GATE_PACKAGE.md](https://github.com/abuhmaid28/homesets/blob/campaign/c2-mega-foundation/docs/reviews/C2R_OWNER_GATE_PACKAGE.md). Any agent claims of test success, repo merge, APK, package compatibility, or Honor behavior remain **UNVERIFIED until direct evidence**.
 
-**Current next step:** Update [Issue #11](https://github.com/abuhmaid28/homesets/issues/11) to authorized and hand one long Antigravity task to the verified HOMESETS workspace. User is not asked to operate routine Git commands. 
+**Current next step:** Update [Issue #11](https://github.com/abuhmaid28/homesets/issues/11) to authorized and hand one long Antigravity task to the verified HOMESETS workspace. User is not asked to operate routine Git commands.
+
+## GOV20 — Explicit C3 dev-only dependency exception (2026-11-15)
+
+**Owner authorization (direct):** Ahmed explicitly approves `flutter_lints ^6.0.0` and `sqflite_common_ffi ^2.4.7` **as Dev-Only exceptions to GOV16**, and authorizes a guarded normal merge of [PR #12](https://github.com/abuhmaid28/homesets/pull/12) after all GOV08 checks are reverified.
+
+| ID | Decision | Status |
+| --- | --- | --- |
+| GOV20 | **Narrow exception to GOV16, for HOMESETS C3 P0–P4 only:** allow `flutter_lints: ^6.0.0` under `dev_dependencies` for static lint rules, and `sqflite_common_ffi: ^2.4.7` under `dev_dependencies` for headless SQLite tests/CI. They must remain dev-only; no authorization to add other packages, runtime network services, paid dependencies, or to expand P5–P8. Preserve `pubspec.lock` and verify the exact resolved package versions and license evidence at relevant gate. **Merge authorization is conditional on GOV08 exact-head green CI, reviewed in-scope diff, no critical blocker, and a non-force GitHub PR merge.** | **[Confirmed] — Ahmed approved 2026-11-15** |
+
+**Scope and provenance:** This is an additive, narrow exception; all other GOV16 restrictions remain in force. The final C3 technical review is recorded on [PR #12 review #5909225185](https://github.com/abuhmaid28/homesets/pull/12#pullrequestreview-5909225185). The current Flutter Core candidate uses provisional `com.abuhmaid.homesets`; final signing/package ID and Honor acceptance are still separate gates.
