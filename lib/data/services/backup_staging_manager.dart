@@ -92,7 +92,19 @@ class BackupStagingManager {
             await photosDir.delete(recursive: true);
           }
           if (await photosBackupDir.exists()) {
-            await photosBackupDir.rename(photosDir.path);
+            try {
+              await photosBackupDir.rename(photosDir.path);
+            } catch (_) {
+              // Fallback if atomic rename across mounts or locks fails
+              await photosDir.create(recursive: true);
+              await for (final entity in photosBackupDir.list(recursive: false)) {
+                if (entity is File) {
+                  final filename = entity.uri.pathSegments.last;
+                  await entity.copy('${photosDir.path}/$filename');
+                }
+              }
+              await photosBackupDir.delete(recursive: true);
+            }
           }
         }
       } catch (rollbackError) {

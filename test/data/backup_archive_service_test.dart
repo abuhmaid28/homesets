@@ -278,7 +278,7 @@ void main() {
       await incomingPhoto.writeAsString('INCOMING_PHOTO_CONTENT');
 
       // Execute restore where DB operation fails
-      expect(
+      await expectLater(
         () => stagingManager.executeTwoPhaseRestore(
           snapshot: const HomesetsDataSnapshot(
             workoutSessions: [],
