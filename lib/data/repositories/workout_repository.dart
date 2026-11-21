@@ -897,8 +897,11 @@ class WorkoutRepository {
     );
   }
 
-  /// Restores full P0-P5 data snapshot transactionally into SQLite database (WP13).
-  Future<void> restoreDataSnapshot(HomesetsDataSnapshot snapshot) async {
+  /// Restores full P0-P5 data snapshot transactionally into SQLite database (WP13, P6-FINAL-02).
+  Future<void> restoreDataSnapshot(
+    HomesetsDataSnapshot snapshot, {
+    String? restoreToken,
+  }) async {
     final db = await _dbHelper.database;
 
     await db.transaction((txn) async {
@@ -973,7 +976,39 @@ class WorkoutRepository {
         await txn.insert('reminder_settings', snapshot.reminderSettings!,
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
+
+      // 12. Record restore token in app_metadata atomically with restore (P6-FINAL-02)
+      if (restoreToken != null) {
+        await txn.insert(
+          'app_metadata',
+          {'key': 'restore_token', 'value': restoreToken},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
     });
+  }
+
+  /// Retrieves the currently committed restore generation token, if any (P6-FINAL-02).
+  Future<String?> getCurrentRestoreToken() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'app_metadata',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['restore_token'],
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  /// Clears the restore generation token after successful recovery finalization.
+  Future<void> clearRestoreToken() async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'app_metadata',
+      where: 'key = ?',
+      whereArgs: ['restore_token'],
+    );
   }
 
   /// Retrieves local daily reminder settings (WP16).

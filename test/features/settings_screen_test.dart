@@ -194,7 +194,10 @@ void main() {
       expect(backupBtn, findsOneWidget);
 
       await tester.tap(backupBtn);
-      await pumpAsync(tester, 12);
+      for (var i = 0; i < 30; i++) {
+        await pumpAsync(tester, 2);
+        if (find.text('Backup exported successfully.').evaluate().isNotEmpty) break;
+      }
 
       expect(find.text('Backup exported successfully.'), findsOneWidget);
     });

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:homesets/data/services/backup_hash_provider.dart';
 import 'package:homesets/data/services/zip_codec.dart';
 import 'package:homesets/domain/backup/backup_models.dart';
@@ -41,6 +40,7 @@ class BackupValidationResult {
 }
 
 /// Service handling packaging, unpacking, and hostile-threat validation of `.homesets` backup archives.
+/// Employs bounded O(1) buffer streaming to eliminate high memory spikes (P6-FINAL-05).
 class BackupArchiveService {
   static const int maxArchiveBytes = 250 * 1024 * 1024; // 250 MB
   static const int maxUncompressedBytes = 500 * 1024 * 1024; // 500 MB
@@ -64,92 +64,97 @@ class BackupArchiveService {
     String appVersion = '1.0.0+1',
     String devicePlatform = 'android',
   }) async {
-    // 1. Serialize Data Snapshot to JSON
-    final snapshotJson = jsonEncode(snapshot.toJson());
-    final snapshotBytes = utf8.encode(snapshotJson);
-    final snapshotChecksum = hashProvider.computeChecksum(snapshotBytes);
-
-    // 2. Read and hash photo files
-    final fileEntries = <BackupFileEntry>[];
-    final zipEntries = <ZipEntry>[];
-    var totalBytes = snapshotBytes.length;
-
-    for (final photoFile in photoFiles) {
-      if (!await photoFile.exists()) {
-        throw BackupValidationException('Missing tracked photo file on disk: ${photoFile.path}');
-      }
-      final rawPhotoBytes = await photoFile.readAsBytes();
-      final filename = photoFile.uri.pathSegments.last;
-      final relPath = 'progress_photos/$filename';
-      final photoHash = hashProvider.computeChecksum(rawPhotoBytes);
-
-      fileEntries.add(BackupFileEntry(
-        relativePath: relPath,
-        byteLength: rawPhotoBytes.length,
-        sha256: photoHash,
-      ));
-
-      zipEntries.add(ZipEntry(
-        path: relPath,
-        data: rawPhotoBytes,
-      ));
-
-      totalBytes += rawPhotoBytes.length;
-    }
-
-    if (fileEntries.length != snapshot.progressPhotos.length) {
-      throw BackupValidationException(
-        'Photo count mismatch: snapshot declares ${snapshot.progressPhotos.length} photos, but ${fileEntries.length} files were provided',
-      );
-    }
-
-    // 3. Create Manifest
-    final manifest = BackupManifest(
-      formatVersion: supportedFormatVersion,
-      appVersion: appVersion,
-      databaseSchemaVersion: currentDatabaseSchemaVersion,
-      createdAt: DateTime.now().toUtc().toIso8601String(),
-      devicePlatform: devicePlatform,
-      dataSnapshotChecksum: snapshotChecksum,
-      recordCounts: snapshot.computeRecordCounts(),
-      files: fileEntries,
-      totalFilesCount: fileEntries.length,
-      totalUncompressedBytes: totalBytes,
-    );
-
-    final manifestJson = jsonEncode(manifest.toJson());
-    final manifestBytes = utf8.encode(manifestJson);
-
-    // Add manifest and data.json as first entries
-    zipEntries.insert(0, ZipEntry(
-      path: 'manifest.json',
-      data: Uint8List.fromList(manifestBytes),
-    ));
-    zipEntries.insert(1, ZipEntry(
-      path: 'data.json',
-      data: Uint8List.fromList(snapshotBytes),
-    ));
-
-    // 4. Encode ZIP container
-    final archiveBytes = ZipCodec.encode(zipEntries, compress: true);
-
-    if (archiveBytes.length > maxArchiveBytes) {
-      throw BackupSecurityException(
-        'Created archive exceeds maximum size limit ($maxArchiveBytes bytes): ${archiveBytes.length} bytes',
-      );
-    }
-
     final outFile = File(outputFilePath);
-    await outFile.parent.create(recursive: true);
-    await outFile.writeAsBytes(archiveBytes, flush: true);
-    return outFile;
+    final tempDir = Directory('${outFile.parent.path}/.temp_pkg_${DateTime.now().microsecondsSinceEpoch}');
+    await tempDir.create(recursive: true);
+
+    try {
+      // 1. Serialize Data Snapshot to temporary JSON file
+      final snapshotJson = jsonEncode(snapshot.toJson());
+      final snapshotFile = File('${tempDir.path}/data.json');
+      await snapshotFile.writeAsString(snapshotJson, flush: true);
+
+      final snapshotLength = await snapshotFile.length();
+      final snapshotChecksum = await hashProvider.computeFileChecksum(snapshotFile);
+
+      // 2. Hash and prepare photo file inputs
+      final fileEntries = <BackupFileEntry>[];
+      final zipInputs = <ZipFileInput>[];
+      var totalBytes = snapshotLength;
+
+      for (final photoFile in photoFiles) {
+        if (!await photoFile.exists()) {
+          throw BackupValidationException('Missing tracked photo file on disk: ${photoFile.path}');
+        }
+        final photoLength = await photoFile.length();
+        final filename = photoFile.uri.pathSegments.last;
+        final relPath = 'progress_photos/$filename';
+        final photoHash = await hashProvider.computeFileChecksum(photoFile);
+
+        fileEntries.add(BackupFileEntry(
+          relativePath: relPath,
+          byteLength: photoLength,
+          checksum: photoHash,
+        ));
+
+        zipInputs.add(ZipFileInput(
+          path: relPath,
+          file: photoFile,
+        ));
+
+        totalBytes += photoLength;
+      }
+
+      if (fileEntries.length != snapshot.progressPhotos.length) {
+        throw BackupValidationException(
+          'Photo count mismatch: snapshot declares ${snapshot.progressPhotos.length} photos, but ${fileEntries.length} files were provided',
+        );
+      }
+
+      // 3. Create Manifest file
+      final manifest = BackupManifest(
+        formatVersion: supportedFormatVersion,
+        appVersion: appVersion,
+        databaseSchemaVersion: currentDatabaseSchemaVersion,
+        createdAt: DateTime.now().toUtc().toIso8601String(),
+        devicePlatform: devicePlatform,
+        dataSnapshotChecksum: snapshotChecksum,
+        checksumAlgorithm: BackupManifest.supportedChecksumAlgorithm,
+        recordCounts: snapshot.computeRecordCounts(),
+        files: fileEntries,
+        totalFilesCount: fileEntries.length,
+        totalUncompressedBytes: totalBytes,
+      );
+
+      final manifestFile = File('${tempDir.path}/manifest.json');
+      await manifestFile.writeAsString(manifest.serialize(), flush: true);
+
+      // Add manifest and data.json as first entries
+      zipInputs.insert(0, ZipFileInput(path: 'manifest.json', file: manifestFile));
+      zipInputs.insert(1, ZipFileInput(path: 'data.json', file: snapshotFile));
+
+      // 4. Stream ZIP container creation directly to disk (P6-FINAL-05)
+      await ZipCodec.createArchiveFileStream(
+        outputFile: outFile,
+        files: zipInputs,
+        maxArchiveBytes: maxArchiveBytes,
+      );
+
+      return outFile;
+    } finally {
+      try {
+        if (await tempDir.exists()) {
+          await tempDir.delete(recursive: true);
+        }
+      } catch (_) {}
+    }
   }
 
   /// Unpacks and rigorously validates a `.homesets` archive file into [stagingDir].
   ///
   /// Enforces THREAT-01 (Path Traversal), THREAT-02 (Decompression Bomb),
   /// THREAT-03 (Checksum Tampering), THREAT-04 (Schema Incompatibility),
-  /// and THREAT-05 (Dangling Photo References).
+  /// and THREAT-05 (Dangling Photo References) using streaming extraction (P6-FINAL-05).
   Future<BackupValidationResult> validateAndExtractArchive({
     required File archiveFile,
     required Directory stagingDir,
@@ -170,88 +175,59 @@ class BackupArchiveService {
         );
       }
 
-      // 2. Decode ZIP archive container
-      final archiveBytes = await archiveFile.readAsBytes();
-      List<ZipEntry> entries;
-      try {
-        entries = ZipCodec.decode(archiveBytes);
-      } catch (e) {
-        return BackupValidationResult.failure('Corrupt or invalid backup container format: $e');
-      }
-
-      // 3. Enforce member file count (THREAT-02)
-      if (entries.length > maxFileCount) {
-        return BackupValidationResult.failure(
-          'Archive contains too many files ($maxFileCount max): ${entries.length}',
-        );
-      }
-
-      // Clean extract destination
+      // 2. Clean extract destination
       final extractDir = Directory('${stagingDir.path}/extracted');
       if (await extractDir.exists()) {
         await extractDir.delete(recursive: true);
       }
       await extractDir.create(recursive: true);
 
-      var cumulativeUncompressedBytes = 0;
-      ZipEntry? manifestEntry;
-      ZipEntry? dataEntry;
-      final extractedPhotos = <File>[];
-
-      // 4. Validate each member path and byte budget (THREAT-01, THREAT-02)
-      for (final entry in entries) {
-        final path = entry.path;
-
-        // Path Traversal Defenses: reject `..`, `\`, leading `/`, drive letters
-        if (path.contains('..') ||
-            path.contains('\\') ||
-            path.startsWith('/') ||
-            path.contains(':')) {
-          await _purgeDirectory(extractDir);
-          throw BackupSecurityException('Path traversal attempt detected in entry: $path');
-        }
-
-        // Whitelist check: only manifest.json, data.json, or progress_photos/<id>.jpg
-        final isManifest = path == 'manifest.json';
-        final isData = path == 'data.json';
-        final isPhoto = _validPhotoPathPattern.hasMatch(path);
-
-        if (!isManifest && !isData && !isPhoto) {
-          await _purgeDirectory(extractDir);
-          throw BackupSecurityException('Unauthorized or unexpected file in backup: $path');
-        }
-
-        cumulativeUncompressedBytes += entry.data.length;
-        if (cumulativeUncompressedBytes > maxUncompressedBytes) {
-          await _purgeDirectory(extractDir);
-          throw BackupSecurityException(
-            'Decompression bomb defense triggered: uncompressed size exceeds limit ($maxUncompressedBytes bytes)',
-          );
-        }
-
-        // Write file to isolated staging
-        final targetFile = File('${extractDir.path}/$path');
-        await targetFile.parent.create(recursive: true);
-        await targetFile.writeAsBytes(entry.data, flush: true);
-
-        if (isManifest) manifestEntry = entry;
-        if (isData) dataEntry = entry;
-        if (isPhoto) extractedPhotos.add(targetFile);
+      // 3. Stream ZIP archive extraction directly to disk with pre-checked bounds (P6-FINAL-05)
+      List<File> extractedFiles;
+      try {
+        extractedFiles = await ZipCodec.extractArchiveFileStream(
+          archiveFile: archiveFile,
+          targetDir: extractDir,
+          maxFileCount: maxFileCount,
+          maxArchiveBytes: maxArchiveBytes,
+          maxUncompressedBytes: maxUncompressedBytes,
+        );
+      } catch (e) {
+        return BackupValidationResult.failure('Corrupt or invalid backup container format: $e');
       }
 
-      if (manifestEntry == null) {
+      // 4. Validate all extracted member paths against whitelist (THREAT-01)
+      final extractedPhotos = <File>[];
+      for (final file in extractedFiles) {
+        final relPath = file.path.substring(extractDir.path.length).replaceAll('\\', '/');
+        final cleanPath = relPath.startsWith('/') ? relPath.substring(1) : relPath;
+        if (cleanPath == 'manifest.json' || cleanPath == 'data.json') continue;
+
+        if (!_validPhotoPathPattern.hasMatch(cleanPath)) {
+          await _purgeDirectory(extractDir);
+          throw BackupSecurityException('Unauthorized or unexpected file in backup: $cleanPath');
+        }
+        extractedPhotos.add(file);
+      }
+
+      // 5. Verify presence of manifest.json and data.json
+      final manifestFile = File('${extractDir.path}/manifest.json');
+      final dataFile = File('${extractDir.path}/data.json');
+
+      if (!await manifestFile.exists()) {
         await _purgeDirectory(extractDir);
         return BackupValidationResult.failure('Archive is missing manifest.json');
       }
-      if (dataEntry == null) {
+      if (!await dataFile.exists()) {
         await _purgeDirectory(extractDir);
         return BackupValidationResult.failure('Archive is missing data.json');
       }
 
-      // 5. Parse and validate manifest (THREAT-04)
+      // 6. Parse and validate manifest (THREAT-04)
       BackupManifest manifest;
       try {
-        final manifestMap = jsonDecode(utf8.decode(manifestEntry.data)) as Map<String, dynamic>;
+        final manifestStr = await manifestFile.readAsString();
+        final manifestMap = jsonDecode(manifestStr) as Map<String, dynamic>;
         manifest = BackupManifest.fromJson(manifestMap);
       } catch (e) {
         await _purgeDirectory(extractDir);
@@ -272,8 +248,16 @@ class BackupArchiveService {
         );
       }
 
+      // Enforce recognized checksum algorithm (P6-FINAL-07)
+      if (manifest.checksumAlgorithm != BackupManifest.supportedChecksumAlgorithm) {
+        await _purgeDirectory(extractDir);
+        return BackupValidationResult.failure(
+          'Unsupported checksum algorithm: ${manifest.checksumAlgorithm}. Supported: ${BackupManifest.supportedChecksumAlgorithm}',
+        );
+      }
+
       // 6. Verify checksum of data.json (THREAT-03)
-      final actualDataChecksum = hashProvider.computeChecksum(dataEntry.data);
+      final actualDataChecksum = await hashProvider.computeFileChecksum(dataFile);
       if (actualDataChecksum != manifest.dataSnapshotChecksum) {
         await _purgeDirectory(extractDir);
         return BackupValidationResult.failure(
@@ -291,9 +275,8 @@ class BackupArchiveService {
           throw BackupSecurityException('Extracted photo not declared in manifest: $relPath');
         }
 
-        final photoBytes = await photoFile.readAsBytes();
-        final actualHash = hashProvider.computeChecksum(photoBytes);
-        if (actualHash != expectedMeta.sha256) {
+        final actualHash = await hashProvider.computeFileChecksum(photoFile);
+        if (actualHash != expectedMeta.checksum) {
           await _purgeDirectory(extractDir);
           return BackupValidationResult.failure(
             'Photo file checksum mismatch for $relPath: file may be corrupted',
@@ -301,10 +284,11 @@ class BackupArchiveService {
         }
       }
 
-      // 8. Parse Data Snapshot & Strict Record & Photo Matching (THREAT-05 & P6-R06)
+      // 9. Parse Data Snapshot & Strict Record & Photo Matching (THREAT-05 & P6-R06)
       HomesetsDataSnapshot snapshot;
       try {
-        final snapshotMap = jsonDecode(utf8.decode(dataEntry.data)) as Map<String, dynamic>;
+        final dataStr = await dataFile.readAsString();
+        final snapshotMap = jsonDecode(dataStr) as Map<String, dynamic>;
         snapshot = HomesetsDataSnapshot.fromJson(snapshotMap);
       } catch (e) {
         await _purgeDirectory(extractDir);
@@ -325,8 +309,6 @@ class BackupArchiveService {
 
       // Strict bidirectional photo file verification
       final extractedPhotoNames = extractedPhotos.map((f) => f.uri.pathSegments.last).toSet();
-      final snapshotPhotoNames = <String>{};
-
       for (final photoEntry in snapshot.progressPhotos) {
         final filePath = photoEntry['file_path'] as String? ?? '';
         final photoId = photoEntry['id'] as String? ?? 'unknown';
@@ -337,7 +319,6 @@ class BackupArchiveService {
             'Referenced photo file for entry $photoId ($expectedName) is missing from archive',
           );
         }
-        snapshotPhotoNames.add(expectedName);
       }
 
       if (extractedPhotos.length != manifest.files.length) {

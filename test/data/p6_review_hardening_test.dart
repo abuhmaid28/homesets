@@ -251,7 +251,7 @@ void main() {
 
       // Run cold recovery
       final recovered = await stagingManager.recoverPendingJournal();
-      expect(recovered, isTrue);
+      expect(recovered.isSuccess, isTrue);
 
       // Original photo must be restored
       expect(await origPhoto.exists(), isTrue);
@@ -290,7 +290,7 @@ void main() {
 
       // Run cold recovery
       final recovered = await stagingManager.recoverPendingJournal();
-      expect(recovered, isTrue);
+      expect(recovered.isSuccess, isTrue);
 
       // Committed photo remains
       expect(await committedPhoto.exists(), isTrue);

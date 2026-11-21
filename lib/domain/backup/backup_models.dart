@@ -102,36 +102,81 @@ class BackupValidationException implements Exception {
   String toString() => 'BackupValidationException: $message';
 }
 
-/// Metadata entry for a single physical file bundled in a backup (WP05).
+/// Result of a startup or pre-restore crash journal recovery operation (P6-FINAL-01, P6-FINAL-02, P6-FINAL-04).
+class RestoreRecoveryResult {
+  final bool neededRecovery;
+  final bool isSuccess;
+  final String action; // 'finalized', 'rolled_back', 'cleaned_orphan_backup', 'none', 'failed'
+  final String? error;
+
+  const RestoreRecoveryResult({
+    required this.neededRecovery,
+    required this.isSuccess,
+    required this.action,
+    this.error,
+  });
+
+  bool get isFailure => !isSuccess;
+
+  factory RestoreRecoveryResult.none() => const RestoreRecoveryResult(
+        neededRecovery: false,
+        isSuccess: true,
+        action: 'none',
+      );
+
+  factory RestoreRecoveryResult.success({
+    required String action,
+  }) =>
+      RestoreRecoveryResult(
+        neededRecovery: true,
+        isSuccess: true,
+        action: action,
+      );
+
+  factory RestoreRecoveryResult.failure(String error) => RestoreRecoveryResult(
+        neededRecovery: true,
+        isSuccess: false,
+        action: 'failed',
+        error: error,
+      );
+}
+
+/// Metadata entry for a single physical file bundled in a backup (WP05, P6-FINAL-07).
 class BackupFileEntry {
   final String relativePath;
   final int byteLength;
-  final String sha256;
+  final String checksum;
 
   const BackupFileEntry({
     required this.relativePath,
     required this.byteLength,
-    required this.sha256,
-  });
+    String? checksum,
+    String? sha256,
+  }) : checksum = checksum ?? sha256 ?? '';
+
+  /// Compatibility alias for older v1 manifest field naming (P6-FINAL-07).
+  String get sha256 => checksum;
 
   Map<String, dynamic> toJson() => {
         'relativePath': relativePath,
         'byteLength': byteLength,
-        'sha256': sha256,
+        'checksum': checksum,
+        'sha256': checksum,
       };
 
   factory BackupFileEntry.fromJson(Map<String, dynamic> json) =>
       BackupFileEntry(
         relativePath: json['relativePath'] as String,
         byteLength: json['byteLength'] as int,
-        sha256: json['sha256'] as String,
+        checksum: (json['checksum'] ?? json['sha256']) as String,
       );
 }
 
-/// Root manifest descriptor for the backup archive (WP05).
+/// Root manifest descriptor for the backup archive (WP05, P6-FINAL-07).
 class BackupManifest {
   static const int currentFormatVersion = 1;
   static const int currentDatabaseSchemaVersion = 2;
+  static const String supportedChecksumAlgorithm = 'homesets-v1-digest';
 
   final int formatVersion;
   final String appVersion;
@@ -152,7 +197,7 @@ class BackupManifest {
     required this.createdAt,
     required this.devicePlatform,
     required this.dataSnapshotChecksum,
-    this.checksumAlgorithm = 'homesets-v1-digest',
+    this.checksumAlgorithm = supportedChecksumAlgorithm,
     required this.recordCounts,
     required this.files,
     required this.totalFilesCount,

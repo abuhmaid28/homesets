@@ -151,6 +151,11 @@ class MainActivity : FlutterActivity() {
                     result.success(enabled)
                 }
                 "scheduleDailyReminder" -> {
+                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && nm?.areNotificationsEnabled() == false) {
+                        result.success(false)
+                        return@setMethodCallHandler
+                    }
                     val hour = call.argument<Int>("hour") ?: 15
                     val minute = call.argument<Int>("minute") ?: 30
                     val title = call.argument<String>("title") ?: "HOMESETS"

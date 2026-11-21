@@ -78,6 +78,13 @@ class DatabaseHelper {
         updated_at TEXT NOT NULL
       );
     ''');
+    // Ensure app_metadata table exists for durable recovery tokens (P6 Workstream A)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    ''');
   }
 
   Future<void> _onCreate(Database db, int version) async {

@@ -103,22 +103,36 @@
 
 ---
 
-## 5. Verification Evidence & Test Execution Suite
+## 5. P6 Final Durability & Security Hardening Matrix (P6-FINAL-01 to P6-FINAL-07)
+
+| Finding ID | Severity | Finding & Defect Description | Resolution & Architectural Implementation | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-FINAL-01** | **CRITICAL** | Interruption between moving photos and SQLite commit or during rollback destroys original photos or orphans staging. Pre-rename crash deleted photos dir without backup existing. | Implemented 6-phase two-resource restore journal with SQLite `restoreToken` in `app_metadata` table. Pre-rename crash only deletes `photosDir` if `photosBackupDir` exists. If SQLite transaction rolls back, restored from backup. If SQLite commits, token confirms commit and photos are kept. | `lib/data/services/backup_staging_manager.dart`, `lib/data/repositories/workout_repository.dart`, and `test/data/p6_final_durability_test.dart` (Boundaries 1–10). |
+| **P6-FINAL-02** | **CRITICAL** | Startup recovery not invoked in `lib/main.dart` before normal app flow; profile and inventory read inconsistent state. | Initialized `BackupStagingManager` in `lib/main.dart` and executed `recoverPendingJournal(repository: widget.repository)` before reading user profile and before orphan photo sweeping. Added user-facing recovery failure screen with retry button blocking DB writes if rollback is incomplete. | `lib/main.dart` and `test/data/p6_final_durability_test.dart`. |
+| **P6-FINAL-03** | **CRITICAL** | Unbounded memory consumption during archive creation and extraction; reads whole files into heap. | Implemented streaming file-to-file ZIP creation (`createArchiveFileStream`) and extraction (`extractArchiveFileStream`) in `ZipCodec` streaming 64KB chunks directly between disk files with zero whole-file memory buffering. Central directory headers parsed from disk with `RandomAccessFile` before inflating. Enforced hard streaming quotas (max 250MB single entry, max 500MB total, max 1000 files, 100:1 ratio, anti-traversal). | `lib/data/services/zip_codec.dart`, `lib/data/services/backup_archive_service.dart`, and `test/data/p6_final_durability_test.dart`. |
+| **P6-FINAL-04** | **CRITICAL** | Failed rollback purged rollback directory on next restore attempt, causing irreversible photo loss. | On rollback failure, journal status set to `ROLLBACK_FAILED` and `photosBackupDir` preserved. Startup recovery re-attempts rollback and alerts user, blocking any routine photo cleanup. | `lib/data/services/backup_staging_manager.dart` and `test/data/p6_final_durability_test.dart` (Boundary 8). |
+| **P6-FINAL-05** | **HIGH** | Checksum algorithm named "homesets-v1-digest" lacked streaming chunk computation and explicit algorithm gating in manifest. | Implemented streaming chunked checksum in `DefaultBackupHashProvider.computeFileChecksum` (64KB chunks, O(1) RAM). Added `BackupManifest.supportedChecksumAlgorithm = 'homesets-v1-digest'`; fails closed if unrecognized algorithm is present in archive. | `lib/data/services/backup_hash_provider.dart`, `lib/domain/backup/backup_models.dart`, `lib/data/services/backup_archive_service.dart`, and `test/data/p6_final_durability_test.dart`. |
+| **P6-FINAL-06** | **HIGH** | Reminder toggle allowed enabling when Android 13+ notifications are disabled at system level; Settings saved `isEnabled: true`. | Added `areNotificationsEnabled()` check in `MainActivity.kt` and `SettingsScreen._toggleReminders`. If notifications disabled at system level, toggle is reverted, user warning is displayed, and `isEnabled: true` is never committed. | `MainActivity.kt`, `lib/features/settings/settings_screen.dart`, and `test/features/settings_screen_test.dart`. |
+| **P6-FINAL-07** | **HIGH** | Lack of comprehensive crash interruption boundary tests covering all failure windows and synthetic P0-P5 full roundtrip. | Created `test/data/p6_final_durability_test.dart` with 14 tests verifying all 10 crash interruption boundaries, streaming archive limits, deterministic digest vectors, full 10-table synthetic P0-P5 roundtrip, and user cancellation. | `test/data/p6_final_durability_test.dart` (14/14 pass). |
+
+---
+
+## 6. Verification Evidence & Test Execution Suite
 
 | Verification Step | Command / Tool | Result | Details |
 | :--- | :--- | :--- | :--- |
 | **Dart Analyzer** | `flutter analyze --fatal-infos` | **PASS (0 issues)** | Zero errors, zero warnings, zero infos across all packages and test files. |
-| **Unit & Widget Tests** | `flutter test` | **PASS (128/128)** | All 128 tests green across data, domain, and feature suites (+11 new hardening tests). |
+| **Unit & Widget Tests** | `flutter test` | **PASS (142/142)** | All 142 tests green across data, domain, and feature suites (+14 new durability tests). |
 | **Python Quality Suite** | `python tools/quality/run_all_checks.py` | **PASS (4/4 suites)** | Fixtures, links, secrets, media scan, and code fence hygiene verified. |
-| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 35.5s. |
-| **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Triggered on push to `campaign/p6-reliability`. |
+| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 36.3s. |
+| **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Monitored on push to `campaign/p6-reliability`. |
 
 ---
 
-## 6. Commit History & PR Status
+## 7. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** Hardened, all review findings addressed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
+- **Status:** Final durability & security hardening completed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet

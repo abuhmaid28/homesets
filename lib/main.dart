@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'core/theme/homesets_colors.dart';
 import 'core/theme/homesets_theme.dart';
+import 'core/theme/homesets_typography.dart';
 import 'data/repositories/workout_repository.dart';
 import 'data/services/backup_archive_service.dart';
 import 'data/services/backup_platform_service.dart';
@@ -50,6 +52,7 @@ class HomesetsApp extends StatefulWidget {
 
 class _HomesetsAppState extends State<HomesetsApp> {
   bool _isLoading = true;
+  String? _recoveryError;
   bool _hasProfile = false;
   bool _isEditingSettings = false;
   bool _isViewingSettings = false;
@@ -76,24 +79,44 @@ class _HomesetsAppState extends State<HomesetsApp> {
   }
 
   Future<void> _checkInitialState() async {
-    final profile = await widget.repository.getUserProfile();
-    final inventory = await widget.repository.getEquipmentInventory();
-
-    // P5-R02: Startup orphan photo cleanup once DB is verified healthy
-    try {
-      final photos = await widget.repository.getProgressPhotos();
-      final validPaths = photos.map((p) => p.filePath).toList();
-      await _photoService.cleanupOrphanPhotos(validPaths);
-    } catch (_) {}
-
+    // 1. Initialize BackupStagingManager FIRST (P6-FINAL-03)
     if (widget.backupStagingManager != null) {
       _backupStagingManager = widget.backupStagingManager;
     } else {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
         _backupStagingManager = BackupStagingManager(appDocsDir: docsDir);
-      } catch (_) {}
+      } catch (_) {
+        // Fallback for headless tests without platform channel registration
+        final tempDocs = Directory('${Directory.systemTemp.path}/homesets_fallback_${DateTime.now().microsecondsSinceEpoch}');
+        _backupStagingManager = BackupStagingManager(appDocsDir: tempDocs);
+      }
     }
+
+    // 2. Perform blocking startup crash recovery BEFORE any normal DB reads or photo cleanup (P6-FINAL-03)
+    final recovery = await _backupStagingManager!.recoverPendingJournal(
+      repository: widget.repository,
+    );
+
+    if (recovery.isFailure) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _recoveryError = recovery.error ?? 'Startup recovery failed';
+      });
+      return;
+    }
+
+    // 3. Safe normal startup reads
+    final profile = await widget.repository.getUserProfile();
+    final inventory = await widget.repository.getEquipmentInventory();
+
+    // 4. Safe orphan photo cleanup ONLY after recovery succeeds
+    try {
+      final photos = await widget.repository.getProgressPhotos();
+      final validPaths = photos.map((p) => p.filePath).toList();
+      await _photoService.cleanupOrphanPhotos(validPaths);
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() {
@@ -101,6 +124,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
       _currentProfile = profile;
       _currentInventory = inventory;
       _isLoading = false;
+      _recoveryError = null;
     });
   }
 
@@ -156,6 +180,52 @@ class _HomesetsAppState extends State<HomesetsApp> {
   }
 
   Widget _buildCurrentScreen() {
+    if (_recoveryError != null) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: HomesetsColors.orange, size: 56),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Recovery Incomplete',
+                    style: HomesetsTypography.heading2,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _recoveryError!,
+                    style: HomesetsTypography.bodyMedium.copyWith(color: HomesetsColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: HomesetsColors.lime,
+                      foregroundColor: HomesetsColors.textOnLime,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isLoading = true;
+                        _recoveryError = null;
+                      });
+                      _checkInitialState();
+                    },
+                    child: const Text('Retry Recovery'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(

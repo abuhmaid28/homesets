@@ -29,9 +29,10 @@ void main() {
     final repo = WorkoutRepository();
 
     await tester.pumpWidget(HomesetsApp(repository: repo));
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 25; i++) {
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 50));
+      if (find.byType(OnboardingScreen).evaluate().isNotEmpty) break;
     }
 
     // Verify OnboardingScreen is shown

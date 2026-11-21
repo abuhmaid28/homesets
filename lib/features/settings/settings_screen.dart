@@ -75,6 +75,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleReminders(bool value) async {
     final l10n = AppLocalizations.of(context)!;
     if (value) {
+      final hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
+      if (!hasPerm) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.notificationsDisabledWarning),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final success = await widget.reminderPlatformService.scheduleDailyReminder(
         hour: _reminderSettings.hour,
         minute: _reminderSettings.minute,
@@ -292,9 +305,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await widget.backupStagingManager.executeTwoPhaseRestore(
         snapshot: validation.snapshot!,
         stagedPhotos: validation.photoFiles,
-        onDbRestore: () async {
-          await widget.repository.restoreDataSnapshot(validation.snapshot!);
+        onDbRestore: (restoreToken) async {
+          await widget.repository.restoreDataSnapshot(
+            validation.snapshot!,
+            restoreToken: restoreToken,
+          );
         },
+        repository: widget.repository,
       );
 
       if (!mounted) return;
