@@ -1,40 +1,44 @@
-# HOMESETS Photo Privacy & Storage Architecture Audit (WP11)
+# HOMESETS Photo Privacy & Storage Architecture Audit (WP11, P5-R01 to P5-R09)
 
-**Date:** 2026-11-15  
-**Campaign:** P5 (Progress Tracking)  
+**Date:** 2026-11-21  
+**Campaign:** P5 (Progress Tracking) — Post-Review Corrections  
 **Author:** Lead Implementation Agent  
-**Review Status:** P5 Autonomous Implementation Complete — Ready for Independent Lead Review  
+**Review Status:** P5-R01 through P5-R09 Implemented — Ready for Independent Lead Review  
 
 ---
 
 ## 1. Executive Summary
 
-Physique progress photos represent sensitive, intimate user health data. Training at home without external scrutiny requires ironclad privacy guarantees. HOMESETS adheres to an uncompromising offline, zero-permission, app-private architecture.
+Physique progress photos represent sensitive, intimate user health data. Training at home without external scrutiny requires verifiable, defense-in-depth privacy guarantees. HOMESETS adheres to an uncompromising offline, zero-permission, app-private architecture.
 
-Under decision **GOV21 & GOV22**, HOMESETS establishes:
-1. **0 Android Permissions:** Release `AndroidManifest.xml` retains zero `<uses-permission>` tags.
-2. **0 Network Access:** No `INTERNET` permission, zero network calls, zero analytics or telemetry SDKs.
-3. **0 Direct Gallery Access:** Photos are imported via Android's native system Photo Picker contract (`ActivityResultContracts.PickVisualMedia` / `ACTION_GET_CONTENT`). The app never requests or receives `READ_EXTERNAL_STORAGE` or `READ_MEDIA_IMAGES`.
-4. **App-Private Sandbox:** Staged photos are copied into `<appDataDir>/progress_photos/` and never written to public directories (`DCIM`, `Pictures`, `Download`).
-5. **No Cloud Backup Leakage:** `android:allowBackup="false"`, `android:fullBackupContent="false"`, and `android:dataExtractionRules` explicitly prevent physique photos from backing up to Google Drive or OEM cloud storage.
+Under decisions **GOV15, GOV16, GOV20, GOV21, and GOV22**, HOMESETS enforces:
+1. **0 Android Permissions:** Release `AndroidManifest.xml` retains strictly zero `<uses-permission>` tags.
+2. **0 Network Access:** No `INTERNET` permission, zero network calls, zero analytics, telemetry, or remote crash reporting SDKs.
+3. **0 Broad Media Permissions:** Photos are selected via Android's native system content selector (`Intent.ACTION_GET_CONTENT` with `CATEGORY_OPENABLE`). The app never requests or receives `READ_EXTERNAL_STORAGE` or `READ_MEDIA_IMAGES`.
+4. **Bounded Off-Thread Processing & EXIF Stripping (P5-R01):** Raw inputs are capped at 25 MB, decoded off the main UI thread with `inSampleSize` downsampling to prevent OOM, rotated per EXIF orientation, and re-encoded to clean raster JPEG pixels, completely stripping all EXIF, GPS, camera model, and personal tracking tags.
+5. **Two-Phase Lifecycle & Startup Orphan Cleanup (P5-R02):** Atomic compensating rollback deletes any newly copied sandbox file if database insertion fails. Deletions are failure-tolerant, and startup orphan sweeps purge untracked files once database integrity is verified.
+6. **Comprehensive Android Backup / Data Extraction Exclusions (P5-R04):** `android:allowBackup="false"`, `android:fullBackupContent="@xml/backup_rules"`, and `android:dataExtractionRules="@xml/data_extraction_rules"` explicitly exclude `database`, `file`, `root`, and `sharedpref` domains from both cloud backup and device-to-device transfers.
 
 ---
 
-## 2. Threat Modeling & Attack Vectors
+## 2. Threat Modeling & Defense Verification
 
-| Attack Vector | Threat Level | Defense Implementation | Audit Verdict |
+| Threat / Attack Vector | Threat Level | Defense Implementation | Verification Status |
 | :--- | :--- | :--- | :--- |
-| **Broad Storage Permission Leak** | Critical | No `READ_EXTERNAL_STORAGE` or `READ_MEDIA_IMAGES` requested. System Picker handles image selection out-of-process. | **PASS** |
-| **Public Gallery Leakage (DCIM/MediaStore)** | Critical | Photos stored exclusively in internal app directory (`path_provider.getApplicationDocumentsDirectory()`). | **PASS** |
-| **Path Traversal Attacks** | High | `PhotoService` validates relative paths; strictly rejects any path containing `..` or residing outside `progress_photos/`. | **PASS** |
-| **Arbitrary File / Malware Injection** | High | `PhotoService.isValidImageBytes` inspects magic header bytes (JPEG: `FF D8 FF`, PNG: `89 50 4E 47`, WEBP: `RIFF...WEBP`). Corrupt or non-image files are rejected. | **PASS** |
-| **Cloud Backup Exfiltration** | High | `AndroidManifest.xml` disables all backups (`allowBackup="false"`). `res/xml/data_extraction_rules.xml` excludes `progress_photos`. | **PASS** |
-| **Orphan Photo Residue** | Medium | `PhotoService.deletePrivatePhoto` deletes disk files upon user deletion. `cleanupOrphanPhotos` purges unreferenced disk files. | **PASS** |
-| **Metadata / Exif Leakage** | Medium | Opaque file naming (`photo_<timestamp>.jpg`) strips original filename and location metadata from storage key. | **PASS** |
+| **Broad Storage Permission Leak** | Critical | 0 permissions in manifest. System picker handles image selection out-of-process. | **PASS** |
+| **EXIF & GPS Location Leakage** | Critical | Native `Bitmap.compress(JPEG, 90, out)` raster re-encode completely strips all EXIF/GPS metadata tags. | **PASS (P5-R01)** |
+| **OOM / Huge Image Crash** | High | Stream capped at 25 MB; `BitmapFactory.Options.inJustDecodeBounds` + `inSampleSize` (max 2048px); background executor. | **PASS (P5-R01)** |
+| **Unbounded Dart Heap Consumption** | High | Dart side inspects file size bounds (max 15 MB) and reads only 16-byte magic header stream before copying. | **PASS (P5-R01)** |
+| **Orphaned Photo Binary on DB Error** | High | Two-phase photo save with compensating rollback: deletes sandbox file immediately if SQLite insert throws. | **PASS (P5-R02)** |
+| **Untracked Photo Residue on Crash** | Medium | Startup orphan cleanup (`cleanupOrphanPhotos`) wired to app initialization in `main.dart` and `ProgressHubScreen`. | **PASS (P5-R02)** |
+| **Public Gallery Leakage (DCIM)** | Critical | Photos stored exclusively in private sandbox (`<appDocsDir>/progress_photos/<photoId>.jpg`). | **PASS** |
+| **Cloud Backup & D2D Exfiltration** | High | `allowBackup="false"`, `data_extraction_rules.xml` and `backup_rules.xml` exclude `database`, `file`, `root`, `sharedpref`. | **PASS (P5-R04)** |
+| **Path Traversal Attacks** | High | Relative paths validated against `progress_photos/`; strictly rejects `..` and external traversal. | **PASS** |
+| **Absolute Privacy Overpromise in UI** | Medium | Replaced "100% Private" with truthful localized "App-Private" badge and explicit copy detailing sandbox boundaries. | **PASS (P5-R09)** |
 
 ---
 
-## 3. Android Platform Audit
+## 3. Android Platform Audit & Implementation Details
 
 ### 3.1 AndroidManifest.xml Verification
 
@@ -46,82 +50,77 @@ Inspection of `android/app/src/main/AndroidManifest.xml`:
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
-        android:fullBackupContent="false"
+        android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules">
         ...
     </application>
 </manifest>
 ```
+- **`<uses-permission>` tags:** Exactly **0**.
+- **`android:allowBackup`:** `"false"`.
+- **`android:fullBackupContent`:** `"@xml/backup_rules"`.
+- **`android:dataExtractionRules`:** `"@xml/data_extraction_rules"`.
 
-- **`<uses-permission>` tags:** 0
-- **`android:allowBackup`:** `"false"`
-- **`android:fullBackupContent`:** `"false"`
-- **`android:dataExtractionRules`:** Configured to exclude `progress_photos` domain
+### 3.2 Data Extraction Rules Across All Domains (`data_extraction_rules.xml` & `backup_rules.xml`)
 
-### 3.2 Native Photo Picker Integration (`MainActivity.kt`)
-
-Rather than importing third-party photo picker plugins (e.g. `image_picker`) which introduce external transitive dependencies and legacy permission manifests, HOMESETS utilizes a pure Kotlin `MethodChannel` (`com.abuhmaid.homesets/media`) using AndroidX's `ActivityResultContracts.PickVisualMedia` / `GetContent`:
-
-```kotlin
-// Uses Android system photo picker contract without broad permissions
-private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-    if (uri != null) {
-        val stageFile = File(stagingDir, "stage_${System.currentTimeMillis()}.jpg")
-        contentResolver.openInputStream(uri)?.use { input ->
-            stageFile.outputStream().use { output -> input.copyTo(output) }
-        }
-        pendingResult?.success(stageFile.absolutePath)
-    } else {
-        pendingResult?.success(null)
-    }
-}
+`android/app/src/main/res/xml/data_extraction_rules.xml` (Android 12+, API 31+):
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>
 ```
 
-The system UI runs in Android's permission-isolated system process. HOMESETS only receives an input stream for the single user-chosen photo.
+`android/app/src/main/res/xml/backup_rules.xml` (Pre-Android 12 fallback):
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="root" path="." />
+    <exclude domain="file" path="." />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>
+```
+
+> [!NOTE]
+> **OEM Device-to-Device Verification Notice:**
+> While standard Android platform rules explicitly forbid D2D data extraction across all domains, proprietary OEM migration tools (such as Honor MagicOS Device Clone) operate outside standard Android framework APIs. Full physical device verification remains deferred to the integrated C9 physical acceptance gate (GOV07/GOV22).
+
+### 3.3 Native System Image Selector & EXIF Stripping (`MainActivity.kt`)
+
+Rather than importing unvetted third-party plugins that require broad permissions, HOMESETS utilizes standard Android platform APIs:
+- Selection: `Intent.ACTION_GET_CONTENT` with `addCategory(Intent.CATEGORY_OPENABLE)` and `type = "image/*"`.
+- Off-Thread Execution: `Executors.newSingleThreadExecutor()` executes bounded stream copying and bitmap compression off the Activity UI thread.
+- Bounded Reading: Maximum 25 MB raw input limit. If exceeded, the stream is aborted and temporary files deleted.
+- Memory Bounding: `BitmapFactory.Options.inJustDecodeBounds` inspects dimensions. Images larger than 2048px are downsampled via `inSampleSize`.
+- EXIF Orientation: Handled via standard `android.media.ExifInterface`.
+- Re-Encoding: `Bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)` writes pure raster pixels to a private cache file, stripping all EXIF and GPS tags.
 
 ---
 
-## 4. Software Architecture & Sandbox Lifecycle
+## 4. Hardware & Camera Implementation Status (P5-R08)
 
-```
-[User Device Gallery]
-         |
-         | (User selects 1 photo via Android System Picker)
-         v
-[Android Cache Staging] (stage_<timestamp>.jpg)
-         |
-         | (PhotoService: Magic byte header validation & sanitization)
-         v
-[App-Private Document Sandbox] (<appDocsDir>/progress_photos/<photoId>.jpg)
-         |
-         | (SQLite DB: progress_photos table stores metadata)
-         v
-[Progress Hub UI] (Rendered in In-Memory Flutter Canvas / Image.file)
-```
-
-1. **Acquisition:** User triggers "Add Photo", selects angle (Front, Side, Back).
-2. **Staging:** Native picker saves bytes to cache staging.
-3. **Validation:** `PhotoService.isValidImageBytes` checks magic numbers.
-4. **Sandboxing:** File moved/copied to app-private storage with opaque ID.
-5. **Deletion:** Deleting a photo in Progress Hub removes the SQLite record AND immediately deletes the physical file from disk via `PhotoService.deletePrivatePhoto`.
-6. **Orphan Purge:** `PhotoService.cleanupOrphanPhotos` cross-checks SQLite records with on-disk directory contents to reclaim leaked storage.
+> [!IMPORTANT]
+> **Direct Camera Capture Status: BLOCKED / NOT IMPLEMENTED**
+> Under project governance rules (GOV16/GOV21 zero new permissions, zero new dependencies), integrating direct in-app camera capture requires either `android.permission.CAMERA` (strictly prohibited) or delegating to the system camera via `MediaStore.ACTION_IMAGE_CAPTURE` with an `androidx.core.content.FileProvider`. Without adding AndroidX dependencies or device permissions, direct camera capture cannot be safely implemented.
+> 
+> Therefore, direct camera capture is officially recorded as **BLOCKED / NOT IMPLEMENTED**, and gallery/file selection via `ACTION_GET_CONTENT` is the approved photo input channel.
 
 ---
 
-## 5. Automated Verification Evidence
+## 5. UI Copy & Truthful Privacy Disclosures (P5-R09)
 
-- `test/data/photo_sandbox_test.dart`:
-  - `Magic header byte validation recognizes JPEG, PNG, WEBP and rejects invalid files` -> **PASS**
-  - `MockPhotoService stores, resolves and deletes files in memory` -> **PASS**
-  - `Path traversal protection rejects relative paths with .. or outside progress_photos` -> **PASS**
-  - `copyToPrivateSandbox rejects non-existent or corrupted files` -> **PASS**
-- `test/features/progress_hub_test.dart`:
-  - `Photos Tab & Side-by-Side Comparison` -> **PASS**
-  - Private deletion dialog confirmation & file removal -> **PASS**
-  - 100% Private badge display -> **PASS**
+The Progress Hub AppBar displays the localized badge `l10n.appPrivateBadge` ("App-Private" / "حفظ محلي خاص") rather than an overpromising "100% Private" banner. Tapping the badge opens a disclosure dialog:
 
----
-
-## 6. Conclusion
-
-The HOMESETS progress tracking implementation sets an exemplary standard for user privacy and security on Android. It complies with all directives of **GOV21 and GOV22**, maintaining zero dependencies, zero permissions, and airtight offline isolation.
+> *"App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app."*

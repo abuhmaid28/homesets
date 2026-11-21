@@ -764,10 +764,40 @@ abstract class AppLocalizations {
   /// **'After'**
   String get photoAfter;
 
+  /// No description provided for @editWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Weight'**
+  String get editWeight;
+
+  /// No description provided for @appPrivateBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'App-Private'**
+  String get appPrivateBadge;
+
+  /// No description provided for @bandFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get bandFilterAll;
+
+  /// No description provided for @bandFilterBodyweight.
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight'**
+  String get bandFilterBodyweight;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save. Please try again.'**
+  String get saveFailed;
+
   /// No description provided for @privateStorageNotice.
   ///
   /// In en, this message translates to:
-  /// **'🔒 100% Private: Photos stay strictly in app sandbox on device'**
+  /// **'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.'**
   String get privateStorageNotice;
 }
 

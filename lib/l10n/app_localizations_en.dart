@@ -356,6 +356,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get photoAfter => 'After';
 
   @override
+  String get editWeight => 'Edit Weight';
+
+  @override
+  String get appPrivateBadge => 'App-Private';
+
+  @override
+  String get bandFilterAll => 'All';
+
+  @override
+  String get bandFilterBodyweight => 'Bodyweight';
+
+  @override
+  String get saveFailed => 'Failed to save. Please try again.';
+
+  @override
   String get privateStorageNotice =>
-      '🔒 100% Private: Photos stay strictly in app sandbox on device';
+      'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.';
 }

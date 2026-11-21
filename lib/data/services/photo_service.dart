@@ -2,9 +2,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Abstract service defining the app-private photo lifecycle (WP07, WP08).
+/// Abstract service defining the app-private photo lifecycle (WP07, WP08, P5-R01, P5-R02).
 abstract class PhotoService {
-  /// Launches native Photo Picker and returns a private staged image path, or null if cancelled.
+  /// Maximum permitted sanitized photo file size (15 MB) to prevent storage exhaustion and OOM.
+  static const int maxSanitizedPhotoBytes = 15 * 1024 * 1024;
+
+  /// Launches native system image selector and returns a private staged image path, or null if cancelled.
   Future<String?> pickPhotoFromGallery();
 
   /// Moves or copies [stagedPath] into the app-private `<appDocsDir>/progress_photos/<photoId>.jpg`
@@ -21,7 +24,7 @@ abstract class PhotoService {
   Future<int> cleanupOrphanPhotos(List<String> validRelativePaths);
 
   /// Validates magic header bytes (JPEG, PNG, WEBP) to ensure file is a genuine image.
-  static bool isValidImageBytes(Uint8List bytes) {
+  static bool isValidImageBytes(List<int> bytes) {
     if (bytes.length < 4) return false;
     // JPEG: FF D8 FF
     if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) return true;
@@ -66,8 +69,24 @@ class AndroidPhotoService implements PhotoService {
       throw FileSystemException('Staged file does not exist', stagedPath);
     }
 
-    final bytes = await stagedFile.readAsBytes();
-    if (!PhotoService.isValidImageBytes(bytes)) {
+    final length = await stagedFile.length();
+    if (length == 0) {
+      try {
+        await stagedFile.delete();
+      } catch (_) {}
+      throw const FormatException('Selected image is empty');
+    }
+
+    if (length > PhotoService.maxSanitizedPhotoBytes) {
+      try {
+        await stagedFile.delete();
+      } catch (_) {}
+      throw const FormatException('File exceeds maximum allowed size of 15MB');
+    }
+
+    // Stream-bound header check: only read the first 16 bytes rather than loading the whole file into Dart heap
+    final headerChunk = await stagedFile.openRead(0, 16).first;
+    if (!PhotoService.isValidImageBytes(headerChunk)) {
       try {
         await stagedFile.delete();
       } catch (_) {}
@@ -83,7 +102,7 @@ class AndroidPhotoService implements PhotoService {
     final destPath = '${photosDir.path}/$photoId.jpg';
     await stagedFile.copy(destPath);
 
-    // Securely remove the temporary staging file
+    // Clean up temporary staged file
     try {
       await stagedFile.delete();
     } catch (_) {}
@@ -123,8 +142,10 @@ class AndroidPhotoService implements PhotoService {
       if (entity is File) {
         final filename = entity.path.replaceAll('\\', '/').split('/').last;
         if (!validBasenames.contains(filename)) {
-          await entity.delete();
-          cleaned++;
+          try {
+            await entity.delete();
+            cleaned++;
+          } catch (_) {}
         }
       }
     }
@@ -138,7 +159,7 @@ class AndroidPhotoService implements PhotoService {
   }
 }
 
-/// In-memory and temporary mock for unit and widget testing (WP08, WP10).
+/// In-memory and temporary mock for unit and widget testing (WP08, WP10, P5-R02).
 class MockPhotoService implements PhotoService {
   final Map<String, Uint8List> storedFiles = {};
   String? mockPickResult;

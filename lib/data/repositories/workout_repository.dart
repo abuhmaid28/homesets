@@ -747,10 +747,54 @@ class WorkoutRepository {
     return rows.map((r) => r['exercise_id'] as String).toList();
   }
 
-  /// Computes aggregated strength data points over time for a given exercise (WP04).
-  /// Excludes emergency-stopped sessions, pain-stopped sets, and zero-rep logs.
-  Future<List<StrengthDataPoint>> getStrengthHistoryForExercise(String exerciseId) async {
+  /// Retrieves distinct band configurations logged for [exerciseId] to enable like-for-like comparison (P5-R05).
+  /// Returns 'none' for unassisted bodyweight sets, plus any specific band identifiers.
+  Future<List<String>> getAvailableBandConfigurations(String exerciseId) async {
     final db = await _dbHelper.database;
+    final rows = await db.rawQuery('''
+      SELECT DISTINCT sl.band_used
+      FROM set_logs sl
+      JOIN workout_sessions ws ON sl.session_id = ws.id
+      WHERE sl.exercise_id = ?
+        AND sl.is_pain_stopped = 0
+        AND sl.performed_reps > 0
+        AND ws.is_emergency_stopped = 0
+    ''', [exerciseId]);
+
+    final configs = <String>{};
+    for (final r in rows) {
+      final band = r['band_used'] as String?;
+      if (band == null || band.trim().isEmpty) {
+        configs.add('none');
+      } else {
+        configs.add(band.trim());
+      }
+    }
+    final sorted = configs.toList();
+    sorted.sort();
+    return sorted;
+  }
+
+  /// Computes aggregated strength data points over time for a given exercise (WP04, P5-R05).
+  /// Excludes emergency-stopped sessions, pain-stopped sets, and zero-rep logs.
+  /// If [bandFilter] is provided ('none' for bodyweight, or a specific band id), strictly filters to that configuration.
+  Future<List<StrengthDataPoint>> getStrengthHistoryForExercise(
+    String exerciseId, {
+    String? bandFilter,
+  }) async {
+    final db = await _dbHelper.database;
+    String filterClause = '';
+    final args = <dynamic>[exerciseId];
+
+    if (bandFilter != null && bandFilter != 'all') {
+      if (bandFilter == 'none' || bandFilter == 'bodyweight') {
+        filterClause = "AND (sl.band_used IS NULL OR sl.band_used = '')";
+      } else {
+        filterClause = 'AND sl.band_used = ?';
+        args.add(bandFilter);
+      }
+    }
+
     final rows = await db.rawQuery('''
       SELECT 
         sl.session_id,
@@ -764,33 +808,38 @@ class WorkoutRepository {
         AND sl.is_pain_stopped = 0
         AND sl.performed_reps > 0
         AND ws.is_emergency_stopped = 0
+        $filterClause
       ORDER BY sl.completed_at ASC
-    ''', [exerciseId]);
+    ''', args);
 
     if (rows.isEmpty) return [];
 
-    // Group rows by session_id to find max reps, total volume, and session date
-    final sessionMap = <String, List<Map<String, dynamic>>>{};
+    // Group rows by session_id AND band_used to prevent mixing assisted and unassisted sets in the same session
+    final groupMap = <String, List<Map<String, dynamic>>>{};
     for (final row in rows) {
       final sessId = row['session_id'] as String;
-      sessionMap.putIfAbsent(sessId, () => []).add(row);
+      final band = (row['band_used'] as String?)?.trim() ?? '';
+      final groupKey = '$sessId##$band';
+      groupMap.putIfAbsent(groupKey, () => []).add(row);
     }
 
     final dataPoints = <StrengthDataPoint>[];
-    for (final entry in sessionMap.entries) {
+    for (final entry in groupMap.entries) {
       final sessRows = entry.value;
       int maxReps = 0;
       int totalReps = 0;
       String? bandUsed;
       DateTime? sessionDate;
       bool isLite = false;
+      final sessId = sessRows.first['session_id'] as String;
 
       for (final r in sessRows) {
         final reps = r['performed_reps'] as int;
         if (reps > maxReps) maxReps = reps;
         totalReps += reps;
-        if (r['band_used'] != null && (r['band_used'] as String).isNotEmpty) {
-          bandUsed = r['band_used'] as String;
+        final b = (r['band_used'] as String?)?.trim();
+        if (b != null && b.isNotEmpty) {
+          bandUsed = b;
         }
         final completedAt = DateTime.parse(r['completed_at'] as String);
         if (sessionDate == null || completedAt.isAfter(sessionDate)) {
@@ -807,7 +856,7 @@ class WorkoutRepository {
           setsCount: sessRows.length,
           bandUsed: bandUsed,
           isLiteMode: isLite,
-          sessionId: entry.key,
+          sessionId: sessId,
         ));
       }
     }

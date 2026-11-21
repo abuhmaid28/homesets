@@ -55,6 +55,14 @@ class _HomesetsAppState extends State<HomesetsApp> {
   Future<void> _checkInitialState() async {
     final profile = await widget.repository.getUserProfile();
     final inventory = await widget.repository.getEquipmentInventory();
+
+    // P5-R02: Startup orphan photo cleanup once DB is verified healthy
+    try {
+      final photos = await widget.repository.getProgressPhotos();
+      final validPaths = photos.map((p) => p.filePath).toList();
+      await _photoService.cleanupOrphanPhotos(validPaths);
+    } catch (_) {}
+
     if (!mounted) return;
     setState(() {
       _hasProfile = profile != null;

@@ -357,6 +357,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get photoAfter => 'بعد';
 
   @override
+  String get editWeight => 'تعديل الوزن';
+
+  @override
+  String get appPrivateBadge => 'حفظ محلي خاص';
+
+  @override
+  String get bandFilterAll => 'الكل';
+
+  @override
+  String get bandFilterBodyweight => 'وزن الجسم';
+
+  @override
+  String get saveFailed => 'فشل الحفظ. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get privateStorageNotice =>
-      '🔒 خصوصية تامة: الصور محفوظة داخل مساحة التطبيق ولا تخرج أبداً';
+      'حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.';
 }

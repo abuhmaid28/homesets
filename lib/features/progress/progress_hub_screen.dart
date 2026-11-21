@@ -31,7 +31,7 @@ class ProgressHubScreen extends StatefulWidget {
   State<ProgressHubScreen> createState() => _ProgressHubScreenState();
 }
 
-class _ProgressHubScreenState extends State<ProgressHubScreen> {
+class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindingObserver {
   int _selectedTab = 0; // 0=Overview, 1=Weight, 2=Photos, 3=Strength, 4=Meals
   bool _isLoading = true;
 
@@ -46,13 +46,15 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
   final List<ProgressPhoto> _selectedForCompare = [];
   bool _isShowingComparison = false;
 
-  // Strength state
+  // Strength state (WP04, P5-R05)
   List<String> _exerciseIds = [];
   String? _selectedExerciseId;
+  List<String> _availableBands = [];
+  String? _selectedBandFilter;
   List<StrengthDataPoint> _strengthPoints = [];
   StrengthSummary? _strengthSummary;
 
-  // Meal state
+  // Meal state (WP06, P5-R07)
   final Map<int, bool> _todayMealChecks = {};
   late String _todayYmd;
 
@@ -62,10 +64,33 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _todayYmd =
-        '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    WidgetsBinding.instance.addObserver(this);
+    _todayYmd = _currentDateYmd();
     _loadAllData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Calculates dynamic calendar date string YYYY-MM-DD.
+  String _currentDateYmd() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  /// P5-R07: Midnight rollover handling when app is resumed from background.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final currentYmd = _currentDateYmd();
+      if (_todayYmd != currentYmd) {
+        setState(() => _todayYmd = currentYmd);
+        _loadAllData();
+      }
+    }
   }
 
   Future<void> _loadAllData() async {
@@ -74,6 +99,11 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
       final weights = await widget.repository.getWeightEntries();
       final rollingAvg = ProgressAnalytics.calculateRolling7DayAverage(weights, DateTime.now());
       final photos = await widget.repository.getProgressPhotos();
+
+      // P5-R02: Cleanup unreferenced orphan files in private sandbox
+      final validPhotoPaths = photos.map((p) => p.filePath).toList();
+      await widget.photoService.cleanupOrphanPhotos(validPhotoPaths);
+
       final exerciseIds = await widget.repository.getLoggedExerciseIds();
       final credit = await widget.repository.getWeeklyConsistencyCredit();
 
@@ -84,8 +114,16 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
 
       List<StrengthDataPoint> points = [];
       StrengthSummary? summary;
+      List<String> availableBands = [];
       if (activeExercise != null) {
-        points = await widget.repository.getStrengthHistoryForExercise(activeExercise);
+        availableBands = await widget.repository.getAvailableBandConfigurations(activeExercise);
+        if (_selectedBandFilter != null && !availableBands.contains(_selectedBandFilter) && _selectedBandFilter != 'all') {
+          _selectedBandFilter = null;
+        }
+        points = await widget.repository.getStrengthHistoryForExercise(
+          activeExercise,
+          bandFilter: _selectedBandFilter,
+        );
         summary = ProgressAnalytics.computeStrengthSummary(points);
       }
 
@@ -98,6 +136,7 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
         _photos = photos;
         _exerciseIds = exerciseIds;
         _selectedExerciseId = activeExercise;
+        _availableBands = availableBands;
         _strengthPoints = points;
         _strengthSummary = summary;
         _todayMealChecks
@@ -113,14 +152,36 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
 
   Future<void> _onSelectExercise(String? exerciseId) async {
     if (exerciseId == null || exerciseId == _selectedExerciseId) return;
-    final points = await widget.repository.getStrengthHistoryForExercise(exerciseId);
+    final bands = await widget.repository.getAvailableBandConfigurations(exerciseId);
+    final points = await widget.repository.getStrengthHistoryForExercise(
+      exerciseId,
+      bandFilter: _selectedBandFilter,
+    );
     final summary = ProgressAnalytics.computeStrengthSummary(points);
     if (!mounted) return;
     setState(() {
       _selectedExerciseId = exerciseId;
+      _availableBands = bands;
       _strengthPoints = points;
       _strengthSummary = summary;
     });
+  }
+
+  Future<void> _onSelectBandFilter(String? band) async {
+    if (band == _selectedBandFilter) return;
+    setState(() => _selectedBandFilter = band);
+    if (_selectedExerciseId != null) {
+      final points = await widget.repository.getStrengthHistoryForExercise(
+        _selectedExerciseId!,
+        bandFilter: band,
+      );
+      final summary = ProgressAnalytics.computeStrengthSummary(points);
+      if (!mounted) return;
+      setState(() {
+        _strengthPoints = points;
+        _strengthSummary = summary;
+      });
+    }
   }
 
   Future<void> _onLogWeightPrompt() async {
@@ -129,7 +190,7 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
       context: context,
       builder: (ctx) => LogWeightDialog(
         initialWeight: latestWeight,
-        onSave: (val) async {
+        onSaveAsync: (val) async {
           final now = DateTime.now();
           final entry = WeightEntry(
             id: 'wt_${now.millisecondsSinceEpoch}',
@@ -143,12 +204,37 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
     );
   }
 
+  Future<void> _onEditWeightPrompt(WeightEntry entry) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => LogWeightDialog(
+        entryToEdit: entry,
+        onSaveAsync: (val) async {
+          final updated = WeightEntry(
+            id: entry.id,
+            weightKg: val,
+            loggedAt: entry.loggedAt,
+            notes: entry.notes,
+          );
+          await widget.repository.saveWeightEntry(updated);
+          await _loadAllData();
+        },
+      ),
+    );
+  }
+
   Future<void> _onDeleteWeight(WeightEntry entry) async {
     await widget.repository.deleteWeightEntry(entry.id);
     await _loadAllData();
   }
 
   Future<void> _onToggleMeal(int slot, bool isChecked) async {
+    // P5-R07: Rollover check before toggling
+    final currentYmd = _currentDateYmd();
+    if (_todayYmd != currentYmd) {
+      setState(() => _todayYmd = currentYmd);
+      await _loadAllData();
+    }
     await widget.repository.saveMealCheck(_todayYmd, slot, isChecked);
     setState(() {
       _todayMealChecks[slot] = isChecked;
@@ -213,7 +299,20 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
       takenAt: DateTime.now(),
     );
 
-    await widget.repository.saveProgressPhoto(photo);
+    try {
+      await widget.repository.saveProgressPhoto(photo);
+    } catch (e) {
+      // P5-R02: Compensating rollback — remove sandbox file immediately to avoid orphan
+      try {
+        await widget.photoService.deletePrivatePhoto(privateRelativePath);
+      } catch (_) {}
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.saveFailed)),
+        );
+      }
+      return;
+    }
     await _loadAllData();
   }
 
@@ -244,7 +343,9 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
 
     if (confirmed == true) {
       await widget.repository.deleteProgressPhoto(photo.id);
-      await widget.photoService.deletePrivatePhoto(photo.filePath);
+      try {
+        await widget.photoService.deletePrivatePhoto(photo.filePath);
+      } catch (_) {}
       setState(() {
         _selectedForCompare.removeWhere((p) => p.id == photo.id);
       });
@@ -291,27 +392,46 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: HomesetsColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: HomesetsColors.borderSubtle),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock, size: 12, color: HomesetsColors.lime),
-                  SizedBox(width: 4),
-                  Text(
-                    '100% Private',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: HomesetsColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+            child: InkWell(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: HomesetsColors.surfaceCard,
+                    title: Text(l10n.appPrivateBadge, style: HomesetsTypography.heading2),
+                    content: Text(l10n.privateStorageNotice, style: HomesetsTypography.bodyMedium),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(l10n.cancel),
+                      ),
+                    ],
                   ),
-                ],
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: HomesetsColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: HomesetsColors.borderSubtle),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.lock_outline, size: 12, color: HomesetsColors.lime),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.appPrivateBadge,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: HomesetsColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -676,27 +796,41 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
                       const Divider(color: HomesetsColors.borderSubtle, height: 1),
                   itemBuilder: (ctx, i) {
                     final e = _weightEntries[i];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        '${e.weightKg.toStringAsFixed(1)} kg',
-                        style: const TextStyle(
-                          color: HomesetsColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontFeatures: [FontFeature.tabularFigures()],
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () => _onEditWeightPrompt(e),
+                        title: Text(
+                          '${e.weightKg.toStringAsFixed(1)} kg',
+                          style: const TextStyle(
+                            color: HomesetsColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
-                      subtitle: Text(
-                        dateFormat.format(e.loggedAt),
-                        style: const TextStyle(
-                          color: HomesetsColors.textSecondary,
-                          fontSize: 12,
+                        subtitle: Text(
+                          dateFormat.format(e.loggedAt),
+                          style: const TextStyle(
+                            color: HomesetsColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline,
-                            size: 18, color: HomesetsColors.textMuted),
-                        onPressed: () => _onDeleteWeight(e),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined,
+                                  size: 18, color: HomesetsColors.lime),
+                              onPressed: () => _onEditWeightPrompt(e),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 18, color: HomesetsColors.textMuted),
+                              onPressed: () => _onDeleteWeight(e),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -985,6 +1119,48 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
               ),
             ),
           ),
+          if (_availableBands.length > 1) ...[
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: Text(l10n.bandFilterAll),
+                    selected: _selectedBandFilter == null || _selectedBandFilter == 'all',
+                    onSelected: (_) => _onSelectBandFilter(null),
+                    selectedColor: HomesetsColors.lime,
+                    labelStyle: TextStyle(
+                      color: (_selectedBandFilter == null || _selectedBandFilter == 'all')
+                          ? HomesetsColors.textOnLime
+                          : HomesetsColors.textSecondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ..._availableBands.map((band) {
+                    final label = band == 'none' ? l10n.bandFilterBodyweight : band.replaceAll('_', ' ');
+                    final isSel = _selectedBandFilter == band;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(label),
+                        selected: isSel,
+                        onSelected: (_) => _onSelectBandFilter(band),
+                        selectedColor: HomesetsColors.lime,
+                        labelStyle: TextStyle(
+                          color: isSel ? HomesetsColors.textOnLime : HomesetsColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
 
           // Strength Metrics summary cards
@@ -1020,43 +1196,66 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> {
               },
             ),
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: _strengthSummary!.repsDelta >= 0
-                    ? HomesetsColors.limeGlow
-                    : HomesetsColors.orangeGlow,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _strengthSummary!.repsDelta >= 0
-                        ? Icons.trending_up
-                        : Icons.trending_down,
-                    color: _strengthSummary!.repsDelta >= 0
-                        ? HomesetsColors.lime
-                        : HomesetsColors.orange,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${_strengthSummary!.repsDelta > 0 ? '+' : ''}${l10n.repsDelta(_strengthSummary!.repsDelta)}',
-                      style: TextStyle(
-                        color: _strengthSummary!.repsDelta >= 0
-                            ? HomesetsColors.lime
-                            : HomesetsColors.orange,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+            if (!_strengthSummary!.isComparable)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: HomesetsColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: HomesetsColors.borderSubtle),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.info_outline, color: HomesetsColors.textMuted, size: 16),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Mixed configurations logged. Filter by band to see exact progress.',
+                        style: TextStyle(color: HomesetsColors.textSecondary, fontSize: 11),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _strengthSummary!.repsDelta >= 0
+                      ? HomesetsColors.limeGlow
+                      : HomesetsColors.orangeGlow,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _strengthSummary!.repsDelta >= 0
+                          ? Icons.trending_up
+                          : Icons.trending_down,
+                      color: _strengthSummary!.repsDelta >= 0
+                          ? HomesetsColors.lime
+                          : HomesetsColors.orange,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '${_strengthSummary!.repsDelta > 0 ? '+' : ''}${l10n.repsDelta(_strengthSummary!.repsDelta)}',
+                        style: TextStyle(
+                          color: _strengthSummary!.repsDelta >= 0
+                              ? HomesetsColors.lime
+                              : HomesetsColors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
           const SizedBox(height: 16),
 

@@ -77,6 +77,7 @@ class ProgressAnalytics {
   // =========================================================================
 
   /// Summarizes strength progression over time for an exercise given its history.
+  /// Enforces like-for-like comparability across band assistance/resistance (P5-R05).
   static StrengthSummary computeStrengthSummary(List<StrengthDataPoint> history) {
     if (history.isEmpty) {
       return const StrengthSummary(
@@ -86,6 +87,7 @@ class ProgressAnalytics {
         recentMaxReps: 0,
         repsDelta: 0,
         recentTotalVolume: 0,
+        isComparable: true,
       );
     }
 
@@ -94,13 +96,21 @@ class ProgressAnalytics {
     final allTimeBest = history.map((p) => p.maxReps).reduce(max);
     final recentVolume = history.last.totalReps;
 
+    // Strict comparability: check if all data points share the exact same band configuration
+    final firstBand = history.first.bandUsed?.trim();
+    final isComparable = history.every((p) => (p.bandUsed?.trim()) == firstBand);
+
     return StrengthSummary(
       totalSessionsLogged: history.length,
       baselineMaxReps: baseline,
       allTimeBestMaxReps: allTimeBest,
       recentMaxReps: recent,
-      repsDelta: recent - baseline,
+      repsDelta: isComparable ? (recent - baseline) : 0,
       recentTotalVolume: recentVolume,
+      isComparable: isComparable,
+      configurationLabel: isComparable
+          ? (firstBand == null || firstBand.isEmpty ? 'bodyweight' : firstBand)
+          : 'mixed',
     );
   }
 
@@ -173,7 +183,7 @@ class WeeklyWeightAverage {
   });
 }
 
-/// Aggregated strength progression summary for an exercise (WP04).
+/// Aggregated strength progression summary for an exercise (WP04, P5-R05).
 class StrengthSummary {
   final int totalSessionsLogged;
   final int baselineMaxReps;
@@ -181,6 +191,8 @@ class StrengthSummary {
   final int recentMaxReps;
   final int repsDelta;
   final int recentTotalVolume;
+  final bool isComparable;
+  final String? configurationLabel;
 
   const StrengthSummary({
     required this.totalSessionsLogged,
@@ -189,6 +201,8 @@ class StrengthSummary {
     required this.recentMaxReps,
     required this.repsDelta,
     required this.recentTotalVolume,
+    this.isComparable = true,
+    this.configurationLabel,
   });
 }
 

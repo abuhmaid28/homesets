@@ -140,5 +140,10 @@
   "proteinTipsTitle": "Inexpensive Egyptian Protein Ideas",
   "photoBefore": "Before",
   "photoAfter": "After",
-  "privateStorageNotice": "🔒 100% Private: Photos stay strictly in app sandbox on device"
+  "editWeight": "Edit Weight",
+  "appPrivateBadge": "App-Private",
+  "bandFilterAll": "All",
+  "bandFilterBodyweight": "Bodyweight",
+  "saveFailed": "Failed to save. Please try again.",
+  "privateStorageNotice": "App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app."
 }

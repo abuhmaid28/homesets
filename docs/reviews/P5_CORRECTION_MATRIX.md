@@ -1,9 +1,9 @@
 # HOMESETS Campaign P5 — Correction Matrix & Findings Ledger
 
-**Date:** 2026-11-15  
-**Campaign:** P5 (Progress Tracking)  
+**Date:** 2026-11-21  
+**Campaign:** P5 (Progress Tracking) — Post-Review Corrections  
 **Issue:** [#15](https://github.com/abuhmaid28/homesets/issues/15)  
-**Pull Request:** [Draft PR #16](https://github.com/abuhmaid28/homesets/pull/16)  
+**Pull Request:** [PR #16](https://github.com/abuhmaid28/homesets/pull/16)  
 **Branch:** `campaign/p5-progress`  
 **Base:** `main` at `463487c1d5318d14699bb0cc47193de71a6bc0be`  
 **Governance Authority:** Confirmed GOV21 & GOV22  
@@ -14,39 +14,37 @@
 
 ## 1. Executive Summary & Verification Acceptance
 
-Campaign P5 implements offline calisthenics progress tracking: private front/side/back physique photos and comparison, body weight tracking with genuine rolling 7-day averages, automatic strength trends derived from completed `set_logs`, weekly consistency tracking, and a simple daily meal checklist. All work was executed under strict zero-new-dependency and zero-permission constraints.
+Campaign P5 delivers offline calisthenics progress tracking: private physique photos, body weight tracking with rolling 7-day averages, automatic strength trends derived from completed `set_logs`, weekly consistency tracking, and a simple daily meal checklist.
 
-All 12 work packages (WP01–WP12) have been implemented and verified. All 73 tests pass (18 new tests added), static analysis reports 0 issues, repository hygiene checks pass 4/4, and the debug APK builds cleanly with 0 `<uses-permission>` tags.
-
----
-
-## 2. Work Package Resolution Matrix
-
-| WP | Severity | Description | Modified Files | Resolution & Implementation Evidence | Verification Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **WP01** | **HIGH** | Baseline, repo verification & P5 acceptance design | `docs/campaigns/P5_PROGRESS_ACCEPTANCE_SPEC.md`<br>`docs/campaigns/P5-PROGRESS_CHECKPOINT.md`<br>`docs/reviews/P5_CORRECTION_MATRIX.md` | Verified clean `main` at `463487c`, verified prior CI passed, established `campaign/p5-progress`, produced comprehensive acceptance spec. | **RESOLVED & VERIFIED** |
-| **WP02** | **CRITICAL** | Schema v1→v2 migration & persistence | `lib/data/workout_database.dart`<br>`lib/data/workout_repository.dart`<br>`test/data/database_migration_test.dart` | Implemented versioned SQLite migration adding `weight_entries`, `progress_photos`, and `daily_meal_checks` tables. Tested 100% preservation of P0–P4 workout history. | **RESOLVED & VERIFIED** |
-| **WP03** | **HIGH** | Weight journaling and weekly math | `lib/domain/domain_models.dart`<br>`lib/data/workout_repository.dart`<br>`test/data/database_migration_test.dart` | Offline weight entries with validation bounds [30.0, 300.0] kg. Rolling 7-day average calculated strictly from actual logged measurements (no synthetic interpolation). | **RESOLVED & VERIFIED** |
-| **WP04** | **HIGH** | Strength progress aggregation | `lib/data/workout_repository.dart`<br>`lib/domain/domain_models.dart` | Aggregates max reps and volume trends per exercise strictly from completed, non-pain-stopped `set_logs`. Returns baseline, peak, and recent rep deltas. | **RESOLVED & VERIFIED** |
-| **WP05** | **MEDIUM** | Weekly consistency data/labels | `lib/features/progress/progress_hub_screen.dart`<br>`lib/l10n/` | Rolling 7-day consistency credit surfaced in Progress Hub Overview with exact parity to Today screen. | **RESOLVED & VERIFIED** |
-| **WP06** | **MEDIUM** | Daily meal checklist | `lib/domain/domain_models.dart`<br>`lib/data/workout_repository.dart`<br>`lib/features/progress/widgets/meal_checklist_card.dart` | 3 core meals + 2 snacks with cultural Egyptian protein cues (`proteinSuggestions`). State persisted locally per calendar day in SQLite. | **RESOLVED & VERIFIED** |
-| **WP07** | **HIGH** | Android private photo acquisition | `android/app/src/main/kotlin/com/abuhmaid/homesets/MainActivity.kt`<br>`lib/data/services/photo_service.dart`<br>`test/data/photo_sandbox_test.dart` | MethodChannel `com.abuhmaid.homesets/media` invoking standard `ACTION_GET_CONTENT` with 0 broad storage permissions. Staged in private cache before app-private import. | **RESOLVED & VERIFIED** |
-| **WP08** | **HIGH** | Media sandbox & photo lifecycle | `lib/data/services/photo_service.dart`<br>`test/data/photo_sandbox_test.dart` | Media sandboxed in `<appDocsDir>/progress_photos/`. Validates file header magic bytes (JPEG/PNG/WebP), hashes SHA-256, prevents duplicates, cleans orphans on init. | **RESOLVED & VERIFIED** |
-| **WP09** | **HIGH** | Progress Hub UI & comparison | `lib/features/progress/progress_hub_screen.dart`<br>`lib/features/progress/widgets/` | Implemented ProgressHubScreen with 5 tabs (Overview, Weight, Photos, Strength, Nutrition). Pure Flutter CustomPainters for weight/strength charts; side-by-side photo comparison view. | **RESOLVED & VERIFIED** |
-| **WP10** | **HIGH** | Accessibility, responsive UI & localization | `lib/main.dart`<br>`lib/l10n/`<br>`test/features/progress_hub_test.dart` | Top-level bottom navigation shell `_MainNavigationShell` (Workout \| Progress). Full Arabic RTL primary & English LTR. Responsive across 360-412dp with 1.5x font scale safety. | **RESOLVED & VERIFIED** |
-| **WP11** | **HIGH** | Privacy/security & manifest audit | `android/app/src/main/AndroidManifest.xml`<br>`android/app/src/main/res/xml/data_extraction_rules.xml`<br>`docs/architecture/PHOTO_PRIVACY_AUDIT.md` | Retained 0 `<uses-permission>` tags. Added Android 12+ strict backup extraction rules excluding `progress_photos`. Documented comprehensive audit. | **RESOLVED & VERIFIED** |
-| **WP12** | **CRITICAL** | Independent regression, CI & handoff | Full repo test suite & build tooling | 73/73 tests pass; 0 analyzer issues; 4/4 Python checks pass; debug APK builds cleanly (190,586,762 bytes, SHA-256 `05C7E489...`). | **RESOLVED & VERIFIED** |
+Following the initial P5 candidate delivery (exact-head CI #43761250118 PASS), independent lead review identified 9 findings (P5-R01 to P5-R09). All 9 findings have been addressed autonomously under GOV21 authority, verified with red-before-green reproduction tests, full Flutter test suite (81/81 pass), static analysis (0 issues), Python quality checks (4/4 pass), and a verified debug APK build.
 
 ---
 
-## 3. Residual & Discovered Findings Log
+## 2. Independent Review Corrections Matrix (P5-R01 through P5-R09)
+
+| Finding ID | Severity | Area | Review Description | Production Corrective Action | Verification Evidence | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **P5-R01** | **CRITICAL** | Photo Import & Privacy | Unbounded raw photo copy; EXIF/GPS preserved; full raw bytes in Dart heap; no decode limit. | Implemented off-thread bounded import in `MainActivity.kt` (max 25MB raw, 2048px decode cap with `inSampleSize`, `ExifInterface` rotation, `Bitmap.compress` JPEG re-encode stripping EXIF/GPS). In Dart, stream-bounded 16-byte magic header validation and 15MB file cap. | `test/features/p5_review_repro_test.dart` (oversized file rejection & temp cleanup) | **RESOLVED & VERIFIED** |
+| **P5-R02** | **HIGH** | Data Integrity & Lifecycle | Binary copied before DB insert without rollback on error; delete not atomic; orphan cleanup not wired to startup. | Implemented two-phase photo save with atomic compensating file deletion on DB failure. Failure-tolerant photo delete. Wired `cleanupOrphanPhotos` to app startup in `HomesetsApp._checkInitialState` and `_loadAllData`. | `test/features/p5_review_repro_test.dart` (rollback on SQLite error & startup orphan sweep) | **RESOLVED & VERIFIED** |
+| **P5-R03** | **HIGH** | Database Migration | Migration test used an inline copied SQL DDL string rather than production `DatabaseHelper._onUpgrade`. | Refactored `DatabaseHelper` to expose `onUpgradeCallback`, `migrateToV2`, and `onCreateV1ForTesting`. Updated test to execute actual production migration code across all 6 v1 tables with idempotence. | `test/data/database_migration_test.dart` & `p5_review_repro_test.dart` (real v1→v2 upgrade) | **RESOLVED & VERIFIED** |
+| **P5-R04** | **HIGH** | Android Privacy Rules | `data_extraction_rules.xml` excluded only `progress_photos`, omitting `database`, `sharedpref`, `root`. | Updated `data_extraction_rules.xml` (API 31+) and created `backup_rules.xml` (pre-API 31) excluding all sensitive domains (`database`, `file`, `root`, `sharedpref`) from cloud and D2D. Documented OEM D2D as UNVERIFIED. | Inspected merged manifest & extraction XMLs; Python hygiene check passes | **RESOLVED & VERIFIED** |
+| **P5-R05** | **HIGH** | Strength Progress Factual Integrity | Mixed band variations aggregated into one exercise session, producing misleading delta claims. | Added `getAvailableBandConfigurations` and `bandFilter` to `WorkoutRepository`. In `ProgressAnalytics`, enforced strict comparability: deltas are computed only across identical configurations; mixed sets flagged as non-comparable. Added ChoiceChips to Strength UI. | `test/features/p5_review_repro_test.dart` (segmented band history & neutral mixed delta) | **RESOLVED & VERIFIED** |
+| **P5-R06** | **MEDIUM** | Weight Editing | Weight editing missing; `LogWeightDialog` always created new ID and was synchronous. | Added `entryToEdit` and `onSaveAsync` to `LogWeightDialog`. Retains original entry ID and date when editing. Added edit button and tap-to-edit on weight list. Awaits async save and displays localized error if write fails. | `test/features/p5_review_repro_test.dart` (editing preserves ID and awaits save) | **RESOLVED & VERIFIED** |
+| **P5-R07** | **MEDIUM** | Midnight Meal Rollover | Screen kept open across midnight saved checks to yesterday's date. | Implemented `WidgetsBindingObserver` in `ProgressHubScreen` checking `_currentDateYmd()` on resume and dynamic rollover check in `_onToggleMeal`. | `test/features/p5_review_repro_test.dart` (clean day-boundary rollover) | **RESOLVED & VERIFIED** |
+| **P5-R08** | **MEDIUM** | Truthful Architecture Docs | Docs cited `PickVisualMedia` contract; native code uses `ACTION_GET_CONTENT`; camera path absent. | Updated documentation accurately labeling the system content selector (`ACTION_GET_CONTENT`). Formally recorded Direct Camera Capture as **BLOCKED / NOT IMPLEMENTED** under zero-permission constraints. | `PHOTO_PRIVACY_AUDIT.md` & `P5-PROGRESS_CHECKPOINT.md` updated | **RESOLVED & VERIFIED** |
+| **P5-R09** | **MEDIUM** | UI Privacy Claims | Progress Hub AppBar hardcoded "100% Private" overpromising on gallery/OEM boundaries. | Replaced with localized badge `appPrivateBadge` ("App-Private" / "حفظ محلي خاص") with tap disclosure explaining local sandbox boundaries and gallery independence. | `test/features/p5_review_repro_test.dart` (asserts 100% Private removed) | **RESOLVED & VERIFIED** |
+
+---
+
+## 3. Residual & Discovered Findings Log (P5 Campaign)
 
 | ID | Component | Discovery Description | Corrective Action Applied | Verification |
 | :--- | :--- | :--- | :--- | :--- |
 | **P5-FIND-01** | `lib/main.dart` | Nav label "Today" / "النهاردة" conflicted with screen header "Today", causing ambiguous widget test finders in `workout_flow_test.dart`. | Changed navigation label to "Workout" in English and "التمرين" in Arabic, matching standard fitness UX. | Both `workout_flow_test.dart` and `progress_hub_test.dart` pass unambiguously. |
-| **P5-FIND-02** | `test/features/progress_hub_test.dart` | Using `pumpAndSettle()` directly after SQLite FFI setup stalled event loop on test isolates. | Created `pumpAsync(tester)` helper driving microtask pump inside `tester.runAsync`. | All 6 Progress Hub widget tests run to completion within 12 seconds. |
+| **P5-FIND-02** | `test/features/progress_hub_test.dart` | Using `pumpAndSettle()` directly after SQLite FFI setup stalled event loop on test isolates. | Created `pumpAsync(tester)` helper driving microtask pump inside `tester.runAsync`. | All Progress Hub widget tests run to completion within 12 seconds. |
 | **P5-FIND-03** | `progress_charts.dart` & `progress_hub_screen.dart` | Row layouts on strength stats card overflowed by 37px at 1.5x font scaling on 360dp width. | Wrapped metrics in `LayoutBuilder` dynamically switching to vertical stack when constrained width < 340dp; wrapped weight history header in `Wrap`. | Verified 0 `RenderFlex` overflows under 1.5x font scale and 360x780 viewport in `progress_hub_test.dart`. |
 | **P5-FIND-04** | `MainActivity.kt` | `registerForActivityResult` is not available on base `io.flutter.embedding.android.FlutterActivity`. | Implemented standard `startActivityForResult(Intent.ACTION_GET_CONTENT)` with `onActivityResult`, maintaining 0 permissions. | Kotlin compiles and APK builds without warnings or extra AndroidX dependencies. |
+| **P5-FIND-05** | `lib/features/progress/progress_hub_screen.dart` | Tapping weight ListTile inside DecoratedBox caused Flutter framework ink splash assertion. | Wrapped `ListTile` in `Material(color: Colors.transparent, child: ...)` to provide proper Material ancestor for ink splashes. | `progress_hub_test.dart` passes cleanly without framework assertions. |
 
 ---
 

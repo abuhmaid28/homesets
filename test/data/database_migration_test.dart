@@ -50,81 +50,7 @@ void main() {
         options: OpenDatabaseOptions(
           version: 1,
           onCreate: (db, version) async {
-            await db.execute('''
-              CREATE TABLE user_profile (
-                id TEXT PRIMARY KEY,
-                goal TEXT NOT NULL,
-                wake_time_minutes INTEGER NOT NULL,
-                shift_start_minutes INTEGER NOT NULL,
-                target_workouts_per_week INTEGER NOT NULL,
-                avoided_joints TEXT NOT NULL,
-                created_at TEXT NOT NULL
-              );
-            ''');
-            await db.execute('''
-              CREATE TABLE equipment_inventory (
-                id TEXT PRIMARY KEY,
-                has_pull_up_bar INTEGER NOT NULL,
-                has_bands INTEGER NOT NULL,
-                has_door_anchor INTEGER NOT NULL,
-                has_sturdy_table INTEGER NOT NULL,
-                has_parallel_grip INTEGER NOT NULL,
-                updated_at TEXT NOT NULL
-              );
-            ''');
-            await db.execute('''
-              CREATE TABLE workout_sessions (
-                id TEXT PRIMARY KEY,
-                scheduled_session_id TEXT NOT NULL,
-                routine_name TEXT NOT NULL,
-                is_lite_mode INTEGER NOT NULL,
-                started_at TEXT NOT NULL,
-                ended_at TEXT NOT NULL,
-                total_duration_seconds INTEGER NOT NULL,
-                is_emergency_stopped INTEGER NOT NULL,
-                emergency_stop_reason TEXT
-              );
-            ''');
-            await db.execute('''
-              CREATE TABLE set_logs (
-                id TEXT PRIMARY KEY,
-                session_id TEXT NOT NULL,
-                set_index INTEGER NOT NULL,
-                exercise_id TEXT NOT NULL,
-                performed_reps INTEGER NOT NULL,
-                band_used TEXT,
-                exertion TEXT NOT NULL,
-                is_pain_stopped INTEGER NOT NULL,
-                pain_note TEXT,
-                completed_at TEXT NOT NULL,
-                FOREIGN KEY (session_id) REFERENCES workout_sessions (id) ON DELETE CASCADE
-              );
-            ''');
-            await db.execute('''
-              CREATE TABLE active_session_state (
-                session_id TEXT PRIMARY KEY,
-                routine_name TEXT NOT NULL,
-                routine_name_ar TEXT NOT NULL,
-                is_lite_mode INTEGER NOT NULL,
-                started_at TEXT NOT NULL,
-                current_exercise_index INTEGER NOT NULL,
-                current_set_index INTEGER NOT NULL,
-                completed_sets_json TEXT NOT NULL,
-                active_session_json TEXT NOT NULL
-              );
-            ''');
-            await db.execute('''
-              CREATE TABLE session_salvage_archive (
-                id TEXT PRIMARY KEY,
-                session_id TEXT NOT NULL,
-                routine_name TEXT NOT NULL,
-                salvaged_at TEXT NOT NULL,
-                parsed_sets_count INTEGER NOT NULL,
-                has_corrupt_logs INTEGER NOT NULL,
-                raw_completed_sets_json TEXT NOT NULL,
-                raw_active_session_json TEXT NOT NULL
-              );
-            ''');
+            await DatabaseHelper.onCreateV1ForTesting(db);
           },
         ),
       );
@@ -201,48 +127,17 @@ void main() {
 
       await v1Db.close();
 
-      // 3. Open the database using DatabaseHelper's v2 schema migration logic
+      // 3. Open the database using DatabaseHelper's actual production onUpgrade callback
       final upgradedDb = await factory.openDatabase(
         v1DbName,
         options: OpenDatabaseOptions(
           version: 2,
-          onUpgrade: (db, oldVersion, newVersion) async {
-            if (oldVersion < 2) {
-              await db.execute('''
-                CREATE TABLE IF NOT EXISTS weight_entries (
-                  id TEXT PRIMARY KEY,
-                  weight_kg REAL NOT NULL,
-                  logged_at TEXT NOT NULL,
-                  notes TEXT
-                );
-              ''');
-              await db.execute('''
-                CREATE INDEX IF NOT EXISTS idx_weight_entries_logged_at ON weight_entries (logged_at);
-              ''');
-              await db.execute('''
-                CREATE TABLE IF NOT EXISTS progress_photos (
-                  id TEXT PRIMARY KEY,
-                  file_path TEXT NOT NULL,
-                  angle TEXT NOT NULL,
-                  taken_at TEXT NOT NULL,
-                  notes TEXT
-                );
-              ''');
-              await db.execute('''
-                CREATE INDEX IF NOT EXISTS idx_progress_photos_taken_at ON progress_photos (taken_at);
-              ''');
-              await db.execute('''
-                CREATE TABLE IF NOT EXISTS daily_meal_checks (
-                  date TEXT NOT NULL,
-                  meal_slot INTEGER NOT NULL,
-                  is_checked INTEGER NOT NULL DEFAULT 0,
-                  PRIMARY KEY (date, meal_slot)
-                );
-              ''');
-            }
-          },
+          onUpgrade: DatabaseHelper.onUpgradeCallback,
         ),
       );
+
+      // Verify migration idempotence: calling migrateToV2 again does not fail
+      await DatabaseHelper.migrateToV2(upgradedDb);
 
       // 4. Assert all v1 data was preserved with exact precision
       final profiles = await upgradedDb.query('user_profile');

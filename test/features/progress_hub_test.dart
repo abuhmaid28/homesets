@@ -175,7 +175,7 @@ void main() {
 
     // Overview Tab Content
     expect(find.text('Progress Tracking'), findsOneWidget);
-    expect(find.text('100% Private'), findsOneWidget);
+    expect(find.text('App-Private'), findsOneWidget);
     expect(find.text('Current Weight'), findsOneWidget);
     expect(find.text('77.8 kg'), findsOneWidget);
     expect(find.byType(WeightTrendChart), findsOneWidget);
