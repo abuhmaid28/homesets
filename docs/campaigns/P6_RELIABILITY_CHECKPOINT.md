@@ -113,3 +113,4 @@
   - `45aa1f8` feat(p6): WP09-WP18 SAF backup-restore, preview dialog, local reminders, and UI integration
   - `aecba9f` test(p6): WP19 responsive layouts, text scale 1.5x, and RTL audit
   - `f46eea9` docs(p6): WP20 review passes and campaign checkpoint update
+  - `a0d427b` fix(p6): await two-phase restore rollback and add fallback file copy on rename failure
