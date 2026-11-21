@@ -192,7 +192,9 @@ class RestorePreviewDialog extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: HomesetsColors.textSecondary),
         const SizedBox(width: 8),
-        Text(text, style: HomesetsTypography.bodySmall),
+        Expanded(
+          child: Text(text, style: HomesetsTypography.bodySmall),
+        ),
       ],
     );
   }
