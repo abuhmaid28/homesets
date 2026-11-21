@@ -203,6 +203,93 @@ void main() {
       await factory.deleteDatabase(v1DbName);
     });
 
+    test('P5-FINAL-04: Upgrade failure rolls back cleanly and subsequent restart/retry completes', () async {
+      final factory = databaseFactoryFfi;
+      const failDbName = 'test_v1_fail_rollback.db';
+      await factory.deleteDatabase(failDbName);
+
+      // Create v1 database with data
+      final v1Db = await factory.openDatabase(
+        failDbName,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, version) async {
+            await DatabaseHelper.onCreateV1ForTesting(db);
+          },
+        ),
+      );
+      final now = DateTime.now();
+      await v1Db.insert('user_profile', {
+        'id': 'profile_rollback_test',
+        'goal': 'build_muscle',
+        'wake_time_minutes': 480,
+        'shift_start_minutes': 540,
+        'target_workouts_per_week': 3,
+        'avoided_joints': '[]',
+        'created_at': now.toIso8601String(),
+      });
+      await v1Db.close();
+
+      // Simulate a failed upgrade wrapped in a transaction that throws
+      expect(
+        () async {
+          await factory.openDatabase(
+            failDbName,
+            options: OpenDatabaseOptions(
+              version: 2,
+              onUpgrade: (db, oldV, newV) async {
+                await db.transaction((txn) async {
+                  await txn.execute('''
+                    CREATE TABLE IF NOT EXISTS weight_entries (
+                      id TEXT PRIMARY KEY,
+                      weight_kg REAL NOT NULL,
+                      logged_at TEXT NOT NULL,
+                      notes TEXT
+                    )
+                  ''');
+                  throw Exception('Simulated power outage / I/O error during migration');
+                });
+              },
+            ),
+          );
+        },
+        throwsException,
+      );
+
+      // Verify v1 data is still intact and version was not bumped
+      final checkDb = await factory.openDatabase(
+        failDbName,
+        options: OpenDatabaseOptions(version: 1),
+      );
+      expect(await checkDb.getVersion(), equals(1));
+      final profiles = await checkDb.query('user_profile');
+      expect(profiles.length, equals(1));
+      expect(profiles.first['id'], equals('profile_rollback_test'));
+      await checkDb.close();
+
+      // Restart and run production DatabaseHelper.onUpgradeCallback
+      final recoveredDb = await factory.openDatabase(
+        failDbName,
+        options: OpenDatabaseOptions(
+          version: 2,
+          onUpgrade: DatabaseHelper.onUpgradeCallback,
+        ),
+      );
+      expect(await recoveredDb.getVersion(), equals(2));
+      final recoveredProfiles = await recoveredDb.query('user_profile');
+      expect(recoveredProfiles.length, equals(1));
+      expect(recoveredProfiles.first['id'], equals('profile_rollback_test'));
+
+      final tables = await recoveredDb.query('sqlite_master', where: 'type = ?', whereArgs: ['table']);
+      final names = tables.map((t) => t['name'] as String).toSet();
+      expect(names, contains('weight_entries'));
+      expect(names, contains('progress_photos'));
+      expect(names, contains('daily_meal_checks'));
+
+      await recoveredDb.close();
+      await factory.deleteDatabase(failDbName);
+    });
+
     test('Repository progress methods perform correct CRUD operations', () async {
       final repo = WorkoutRepository();
       final now = DateTime.now();

@@ -371,6 +371,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveFailed => 'Failed to save. Please try again.';
 
   @override
+  String get deletePhotoFailed =>
+      'Failed to delete photo from storage. Please try again.';
+
+  @override
   String get privateStorageNotice =>
       'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.';
 }

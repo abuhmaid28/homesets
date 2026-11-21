@@ -20,11 +20,13 @@ import 'widgets/progress_charts.dart';
 class ProgressHubScreen extends StatefulWidget {
   final WorkoutRepository repository;
   final PhotoService photoService;
+  final DateTime Function()? nowProvider;
 
   const ProgressHubScreen({
     super.key,
     required this.repository,
     required this.photoService,
+    this.nowProvider,
   });
 
   @override
@@ -77,7 +79,7 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
 
   /// Calculates dynamic calendar date string YYYY-MM-DD.
   String _currentDateYmd() {
-    final now = DateTime.now();
+    final now = widget.nowProvider != null ? widget.nowProvider!() : DateTime.now();
     return '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
@@ -152,15 +154,17 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
 
   Future<void> _onSelectExercise(String? exerciseId) async {
     if (exerciseId == null || exerciseId == _selectedExerciseId) return;
+    _selectedBandFilter = null; // P5-FINAL-05: Reset stale configuration filter before query
     final bands = await widget.repository.getAvailableBandConfigurations(exerciseId);
     final points = await widget.repository.getStrengthHistoryForExercise(
       exerciseId,
-      bandFilter: _selectedBandFilter,
+      bandFilter: null,
     );
     final summary = ProgressAnalytics.computeStrengthSummary(points);
     if (!mounted) return;
     setState(() {
       _selectedExerciseId = exerciseId;
+      _selectedBandFilter = null;
       _availableBands = bands;
       _strengthPoints = points;
       _strengthSummary = summary;
@@ -228,17 +232,30 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
     await _loadAllData();
   }
 
-  Future<void> _onToggleMeal(int slot, bool isChecked) async {
-    // P5-R07: Rollover check before toggling
+  Future<void> _onToggleMeal(int slot, bool rawIsChecked) async {
+    // P5-FINAL-03: Rollover check before toggling
     final currentYmd = _currentDateYmd();
     if (_todayYmd != currentYmd) {
       setState(() => _todayYmd = currentYmd);
       await _loadAllData();
+      // User tapped on stale widget from yesterday.
+      // Toggle today's fresh actual state:
+      final newCheckedState = !(_todayMealChecks[slot] ?? false);
+      await widget.repository.saveMealCheck(_todayYmd, slot, newCheckedState);
+      if (mounted) {
+        setState(() {
+          _todayMealChecks[slot] = newCheckedState;
+        });
+      }
+      return;
     }
-    await widget.repository.saveMealCheck(_todayYmd, slot, isChecked);
-    setState(() {
-      _todayMealChecks[slot] = isChecked;
-    });
+
+    await widget.repository.saveMealCheck(_todayYmd, slot, rawIsChecked);
+    if (mounted) {
+      setState(() {
+        _todayMealChecks[slot] = rawIsChecked;
+      });
+    }
   }
 
   Future<void> _onAddPhotoPrompt() async {
@@ -289,8 +306,18 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
     if (stagedPath == null) return;
 
     final photoId = 'photo_${DateTime.now().millisecondsSinceEpoch}';
-    final privateRelativePath =
-        await widget.photoService.copyToPrivateSandbox(stagedPath, photoId);
+    String privateRelativePath;
+    try {
+      privateRelativePath =
+          await widget.photoService.copyToPrivateSandbox(stagedPath, photoId);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.saveFailed)),
+        );
+      }
+      return;
+    }
 
     final photo = ProgressPhoto(
       id: photoId,
@@ -301,7 +328,9 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
 
     try {
       await widget.repository.saveProgressPhoto(photo);
+      widget.photoService.completePendingImport(privateRelativePath);
     } catch (e) {
+      widget.photoService.completePendingImport(privateRelativePath);
       // P5-R02: Compensating rollback — remove sandbox file immediately to avoid orphan
       try {
         await widget.photoService.deletePrivatePhoto(privateRelativePath);
@@ -342,10 +371,40 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
     );
 
     if (confirmed == true) {
-      await widget.repository.deleteProgressPhoto(photo.id);
+      bool fileDeleted = false;
       try {
-        await widget.photoService.deletePrivatePhoto(photo.filePath);
-      } catch (_) {}
+        fileDeleted = await widget.photoService.deletePrivatePhoto(photo.filePath);
+      } catch (_) {
+        fileDeleted = false;
+      }
+
+      if (!fileDeleted) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.deletePhotoFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      try {
+        await widget.repository.deleteProgressPhoto(photo.id);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.deletePhotoFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        await _loadAllData();
+        return;
+      }
+
       setState(() {
         _selectedForCompare.removeWhere((p) => p.id == photo.id);
       });
@@ -1165,51 +1224,21 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
 
           // Strength Metrics summary cards
           if (_strengthSummary != null) ...[
-            LayoutBuilder(
-              builder: (context, constraints) {
-                if (constraints.maxWidth < 380) {
-                  return Column(
-                    children: [
-                      _buildMetricRow(l10n.baselineLabel, '${_strengthSummary!.baselineMaxReps} reps'),
-                      const SizedBox(height: 6),
-                      _buildMetricRow(l10n.bestLabel, '${_strengthSummary!.allTimeBestMaxReps} reps', isHighlight: true),
-                      const SizedBox(height: 6),
-                      _buildMetricRow(l10n.recentLabel, '${_strengthSummary!.recentMaxReps} reps'),
-                    ],
-                  );
-                }
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _buildMetricCol(l10n.baselineLabel, '${_strengthSummary!.baselineMaxReps} reps'),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildMetricCol(l10n.bestLabel, '${_strengthSummary!.allTimeBestMaxReps} reps', isHighlight: true),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildMetricCol(l10n.recentLabel, '${_strengthSummary!.recentMaxReps} reps'),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 12),
             if (!_strengthSummary!.isComparable)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                key: const Key('mixed_bands_banner'),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: HomesetsColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: HomesetsColors.borderSubtle),
                 ),
                 child: const Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.info_outline, color: HomesetsColors.textMuted, size: 16),
+                    Icon(Icons.info_outline, color: HomesetsColors.orange, size: 18),
                     SizedBox(width: 8),
-                    Flexible(
+                    Expanded(
                       child: Text(
                         'Mixed configurations logged. Filter by band to see exact progress.',
                         style: TextStyle(color: HomesetsColors.textSecondary, fontSize: 11),
@@ -1217,12 +1246,48 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
                     ),
                   ],
                 ),
-              )
-            else
+              ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isComparable = _strengthSummary!.isComparable;
+                final baselineText = isComparable ? '${_strengthSummary!.baselineMaxReps} reps' : 'Mixed';
+                final bestText = isComparable ? '${_strengthSummary!.allTimeBestMaxReps} reps' : 'Mixed';
+                final recentText = isComparable ? '${_strengthSummary!.recentMaxReps} reps' : 'Mixed';
+
+                if (constraints.maxWidth < 380) {
+                  return Column(
+                    children: [
+                      _buildMetricRow(l10n.baselineLabel, baselineText),
+                      const SizedBox(height: 6),
+                      _buildMetricRow(l10n.bestLabel, bestText, isHighlight: isComparable),
+                      const SizedBox(height: 6),
+                      _buildMetricRow(l10n.recentLabel, recentText),
+                    ],
+                  );
+                }
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildMetricCol(l10n.baselineLabel, baselineText),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMetricCol(l10n.bestLabel, bestText, isHighlight: isComparable),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMetricCol(l10n.recentLabel, recentText),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (_strengthSummary!.isComparable && _strengthSummary!.repsDelta != null) ...[
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _strengthSummary!.repsDelta >= 0
+                  color: _strengthSummary!.repsDelta! >= 0
                       ? HomesetsColors.limeGlow
                       : HomesetsColors.orangeGlow,
                   borderRadius: BorderRadius.circular(10),
@@ -1231,10 +1296,10 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _strengthSummary!.repsDelta >= 0
+                      _strengthSummary!.repsDelta! >= 0
                           ? Icons.trending_up
                           : Icons.trending_down,
-                      color: _strengthSummary!.repsDelta >= 0
+                      color: _strengthSummary!.repsDelta! >= 0
                           ? HomesetsColors.lime
                           : HomesetsColors.orange,
                       size: 18,
@@ -1242,9 +1307,9 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '${_strengthSummary!.repsDelta > 0 ? '+' : ''}${l10n.repsDelta(_strengthSummary!.repsDelta)}',
+                        '${_strengthSummary!.repsDelta! > 0 ? '+' : ''}${l10n.repsDelta(_strengthSummary!.repsDelta!)}',
                         style: TextStyle(
-                          color: _strengthSummary!.repsDelta >= 0
+                          color: _strengthSummary!.repsDelta! >= 0
                               ? HomesetsColors.lime
                               : HomesetsColors.orange,
                           fontWeight: FontWeight.bold,
@@ -1256,6 +1321,7 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
                   ],
                 ),
               ),
+            ],
           ],
           const SizedBox(height: 16),
 

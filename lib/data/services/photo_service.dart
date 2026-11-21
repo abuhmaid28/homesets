@@ -23,6 +23,12 @@ abstract class PhotoService {
   /// Removes any unreferenced files in `progress_photos/` that are not listed in [validRelativePaths].
   Future<int> cleanupOrphanPhotos(List<String> validRelativePaths);
 
+  /// Registers an in-flight import to prevent concurrent orphan sweeper races (P5-FINAL-02).
+  void markImportPending(String relativePath);
+
+  /// Unregisters an in-flight import once committed to SQLite or rolled back (P5-FINAL-02).
+  void completePendingImport(String relativePath);
+
   /// Validates magic header bytes (JPEG, PNG, WEBP) to ensure file is a genuine image.
   static bool isValidImageBytes(List<int> bytes) {
     if (bytes.length < 4) return false;
@@ -49,8 +55,19 @@ abstract class PhotoService {
 /// Production Android implementation using platform MethodChannel and private directory sandbox.
 class AndroidPhotoService implements PhotoService {
   static const MethodChannel _channel = MethodChannel('com.abuhmaid.homesets/media');
+  static final Set<String> _pendingImports = <String>{};
 
   const AndroidPhotoService();
+
+  @override
+  void markImportPending(String relativePath) {
+    _pendingImports.add(relativePath);
+  }
+
+  @override
+  void completePendingImport(String relativePath) {
+    _pendingImports.remove(relativePath);
+  }
 
   @override
   Future<String?> pickPhotoFromGallery() async {
@@ -64,50 +81,58 @@ class AndroidPhotoService implements PhotoService {
 
   @override
   Future<String> copyToPrivateSandbox(String stagedPath, String photoId) async {
-    final stagedFile = File(stagedPath);
-    if (!await stagedFile.exists()) {
-      throw FileSystemException('Staged file does not exist', stagedPath);
-    }
+    final relPath = 'progress_photos/$photoId.jpg';
+    markImportPending(relPath);
 
-    final length = await stagedFile.length();
-    if (length == 0) {
-      try {
-        await stagedFile.delete();
-      } catch (_) {}
-      throw const FormatException('Selected image is empty');
-    }
-
-    if (length > PhotoService.maxSanitizedPhotoBytes) {
-      try {
-        await stagedFile.delete();
-      } catch (_) {}
-      throw const FormatException('File exceeds maximum allowed size of 15MB');
-    }
-
-    // Stream-bound header check: only read the first 16 bytes rather than loading the whole file into Dart heap
-    final headerChunk = await stagedFile.openRead(0, 16).first;
-    if (!PhotoService.isValidImageBytes(headerChunk)) {
-      try {
-        await stagedFile.delete();
-      } catch (_) {}
-      throw const FormatException('Invalid image format. Only JPEG, PNG, and WEBP are supported.');
-    }
-
-    final docsDir = await getApplicationDocumentsDirectory();
-    final photosDir = Directory('${docsDir.path}/progress_photos');
-    if (!await photosDir.exists()) {
-      await photosDir.create(recursive: true);
-    }
-
-    final destPath = '${photosDir.path}/$photoId.jpg';
-    await stagedFile.copy(destPath);
-
-    // Clean up temporary staged file
     try {
-      await stagedFile.delete();
-    } catch (_) {}
+      final stagedFile = File(stagedPath);
+      if (!await stagedFile.exists()) {
+        throw FileSystemException('Staged file does not exist', stagedPath);
+      }
 
-    return 'progress_photos/$photoId.jpg';
+      final length = await stagedFile.length();
+      if (length == 0) {
+        try {
+          await stagedFile.delete();
+        } catch (_) {}
+        throw const FormatException('Selected image is empty');
+      }
+
+      if (length > PhotoService.maxSanitizedPhotoBytes) {
+        try {
+          await stagedFile.delete();
+        } catch (_) {}
+        throw const FormatException('File exceeds maximum allowed size of 15MB');
+      }
+
+      // Stream-bound header check: only read the first 16 bytes rather than loading the whole file into Dart heap
+      final headerChunk = await stagedFile.openRead(0, 16).first;
+      if (!PhotoService.isValidImageBytes(headerChunk)) {
+        try {
+          await stagedFile.delete();
+        } catch (_) {}
+        throw const FormatException('Invalid image format. Only JPEG, PNG, and WEBP are supported.');
+      }
+
+      final docsDir = await getApplicationDocumentsDirectory();
+      final photosDir = Directory('${docsDir.path}/progress_photos');
+      if (!await photosDir.exists()) {
+        await photosDir.create(recursive: true);
+      }
+
+      final destPath = '${photosDir.path}/$photoId.jpg';
+      await stagedFile.copy(destPath);
+
+      // Clean up temporary staged file
+      try {
+        await stagedFile.delete();
+      } catch (_) {}
+
+      return relPath;
+    } catch (_) {
+      completePendingImport(relPath);
+      rethrow;
+    }
   }
 
   @override
@@ -123,10 +148,14 @@ class AndroidPhotoService implements PhotoService {
     final absPath = await getAbsolutePath(relativePath);
     final file = File(absPath);
     if (await file.exists()) {
-      await file.delete();
-      return true;
+      try {
+        await file.delete();
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
-    return false;
+    return true; // Already deleted / absent from disk
   }
 
   @override
@@ -135,14 +164,24 @@ class AndroidPhotoService implements PhotoService {
     final photosDir = Directory('${docsDir.path}/progress_photos');
     if (!await photosDir.exists()) return 0;
 
-    final validBasenames = validRelativePaths.map((p) => p.split('/').last).toSet();
+    final protectedBasenames = {
+      ...validRelativePaths,
+      ..._pendingImports,
+    }.map((p) => p.split('/').last).toSet();
+
+    final now = DateTime.now();
     int cleaned = 0;
 
     await for (final entity in photosDir.list()) {
       if (entity is File) {
         final filename = entity.path.replaceAll('\\', '/').split('/').last;
-        if (!validBasenames.contains(filename)) {
+        if (!protectedBasenames.contains(filename)) {
           try {
+            // P5-FINAL-02: Grace window: only clean files modified at least 60 seconds ago
+            final stat = await entity.stat();
+            if (now.difference(stat.modified).inSeconds < 60) {
+              continue;
+            }
             await entity.delete();
             cleaned++;
           } catch (_) {}
@@ -159,15 +198,27 @@ class AndroidPhotoService implements PhotoService {
   }
 }
 
-/// In-memory and temporary mock for unit and widget testing (WP08, WP10, P5-R02).
+/// In-memory and temporary mock for unit and widget testing (WP08, WP10, P5-R02, P5-FINAL-01, P5-FINAL-02).
 class MockPhotoService implements PhotoService {
   final Map<String, Uint8List> storedFiles = {};
+  final Set<String> _pendingImports = {};
   String? mockPickResult;
+  bool shouldFailDeletion = false;
 
   MockPhotoService({this.mockPickResult});
 
   void seedVirtualFile(String relativePath, List<int> bytes) {
     storedFiles[relativePath] = Uint8List.fromList(bytes);
+  }
+
+  @override
+  void markImportPending(String relativePath) {
+    _pendingImports.add(relativePath);
+  }
+
+  @override
+  void completePendingImport(String relativePath) {
+    _pendingImports.remove(relativePath);
   }
 
   @override
@@ -177,10 +228,12 @@ class MockPhotoService implements PhotoService {
 
   @override
   Future<String> copyToPrivateSandbox(String stagedPath, String photoId) async {
+    final relPath = 'progress_photos/$photoId.jpg';
+    markImportPending(relPath);
     // Synthetic JPEG header for valid test mock
     final sampleBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]);
-    storedFiles['progress_photos/$photoId.jpg'] = sampleBytes;
-    return 'progress_photos/$photoId.jpg';
+    storedFiles[relPath] = sampleBytes;
+    return relPath;
   }
 
   @override
@@ -190,18 +243,19 @@ class MockPhotoService implements PhotoService {
 
   @override
   Future<bool> deletePrivatePhoto(String relativePath) async {
+    if (shouldFailDeletion) return false;
     if (storedFiles.containsKey(relativePath)) {
       storedFiles.remove(relativePath);
       return true;
     }
-    return false;
+    return true; // Already deleted / absent
   }
 
   @override
   Future<int> cleanupOrphanPhotos(List<String> validRelativePaths) async {
-    final validSet = validRelativePaths.toSet();
+    final protectedSet = {...validRelativePaths, ..._pendingImports}.toSet();
     final initialCount = storedFiles.length;
-    storedFiles.removeWhere((key, _) => !validSet.contains(key));
+    storedFiles.removeWhere((key, _) => !protectedSet.contains(key));
     return initialCount - storedFiles.length;
   }
 }

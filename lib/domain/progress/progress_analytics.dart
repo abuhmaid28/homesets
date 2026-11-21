@@ -105,7 +105,7 @@ class ProgressAnalytics {
       baselineMaxReps: baseline,
       allTimeBestMaxReps: allTimeBest,
       recentMaxReps: recent,
-      repsDelta: isComparable ? (recent - baseline) : 0,
+      repsDelta: isComparable ? (recent - baseline) : null,
       recentTotalVolume: recentVolume,
       isComparable: isComparable,
       configurationLabel: isComparable
@@ -183,13 +183,13 @@ class WeeklyWeightAverage {
   });
 }
 
-/// Aggregated strength progression summary for an exercise (WP04, P5-R05).
+/// Aggregated strength progression summary for an exercise (WP04, P5-R05, P5-FINAL-05).
 class StrengthSummary {
   final int totalSessionsLogged;
   final int baselineMaxReps;
   final int allTimeBestMaxReps;
   final int recentMaxReps;
-  final int repsDelta;
+  final int? repsDelta;
   final int recentTotalVolume;
   final bool isComparable;
   final String? configurationLabel;

@@ -27,19 +27,31 @@
 | **WP09** | Progress Hub UI & photo comparison | **DONE** | Pure Flutter `CustomPainter` for `WeightTrendChart` and `StrengthProgressionChart`; side-by-side `PhotoComparisonView` with zoom/pan; `LogWeightDialog` with edit support; verified by widget tests |
 | **WP10** | Accessibility, responsive UI & localization | **DONE** | `_MainNavigationShell` (Workout \| Progress); 360-412dp adaptive layouts; 1.5x font scaling safety (0 overflows); Egyptian Arabic RTL primary & English LTR; verified by `progress_hub_test.dart` |
 | **WP11** | Privacy, security & manifest audit | **DONE** | Strict 0 permissions in `AndroidManifest.xml`; `allowBackup="false"`; comprehensive backup & D2D extraction rules (`data_extraction_rules.xml` & `backup_rules.xml`) across all domains (P5-R04); documented in `PHOTO_PRIVACY_AUDIT.md` |
-| **WP12** | Full regression, CI & handoff | **DONE** | `flutter analyze --fatal-infos` (0 issues); 81/81 tests pass (8 new regression tests in `p5_review_repro_test.dart`); 4/4 Python quality checks pass; debug APK built (190,586,832 bytes); ready for exact-head CI |
+| **WP12** | Full regression, CI & handoff | **DONE** | `flutter analyze --fatal-infos` (0 issues); 86/86 tests pass; 4/4 Python quality checks pass; debug APK built (210,104,386 bytes); P5-FINAL-01 to P5-FINAL-05 integrated and verified |
 
 ---
 
-## 2. Test Verification Ledger
+## 2. Final Integration Gate Ledger (P5-FINAL-01 through P5-FINAL-05)
 
-- **Flutter Test Suite:** **81 / 81 tests passing (100%)** — comprehensive domain, migration, sandbox, flow, hub, and review regression suites.
+| Finding ID | Severity | Focus Area | Resolution Summary | Verification |
+| :--- | :--- | :--- | :--- | :--- |
+| **P5-FINAL-01** | HIGH | Photo Deletion Protocol | Delete private file first; abort SQLite deletion and show localized error SnackBar (`deletePhotoFailed`) if file deletion fails. | `p5_review_repro_test.dart` |
+| **P5-FINAL-02** | HIGH | In-Flight Import Coordination | Added reservation tracking (`markImportPending`/`completePendingImport`) and 60-second grace window to protect in-flight imports from concurrent orphan sweep. | `p5_review_repro_test.dart` |
+| **P5-FINAL-03** | MEDIUM | Midnight Rollover Gesture | On midnight rollover, reload today's fresh checks and toggle today's actual state; added injectable `nowProvider` seam. | `p5_review_repro_test.dart` |
+| **P5-FINAL-04** | MEDIUM | Migration Coverage & Hardware Truth | Tested populated v1 upgrade with transaction rollback on error and restart; explicitly marked hardware behavior as UNVERIFIED. | `database_migration_test.dart` & `PHOTO_PRIVACY_AUDIT.md` |
+| **P5-FINAL-05** | MEDIUM | Truthful Strength Mixed State | Reset `_selectedBandFilter = null` before query on exercise change; made `repsDelta` nullable; replaced flat metrics with "Mixed" and added explicit `Key('mixed_bands_banner')`. | `p5_review_repro_test.dart` |
+
+---
+
+## 3. Test Verification Ledger
+
+- **Flutter Test Suite:** **86 / 86 tests passing (100%)** — comprehensive domain, migration, sandbox, flow, hub, and review regression suites.
 - **Static Analysis:** `flutter analyze --fatal-infos` reporting **0 issues found**.
 - **Python Quality QA:** **4/4 suites passing** (`validate_fixtures.py`, `test_validation.py`, `validate_links.py`, `check_hygiene.py`).
 - **Android APK Build:** Successfully compiled debug APK via `flutter build apk --debug`:
   - Path: `build/app/outputs/flutter-apk/app-debug.apk`
-  - Size: 190,586,832 bytes (~181.7 MB)
-  - SHA-256: `83FC112927F831B877BA3F21A4DB338E7F1700116E0F29841E570BED15F0BDC2`
+  - Size: 210,104,386 bytes (~200.4 MB)
+  - SHA-256: `206A405628AE581F2BE8A7B89FFB1AFB16DF21DE7D9E7597F4810AD749FEDA30`
 - **Release Permissions:** Strictly **0 `<uses-permission>` tags** in `AndroidManifest.xml`.
 - **Direct Camera Capture:** Officially recorded as **BLOCKED / NOT IMPLEMENTED** under zero-permission constraints.
 - **Physical Phone Status:** Explicitly marked **UNVERIFIED** (deferred to C9 final integrated physical phone acceptance per GOV07/GOV22).

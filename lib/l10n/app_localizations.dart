@@ -794,6 +794,12 @@ abstract class AppLocalizations {
   /// **'Failed to save. Please try again.'**
   String get saveFailed;
 
+  /// No description provided for @deletePhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete photo from storage. Please try again.'**
+  String get deletePhotoFailed;
+
   /// No description provided for @privateStorageNotice.
   ///
   /// In en, this message translates to:

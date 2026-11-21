@@ -36,7 +36,19 @@ Following the initial P5 candidate delivery (exact-head CI #43761250118 PASS), i
 
 ---
 
-## 3. Residual & Discovered Findings Log (P5 Campaign)
+## 3. Final Integration Gate Matrix (P5-FINAL-01 through P5-FINAL-05)
+
+| Finding ID | Severity | Area | Review Description | Production Corrective Action | Verification Evidence | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **P5-FINAL-01** | **HIGH** | Photo Deletion Protocol | Sensitive photo deletion failure was masked as success. SQLite row was deleted first, file deletion errors were swallowed, and UI refreshed as if deleted, leaving untracked private files. | Inverted deletion protocol in `ProgressHubScreen._onDeletePhotoPrompt`: physical file is deleted from sandbox first; if file deletion returns `false` or throws, SQLite deletion is aborted, state is preserved, and a localized error SnackBar (`deletePhotoFailed`) is displayed. | `test/features/p5_review_repro_test.dart` (reproduced DB deletion aborted & error SnackBar shown) | **RESOLVED & VERIFIED** |
+| **P5-FINAL-02** | **HIGH** | Import / Sweeper Concurrency | Race condition between orphan sweeper and photo import: `cleanupOrphanPhotos` swept staged files before metadata was committed to SQLite. | Added `markImportPending` and `completePendingImport` reservation tracking to `PhotoService`. Staged files are protected from orphan deletion during active imports. Added 60-second grace window on file modification time in `AndroidPhotoService.cleanupOrphanPhotos`. | `test/features/p5_review_repro_test.dart` (reproduced concurrent orphan sweep does not delete in-flight photo) | **RESOLVED & VERIFIED** |
+| **P5-FINAL-03** | **MEDIUM** | Midnight Meal Rollover Gesture | Screen left open across midnight applied stale yesterday's inverted boolean state upon tap, saving `false` for today instead of toggling today's fresh state. | In `ProgressHubScreen._onToggleMeal`, detected calendar rollover before save, reloaded today's actual checks from repository, and inverted today's actual state (`!todayState`) saving `true`. Added deterministic `nowProvider` seam for time-travel verification. | `test/features/p5_review_repro_test.dart` (reproduced rollover gesture saves true for today) | **RESOLVED & VERIFIED** |
+| **P5-FINAL-04** | **MEDIUM** | Migration & Hardware Limits | Migration test duplicated SQL; real callback needed verification across all 6 v1 tables with rollback/restart. Hardware proofs needed truthful boundaries. | Added comprehensive v1 upgrade test with rollback on injected error and restart in `test/data/database_migration_test.dart`. Formally documented in `PHOTO_PRIVACY_AUDIT.md` and checkpoints that native JPEG transform & EXIF stripping and OEM D2D clone tools remain **UNVERIFIED ON PHYSICAL HARDWARE** (Honor MagicOS 10) until C9 acceptance. | `test/data/database_migration_test.dart` (populated v1 migration + rollback/restart passing) | **RESOLVED & VERIFIED** |
+| **P5-FINAL-05** | **MEDIUM** | Truthful Strength Mixed State | No band filter by default showed unqualified baseline/recent/best reps; `repsDelta=0` masqueraded as flat progress. Exercise change did not reset stale filter before query. | Reset `_selectedBandFilter = null` in `_onSelectExercise` before fetching configurations and history. In `ProgressAnalytics`, made `repsDelta` nullable (`int?`), returning `null` when `!isComparable`. In UI, replaced misleading numeric metrics with "Mixed", hid zero delta badge, and added explicit `Key('mixed_bands_banner')` banner. | `test/features/p5_review_repro_test.dart` (reproduced exercise switch resets filter, delta hidden, banner shown) | **RESOLVED & VERIFIED** |
+
+---
+
+## 4. Residual & Discovered Findings Log (P5 Campaign)
 
 | ID | Component | Discovery Description | Corrective Action Applied | Verification |
 | :--- | :--- | :--- | :--- | :--- |
@@ -48,7 +60,7 @@ Following the initial P5 candidate delivery (exact-head CI #43761250118 PASS), i
 
 ---
 
-## 4. Dependency Ledger & Version Reconcile (GOV21 Compliance)
+## 5. Dependency Ledger & Version Reconcile (GOV21 Compliance)
 
 | Package Name | Type | Current Version in pubspec.yaml | Status under GOV16/GOV21 | Justification & Note |
 | :--- | :--- | :--- | :--- | :--- |

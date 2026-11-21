@@ -124,3 +124,26 @@ Rather than importing unvetted third-party plugins that require broad permission
 The Progress Hub AppBar displays the localized badge `l10n.appPrivateBadge` ("App-Private" / "حفظ محلي خاص") rather than an overpromising "100% Private" banner. Tapping the badge opens a disclosure dialog:
 
 > *"App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app."*
+
+---
+
+## 6. Final Integration Gate Hardening (P5-FINAL-01, P5-FINAL-02, P5-FINAL-04)
+
+### 6.1 Strict Photo Deletion Protocol (P5-FINAL-01)
+To eliminate untracked private files surviving without SQLite metadata:
+1. Physical sandbox file deletion (`photoService.deletePrivatePhoto`) is executed **first**.
+2. If file deletion returns `false` or throws an exception, database record deletion is **aborted**.
+3. UI state is preserved and a visible, truthful error SnackBar (`deletePhotoFailed` / "Failed to delete photo from storage. Please try again.") is displayed.
+4. Database record deletion is only executed after verified filesystem deletion.
+
+### 6.2 Concurrent Import Reservation & Sweeper Grace Window (P5-FINAL-02)
+To prevent races between in-flight photo imports and background or startup orphan sweepers:
+1. `PhotoService` maintains in-flight reservations via `markImportPending(relativePath)` and `completePendingImport(relativePath)`.
+2. Any photo actively being staged or committed is protected from orphan deletion.
+3. In production `AndroidPhotoService`, a 60-second grace window on file modification time prevents sweeping any file written during active app execution.
+
+### 6.3 Hardware Verification Limits & Explicit Truthfulness (P5-FINAL-04)
+Per project governance GOV07 and GOV22:
+- **Native Raster JPEG Re-encode & EXIF Stripping:** Fully implemented and source-reviewed in `MainActivity.kt`, but remains **UNVERIFIED ON PHYSICAL HARDWARE** (Honor MagicOS 10) in headless CI until the single final integrated C9 physical acceptance gate.
+- **OEM Device Clone & Direct Extraction:** Android `data_extraction_rules.xml` and `backup_rules.xml` comprehensively exclude all domains (`database`, `file`, `root`, `sharedpref`), but proprietary OEM migration behavior (e.g. Honor Device Clone) remains **UNVERIFIED ON PHYSICAL HARDWARE** until final acceptance.
+

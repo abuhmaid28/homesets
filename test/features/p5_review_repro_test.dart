@@ -260,7 +260,7 @@ void main() {
       final allHistory = await repo.getStrengthHistoryForExercise('pullup_standard');
       final allSummary = ProgressAnalytics.computeStrengthSummary(allHistory);
       expect(allSummary.isComparable, isFalse);
-      expect(allSummary.repsDelta, equals(0), reason: 'Mixed band sets must not produce unqualified misleading delta');
+      expect(allSummary.repsDelta, isNull, reason: 'Mixed band sets must produce null repsDelta to prevent flat misleading progress');
     });
 
     // -------------------------------------------------------------------------
@@ -367,4 +367,262 @@ void main() {
       expect(find.text('App-Private'), findsOneWidget);
     });
   });
+
+  // Helper to pump async without SQLite FFI timeouts
+  Future<void> pumpAsync(WidgetTester tester, [int count = 6]) async {
+    for (int i = 0; i < count; i++) {
+      await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  // ===========================================================================
+  // P5 FINAL INTEGRATION GATE REPRODUCTIONS (FINAL-01 to FINAL-05)
+  // ===========================================================================
+  group('P5 Final Integration Gate (P5-FINAL-01 to P5-FINAL-05)', () {
+    // -------------------------------------------------------------------------
+    // P5-FINAL-01: Injected photo file deletion failure aborts DB deletion
+    // -------------------------------------------------------------------------
+    testWidgets('P5-FINAL-01: Injected photo file deletion failure does not delete database metadata and shows error UI', (tester) async {
+      final repo = WorkoutRepository();
+      final mockPhoto = _FailingDeleteMockPhotoService();
+
+      // Seed photo record in SQLite and virtual file in mock service
+      final now = DateTime.now();
+      final photo = ProgressPhoto(
+        id: 'photo_final_01',
+        filePath: 'progress_photos/photo_final_01.jpg',
+        angle: PhotoAngle.front,
+        takenAt: now,
+      );
+      await tester.runAsync(() async {
+        await repo.saveProgressPhoto(photo);
+      });
+      mockPhoto.seedVirtualFile('progress_photos/photo_final_01.jpg', [0xFF, 0xD8, 0xFF, 0xE0]);
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProgressHubScreen(
+              repository: repo,
+              photoService: mockPhoto,
+            ),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Navigate to Photos Tab (Tab index 2)
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('tab_chip_2')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Tap the photo tile to open detail dialog
+      final tileFinder = find.byKey(const Key('photo_tile_photo_final_01'));
+      expect(tileFinder, findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(tileFinder);
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Tap Delete Photo in detail dialog
+      final deleteBtnFinder = find.byIcon(Icons.delete_outline);
+      expect(deleteBtnFinder, findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(deleteBtnFinder);
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Confirm deletion in confirmation alert dialog
+      final confirmBtnFinder = find.widgetWithText(ElevatedButton, 'Delete');
+      expect(confirmBtnFinder, findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(confirmBtnFinder);
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // REPRODUCTION ASSERTION:
+      // When filesystem deletion fails, the DB record MUST NOT be deleted!
+      List<ProgressPhoto> remainingPhotos = [];
+      await tester.runAsync(() async {
+        remainingPhotos = await repo.getProgressPhotos();
+      });
+      expect(remainingPhotos.length, equals(1), reason: 'Photo metadata MUST NOT be deleted from DB when storage deletion fails');
+      expect(find.byType(SnackBar), findsOneWidget);
+    });
+
+    // -------------------------------------------------------------------------
+    // P5-FINAL-02: Concurrent orphan sweep during photo import does not delete staged file
+    // -------------------------------------------------------------------------
+    test('P5-FINAL-02: Concurrent orphan sweep during photo import does not delete in-flight staged image', () async {
+      final mockPhoto = MockPhotoService();
+      // Start import
+      final inFlightPath = await mockPhoto.copyToPrivateSandbox('/staged/img.jpg', 'photo_inflight_99');
+      expect(mockPhoto.storedFiles.containsKey(inFlightPath), isTrue);
+
+      // Concurrent orphan sweep runs with empty DB list before DB commit completes
+      await mockPhoto.cleanupOrphanPhotos([]);
+
+      // REPRODUCTION ASSERTION:
+      // The in-flight image must not be deleted as an orphan while import is pending!
+      expect(mockPhoto.storedFiles.containsKey(inFlightPath), isTrue,
+          reason: 'In-flight staged photo must be protected from concurrent orphan sweep');
+    });
+
+    // -------------------------------------------------------------------------
+    // P5-FINAL-03: Midnight meal rollover gesture semantics
+    // -------------------------------------------------------------------------
+    testWidgets('P5-FINAL-03: Midnight rollover during foreground session toggles today fresh state rather than applying stale previous-day value', (tester) async {
+      final repo = WorkoutRepository();
+      final mockPhoto = MockPhotoService();
+
+      var simulatedNow = DateTime(2026, 11, 20, 23, 59);
+
+      // Seed Breakfast (slot 0) as checked on 2026-11-20
+      await tester.runAsync(() async {
+        await repo.saveMealCheck('2026-11-20', 0, true);
+      });
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProgressHubScreen(
+              repository: repo,
+              photoService: mockPhoto,
+              nowProvider: () => simulatedNow,
+            ),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Navigate to Nutrition Tab (Tab index 4)
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('tab_chip_4')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Verify Breakfast is currently checked on screen
+      expect(find.text('Breakfast'), findsOneWidget);
+
+      // Advance clock past midnight into 2026-11-21 without disposing or reopening the screen
+      simulatedNow = DateTime(2026, 11, 21, 0, 5);
+
+      // User taps the breakfast meal row on the foreground screen
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Breakfast'));
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // REPRODUCTION ASSERTION:
+      // On rollover, user tap must toggle today's fresh state to TRUE, not false!
+      Map<int, bool> todayChecks = {};
+      await tester.runAsync(() async {
+        todayChecks = await repo.getMealChecksForDate('2026-11-21');
+      });
+      expect(todayChecks[0], isTrue, reason: 'Tapping on rollover must toggle today un-checked meal to checked (true)');
+    });
+
+    // -------------------------------------------------------------------------
+    // P5-FINAL-05: Exercise change resets band filter and mixed strength view hides zero delta
+    // -------------------------------------------------------------------------
+    testWidgets('P5-FINAL-05: Exercise change resets band filter before query and mixed strength view hides delta with noncomparable banner', (tester) async {
+      final repo = WorkoutRepository();
+      final mockPhoto = MockPhotoService();
+      final now = DateTime.now();
+
+      await tester.runAsync(() async {
+        // Seed 2 sessions for exercise_pullup with mixed bands
+        await repo.saveCompletedSession(CompletedWorkoutSession(
+          id: 'sess_1',
+          scheduledSessionId: 's1',
+          routineName: 'Upper Pull',
+          isLiteMode: false,
+          startedAt: now.subtract(const Duration(days: 4)),
+          endedAt: now.subtract(const Duration(days: 4, hours: -1)),
+          totalDurationSeconds: 3600,
+          completedSets: [
+            SetLog(
+              setIndex: 1,
+              exerciseId: 'exercise_pullup',
+              performedReps: 6,
+              bandUsed: null, // bodyweight
+              exertion: ExertionRating.targetSweetspot,
+              completedAt: now.subtract(const Duration(days: 4)),
+            ),
+          ],
+        ));
+
+        await repo.saveCompletedSession(CompletedWorkoutSession(
+          id: 'sess_2',
+          scheduledSessionId: 's2',
+          routineName: 'Upper Pull',
+          isLiteMode: false,
+          startedAt: now.subtract(const Duration(days: 2)),
+          endedAt: now.subtract(const Duration(days: 2, hours: -1)),
+          totalDurationSeconds: 3600,
+          completedSets: [
+            SetLog(
+              setIndex: 1,
+              exerciseId: 'exercise_pullup',
+              performedReps: 10,
+              bandUsed: 'band_purple', // with purple band
+              exertion: ExertionRating.targetSweetspot,
+              completedAt: now.subtract(const Duration(days: 2)),
+            ),
+          ],
+        ));
+      });
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProgressHubScreen(
+              repository: repo,
+              photoService: mockPhoto,
+            ),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Navigate to Strength Tab (Tab index 3)
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('tab_chip_3')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // REPRODUCTION ASSERTION:
+      // When mixed configurations are present without single band filter, repsDelta must be null / hidden,
+      // and explicit noncomparable banner must be shown.
+      expect(find.byKey(const Key('mixed_bands_banner')), findsOneWidget);
+      expect(find.text('+0 reps'), findsNothing);
+      expect(find.text('0 reps'), findsNothing);
+    });
+  });
 }
+
+class _FailingDeleteMockPhotoService extends MockPhotoService {
+  @override
+  Future<bool> deletePrivatePhoto(String relativePath) async {
+    return false; // Injected filesystem failure
+  }
+}
+

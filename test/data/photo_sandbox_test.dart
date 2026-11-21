@@ -50,6 +50,9 @@ void main() {
       final cleaned = await mock.cleanupOrphanPhotos([relativePath]);
       expect(cleaned, equals(0), reason: 'Valid path was not deleted');
 
+      // Complete import lifecycle so it is no longer pending in-flight
+      mock.completePendingImport(relativePath);
+
       final cleanedAll = await mock.cleanupOrphanPhotos([]);
       expect(cleanedAll, equals(1), reason: 'Orphan was deleted');
       expect(mock.storedFiles.isEmpty, isTrue);

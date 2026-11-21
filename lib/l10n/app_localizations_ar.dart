@@ -372,6 +372,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveFailed => 'فشل الحفظ. يرجى المحاولة مرة أخرى.';
 
   @override
+  String get deletePhotoFailed =>
+      'فشل حذف الصورة من التخزين. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get privateStorageNotice =>
       'حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.';
 }
