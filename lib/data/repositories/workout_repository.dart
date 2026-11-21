@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
+import '../../domain/backup/backup_models.dart';
 import '../../domain/models/domain_models.dart';
 import '../database/database_helper.dart';
 
@@ -864,5 +865,104 @@ class WorkoutRepository {
     // Sort chronologically ascending
     dataPoints.sort((a, b) => a.date.compareTo(b.date));
     return dataPoints;
+  }
+
+  /// Exports full P0-P5 data snapshot from SQLite database (WP04).
+  Future<HomesetsDataSnapshot> createDataSnapshot() async {
+    final db = await _dbHelper.database;
+
+    final profileRows = await db.query('user_profile', limit: 1);
+    final inventoryRows = await db.query('equipment_inventory', limit: 1);
+    final workoutRows = await db.query('workout_sessions');
+    final setLogRows = await db.query('set_logs');
+    final activeRows = await db.query('active_session_state', limit: 1);
+    final salvageRows = await db.query('session_salvage_archive');
+    final weightRows = await db.query('weight_entries');
+    final photoRows = await db.query('progress_photos');
+    final mealRows = await db.query('daily_meal_checks');
+
+    return HomesetsDataSnapshot(
+      userProfile: profileRows.isNotEmpty ? profileRows.first : null,
+      equipmentInventory: inventoryRows.isNotEmpty ? inventoryRows.first : null,
+      workoutSessions: workoutRows,
+      setLogs: setLogRows,
+      activeSessionState: activeRows.isNotEmpty ? activeRows.first : null,
+      salvageArchives: salvageRows,
+      weightEntries: weightRows,
+      progressPhotos: photoRows,
+      dailyMealChecks: mealRows,
+    );
+  }
+
+  /// Restores full P0-P5 data snapshot transactionally into SQLite database (WP13).
+  Future<void> restoreDataSnapshot(HomesetsDataSnapshot snapshot) async {
+    final db = await _dbHelper.database;
+
+    await db.transaction((txn) async {
+      // 1. Clear existing tables in safe order respecting foreign keys
+      await txn.delete('set_logs');
+      await txn.delete('workout_sessions');
+      await txn.delete('user_profile');
+      await txn.delete('equipment_inventory');
+      await txn.delete('active_session_state');
+      await txn.delete('session_salvage_archive');
+      await txn.delete('weight_entries');
+      await txn.delete('progress_photos');
+      await txn.delete('daily_meal_checks');
+
+      // 2. Insert user profile
+      if (snapshot.userProfile != null) {
+        await txn.insert('user_profile', snapshot.userProfile!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 3. Insert equipment inventory
+      if (snapshot.equipmentInventory != null) {
+        await txn.insert('equipment_inventory', snapshot.equipmentInventory!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 4. Insert workout sessions
+      for (final row in snapshot.workoutSessions) {
+        await txn.insert('workout_sessions', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 5. Insert set logs
+      for (final row in snapshot.setLogs) {
+        await txn.insert('set_logs', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 6. Insert active session state
+      if (snapshot.activeSessionState != null) {
+        await txn.insert('active_session_state', snapshot.activeSessionState!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 7. Insert session salvage archives
+      for (final row in snapshot.salvageArchives) {
+        await txn.insert('session_salvage_archive', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 8. Insert weight entries
+      for (final row in snapshot.weightEntries) {
+        await txn.insert('weight_entries', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 9. Insert progress photos
+      for (final row in snapshot.progressPhotos) {
+        await txn.insert('progress_photos', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 10. Insert daily meal checks
+      for (final row in snapshot.dailyMealChecks) {
+        await txn.insert('daily_meal_checks', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+    });
   }
 }
