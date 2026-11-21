@@ -616,7 +616,241 @@ void main() {
       expect(find.text('+0 reps'), findsNothing);
       expect(find.text('0 reps'), findsNothing);
     });
+
+    // -------------------------------------------------------------------------
+    // P5-CLOSE-01: Routine UI reload does not execute orphan sweep & committed photos are never dropped
+    // -------------------------------------------------------------------------
+    testWidgets('P5-CLOSE-01: Routine UI reload does not execute orphan sweep and committed photos are never dropped during concurrent operations', (tester) async {
+      final repo = WorkoutRepository();
+      final trackingPhoto = _TrackingPhotoService();
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProgressHubScreen(
+              repository: repo,
+              photoService: trackingPhoto,
+            ),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // In production before fix: _loadAllData() runs cleanupOrphanPhotos on every screen reload/init.
+      // After fix: cleanupOrphanPhotos must NOT be run by ProgressHubScreen._loadAllData()!
+      expect(trackingPhoto.cleanupCallCount, equals(0),
+          reason: 'Routine UI load must not execute orphan sweep; sweep belongs exclusively to serialized cold-start');
+
+      // Now test concurrent import and refresh interleaving:
+      // 1. Slow photo import copies binary to private sandbox
+      final inFlightRelPath = await trackingPhoto.copyToPrivateSandbox('/mock/test.jpg', 'photo_concurrent_1');
+      expect(trackingPhoto.storedFiles.containsKey(inFlightRelPath), isTrue);
+
+      // 2. Concurrent UI refresh occurs (e.g. user toggles meal or logs weight)
+      await tester.runAsync(() async {
+        await repo.saveMealCheck('2026-11-21', 1, true);
+        // Trigger screen data reload
+        await tester.tap(find.byKey(const Key('tab_chip_4'))); // Navigate to meals
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Sweep should still NOT have been called during routine refresh
+      expect(trackingPhoto.cleanupCallCount, equals(0));
+
+      // 3. Complete asynchronous SQLite metadata commit
+      final photo = ProgressPhoto(
+        id: 'photo_concurrent_1',
+        filePath: inFlightRelPath,
+        angle: PhotoAngle.front,
+        takenAt: DateTime.now(),
+      );
+      await tester.runAsync(() async {
+        await repo.saveProgressPhoto(photo);
+      });
+      trackingPhoto.completePendingImport(inFlightRelPath);
+
+      // Verify photo binary and database record are both intact
+      expect(trackingPhoto.storedFiles.containsKey(inFlightRelPath), isTrue);
+      List<ProgressPhoto> dbPhotos = [];
+      await tester.runAsync(() async {
+        dbPhotos = await repo.getProgressPhotos();
+      });
+      expect(dbPhotos.any((p) => p.id == 'photo_concurrent_1'), isTrue);
+    });
+
+    // -------------------------------------------------------------------------
+    // P5-CLOSE-02-A: Partial destination file is cleaned up on copy failure
+    // -------------------------------------------------------------------------
+    test('P5-CLOSE-02-A: On failed photo copy, any partial private destination file is safely removed', () async {
+      final tempDir = Directory.systemTemp.createTempSync('homesets_partial_copy_test');
+      try {
+        final stagedFile = File('${tempDir.path}${Platform.pathSeparator}staged_valid.jpg');
+        // Valid JPEG header
+        stagedFile.writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]);
+
+        String? observedDestPath;
+        final service = AndroidPhotoService(
+          baseDirResolver: () async => tempDir,
+          copyOverride: (source, destination) async {
+            observedDestPath = destination;
+            // Simulate partial write before crash or disk full
+            final dest = File(destination);
+            await dest.writeAsBytes([0xFF, 0xD8, 0x00]); // 3 partial bytes
+            throw const FileSystemException('Simulated disk full / I/O error during copy');
+          },
+        );
+
+        await expectLater(
+          () => service.copyToPrivateSandbox(stagedFile.path, 'photo_partial_test'),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        // Verification: The partial destination file must be cleanly deleted on failure!
+        expect(observedDestPath, isNotNull);
+        final partialDestFile = File(observedDestPath!);
+        expect(partialDestFile.existsSync(), isFalse,
+            reason: 'Partial destination file must be cleaned up on copy failure');
+      } finally {
+        if (tempDir.existsSync()) {
+          tempDir.deleteSync(recursive: true);
+        }
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // P5-CLOSE-02-B: SQLite delete failure after file delete provides truthful retryable state
+    // -------------------------------------------------------------------------
+    testWidgets('P5-CLOSE-02-B: When file delete succeeds but SQLite delete fails, UI shows truthful retryable state and eventual idempotent cleanup', (tester) async {
+      final repo = _FailingDeleteProgressPhotoRepository();
+      final mockPhoto = MockPhotoService();
+
+      // Seed a photo in repo and in mock storage
+      final photo = ProgressPhoto(
+        id: 'photo_retry_test',
+        filePath: 'progress_photos/photo_retry_test.jpg',
+        angle: PhotoAngle.front,
+        takenAt: DateTime(2026, 11, 21, 10, 0),
+      );
+      await tester.runAsync(() async {
+        await repo.saveProgressPhoto(photo);
+      });
+      mockPhoto.seedVirtualFile(photo.filePath, [0xFF, 0xD8, 0xFF, 0xE0]);
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ProgressHubScreen(
+              repository: repo,
+              photoService: mockPhoto,
+            ),
+          ),
+        );
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Navigate to Photos Tab (Tab index 2)
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('tab_chip_2')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Open detail dialog
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('photo_tile_photo_retry_test')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Tap delete icon in detail dialog
+      final deleteBtnFinder = find.byIcon(Icons.delete_outline);
+      expect(deleteBtnFinder, findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(deleteBtnFinder);
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Confirm deletion dialog
+      expect(find.text('Delete Photo?'), findsOneWidget);
+      await tester.runAsync(() async {
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Delete'));
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // ASSERTION 1: File is deleted from storage
+      expect(mockPhoto.storedFiles.containsKey(photo.filePath), isFalse,
+          reason: 'Physical file was successfully deleted');
+
+      // ASSERTION 2: SnackBar displays truthful message distinguishing DB failure from storage failure
+      expect(find.text('Photo file removed, but database cleanup failed. Tap to retry.'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      // ASSERTION 3: Open the photo detail dialog again now that file is missing
+      await tester.runAsync(() async {
+        await tester.tap(find.byKey(const Key('photo_tile_photo_retry_test')));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // Dialog must display truthful pending cleanup notice
+      expect(find.text('Photo file removed from storage. Database record pending removal.'), findsOneWidget);
+
+      // Dismiss dialog
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Cancel'));
+        await Future.delayed(const Duration(milliseconds: 200));
+      });
+      await pumpAsync(tester, 6);
+
+      // ASSERTION 4: Retry the database deletion (now that injected failure is cleared)
+      repo.shouldFailPhotoDelete = false;
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Retry'));
+        await Future.delayed(const Duration(milliseconds: 300));
+      });
+      await pumpAsync(tester, 6);
+
+      // Photo record is now cleanly deleted from database!
+      List<ProgressPhoto> remainingPhotos = [];
+      await tester.runAsync(() async {
+        remainingPhotos = await repo.getProgressPhotos();
+      });
+      expect(remainingPhotos.any((p) => p.id == 'photo_retry_test'), isFalse,
+          reason: 'Retry successfully cleaned up SQLite record idempotently');
+    });
   });
+}
+
+class _TrackingPhotoService extends MockPhotoService {
+  int cleanupCallCount = 0;
+
+  @override
+  Future<int> cleanupOrphanPhotos(List<String> validRelativePaths) async {
+    cleanupCallCount++;
+    return super.cleanupOrphanPhotos(validRelativePaths);
+  }
+}
+
+class _FailingDeleteProgressPhotoRepository extends WorkoutRepository {
+  bool shouldFailPhotoDelete = true;
+
+  @override
+  Future<void> deleteProgressPhoto(String id) async {
+    if (shouldFailPhotoDelete) {
+      throw Exception('Simulated SQLite constraint/disk error on photo delete');
+    }
+    return super.deleteProgressPhoto(id);
+  }
 }
 
 class _FailingDeleteMockPhotoService extends MockPhotoService {

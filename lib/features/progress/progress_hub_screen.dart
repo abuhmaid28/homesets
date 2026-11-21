@@ -102,10 +102,6 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
       final rollingAvg = ProgressAnalytics.calculateRolling7DayAverage(weights, DateTime.now());
       final photos = await widget.repository.getProgressPhotos();
 
-      // P5-R02: Cleanup unreferenced orphan files in private sandbox
-      final validPhotoPaths = photos.map((p) => p.filePath).toList();
-      await widget.photoService.cleanupOrphanPhotos(validPhotoPaths);
-
       final exerciseIds = await widget.repository.getLoggedExerciseIds();
       final credit = await widget.repository.getWeeklyConsistencyCredit();
 
@@ -345,30 +341,32 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
     await _loadAllData();
   }
 
-  Future<void> _onDeletePhotoPrompt(ProgressPhoto photo) async {
+  Future<void> _onDeletePhotoPrompt(ProgressPhoto photo, {bool skipConfirmation = false}) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: HomesetsColors.surfaceCard,
-        title: Text(l10n.deletePhotoConfirmTitle, style: HomesetsTypography.heading2),
-        content: Text(l10n.deletePhotoConfirmBody, style: HomesetsTypography.bodyMedium),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancel, style: const TextStyle(color: HomesetsColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: HomesetsColors.orange,
-              foregroundColor: Colors.white,
+    final confirmed = skipConfirmation
+        ? true
+        : await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: HomesetsColors.surfaceCard,
+              title: Text(l10n.deletePhotoConfirmTitle, style: HomesetsTypography.heading2),
+              content: Text(l10n.deletePhotoConfirmBody, style: HomesetsTypography.bodyMedium),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(l10n.cancel, style: const TextStyle(color: HomesetsColors.textSecondary)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HomesetsColors.orange,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(l10n.delete),
+                ),
+              ],
             ),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
+          );
 
     if (confirmed == true) {
       bool fileDeleted = false;
@@ -396,8 +394,13 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.deletePhotoFailed),
+              content: Text(l10n.deletePhotoDbFailed),
               backgroundColor: HomesetsColors.orange,
+              action: SnackBarAction(
+                label: l10n.retry,
+                textColor: Colors.white,
+                onPressed: () => _onDeletePhotoPrompt(photo, skipConfirmation: true),
+              ),
             ),
           );
         }
@@ -1463,12 +1466,22 @@ class _ProgressHubScreenState extends State<ProgressHubScreen> with WidgetsBindi
                   final file = File(path);
                   if (!file.existsSync()) {
                     return Center(
-                      child: Text(
-                        photo.angle.name.toUpperCase(),
-                        style: const TextStyle(
-                          color: HomesetsColors.lime,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.broken_image, color: HomesetsColors.orange, size: 36),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.photoPendingCleanup,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: HomesetsColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );

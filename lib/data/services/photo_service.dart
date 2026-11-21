@@ -56,8 +56,10 @@ abstract class PhotoService {
 class AndroidPhotoService implements PhotoService {
   static const MethodChannel _channel = MethodChannel('com.abuhmaid.homesets/media');
   static final Set<String> _pendingImports = <String>{};
+  final Future<Directory> Function()? baseDirResolver;
+  final Future<void> Function(File source, String destination)? copyOverride;
 
-  const AndroidPhotoService();
+  const AndroidPhotoService({this.baseDirResolver, this.copyOverride});
 
   @override
   void markImportPending(String relativePath) {
@@ -84,6 +86,7 @@ class AndroidPhotoService implements PhotoService {
     final relPath = 'progress_photos/$photoId.jpg';
     markImportPending(relPath);
 
+    String? destPath;
     try {
       final stagedFile = File(stagedPath);
       if (!await stagedFile.exists()) {
@@ -114,14 +117,20 @@ class AndroidPhotoService implements PhotoService {
         throw const FormatException('Invalid image format. Only JPEG, PNG, and WEBP are supported.');
       }
 
-      final docsDir = await getApplicationDocumentsDirectory();
+      final docsDir = baseDirResolver != null
+          ? await baseDirResolver!()
+          : await getApplicationDocumentsDirectory();
       final photosDir = Directory('${docsDir.path}/progress_photos');
       if (!await photosDir.exists()) {
         await photosDir.create(recursive: true);
       }
 
-      final destPath = '${photosDir.path}/$photoId.jpg';
-      await stagedFile.copy(destPath);
+      destPath = '${photosDir.path}/$photoId.jpg';
+      if (copyOverride != null) {
+        await copyOverride!(stagedFile, destPath);
+      } else {
+        await stagedFile.copy(destPath);
+      }
 
       // Clean up temporary staged file
       try {
@@ -131,6 +140,15 @@ class AndroidPhotoService implements PhotoService {
       return relPath;
     } catch (_) {
       completePendingImport(relPath);
+      // P5-CLOSE-02: Safely remove any partial private destination file on failure
+      if (destPath != null) {
+        try {
+          final destFile = File(destPath);
+          if (await destFile.exists()) {
+            await destFile.delete();
+          }
+        } catch (_) {}
+      }
       rethrow;
     }
   }
@@ -138,7 +156,9 @@ class AndroidPhotoService implements PhotoService {
   @override
   Future<String> getAbsolutePath(String relativePath) async {
     _assertSafeRelativePath(relativePath);
-    final docsDir = await getApplicationDocumentsDirectory();
+    final docsDir = baseDirResolver != null
+        ? await baseDirResolver!()
+        : await getApplicationDocumentsDirectory();
     return '${docsDir.path}/$relativePath';
   }
 
@@ -160,7 +180,9 @@ class AndroidPhotoService implements PhotoService {
 
   @override
   Future<int> cleanupOrphanPhotos(List<String> validRelativePaths) async {
-    final docsDir = await getApplicationDocumentsDirectory();
+    final docsDir = baseDirResolver != null
+        ? await baseDirResolver!()
+        : await getApplicationDocumentsDirectory();
     final photosDir = Directory('${docsDir.path}/progress_photos');
     if (!await photosDir.exists()) return 0;
 

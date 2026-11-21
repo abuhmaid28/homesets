@@ -48,7 +48,16 @@ Following the initial P5 candidate delivery (exact-head CI #43761250118 PASS), i
 
 ---
 
-## 4. Residual & Discovered Findings Log (P5 Campaign)
+## 4. Final Photo Integrity Closeout Matrix (P5-CLOSE-01 and P5-CLOSE-02)
+
+| Finding ID | Severity | Area | Review Description | Production Corrective Action | Verification Evidence | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **P5-CLOSE-01** | **HIGH** | Sweeper/Import Concurrency | `ProgressHubScreen._loadAllData` ran orphan sweep on every refresh/reload, which could race with slow asynchronous imports and delete legitimate photos whose metadata was not yet committed. | Removed `cleanupOrphanPhotos` from routine `_loadAllData()`. Orphan cleanup is exclusively executed once as a single serialized cold-start operation in `HomesetsApp._checkInitialState` (`lib/main.dart`) after database integrity is verified. Added UI + repository interleaving tests. | `test/features/p5_review_repro_test.dart` (asserts routine UI reload executes 0 sweeps, and concurrent import/reload preserves photo and DB record) | **RESOLVED & VERIFIED** |
+| **P5-CLOSE-02** | **MEDIUM/HIGH** | Failure Recoverability | **Part A:** `AndroidPhotoService.copyToPrivateSandbox` did not clean up partial private destination files if copy failed midway.<br>**Part B:** In `_onDeletePhotoPrompt`, when file delete succeeded but SQLite delete failed, UI showed generic failure without retry or distinction, and detail dialog showed no pending removal state. | **Part A:** In `AndroidPhotoService.copyToPrivateSandbox`, added compensating deletion in catch block to check and delete any partial destination file at `destPath`. Tested with simulated mid-copy failure and verified no leftover bytes.<br>**Part B:** In `ProgressHubScreen._onDeletePhotoPrompt`, distinguished DB failure with localized message (`deletePhotoDbFailed`), provided actionable `Retry` SnackBarAction, and in `_showPhotoDetailDialog`, displayed truthful pending cleanup message (`photoPendingCleanup`) when file is missing from storage, allowing idempotent retry. | `test/features/p5_review_repro_test.dart` (asserts partial copy file deleted on error, DB delete failure shows retryable SnackBar, detail dialog displays truthful notice, and retry cleanly removes DB record) | **RESOLVED & VERIFIED** |
+
+---
+
+## 5. Residual & Discovered Findings Log (P5 Campaign)
 
 | ID | Component | Discovery Description | Corrective Action Applied | Verification |
 | :--- | :--- | :--- | :--- | :--- |
@@ -60,7 +69,7 @@ Following the initial P5 candidate delivery (exact-head CI #43761250118 PASS), i
 
 ---
 
-## 5. Dependency Ledger & Version Reconcile (GOV21 Compliance)
+## 6. Dependency Ledger & Version Reconcile (GOV21 Compliance)
 
 | Package Name | Type | Current Version in pubspec.yaml | Status under GOV16/GOV21 | Justification & Note |
 | :--- | :--- | :--- | :--- | :--- |

@@ -30,7 +30,8 @@ Under decisions **GOV15, GOV16, GOV20, GOV21, and GOV22**, HOMESETS enforces:
 | **OOM / Huge Image Crash** | High | Stream capped at 25 MB; `BitmapFactory.Options.inJustDecodeBounds` + `inSampleSize` (max 2048px); background executor. | **PASS (P5-R01)** |
 | **Unbounded Dart Heap Consumption** | High | Dart side inspects file size bounds (max 15 MB) and reads only 16-byte magic header stream before copying. | **PASS (P5-R01)** |
 | **Orphaned Photo Binary on DB Error** | High | Two-phase photo save with compensating rollback: deletes sandbox file immediately if SQLite insert throws. | **PASS (P5-R02)** |
-| **Untracked Photo Residue on Crash** | Medium | Startup orphan cleanup (`cleanupOrphanPhotos`) wired to app initialization in `main.dart` and `ProgressHubScreen`. | **PASS (P5-R02)** |
+| **Untracked Photo Residue on Crash** | Medium | Cold-start orphan cleanup (`cleanupOrphanPhotos`) serialized to app initialization in `main.dart` after DB verification (P5-CLOSE-01). | **PASS (P5-R02, P5-CLOSE-01)** |
+| **Partial Photo Residue on Copy Failure** | Medium | Compensating cleanup in `AndroidPhotoService.copyToPrivateSandbox` deletes partial destination file on copy error (P5-CLOSE-02). | **PASS (P5-CLOSE-02)** |
 | **Public Gallery Leakage (DCIM)** | Critical | Photos stored exclusively in private sandbox (`<appDocsDir>/progress_photos/<photoId>.jpg`). | **PASS** |
 | **Cloud Backup & D2D Exfiltration** | High | `allowBackup="false"`, `data_extraction_rules.xml` and `backup_rules.xml` exclude `database`, `file`, `root`, `sharedpref`. | **PASS (P5-R04)** |
 | **Path Traversal Attacks** | High | Relative paths validated against `progress_photos/`; strictly rejects `..` and external traversal. | **PASS** |

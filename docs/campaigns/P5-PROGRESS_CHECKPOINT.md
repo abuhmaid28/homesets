@@ -27,7 +27,7 @@
 | **WP09** | Progress Hub UI & photo comparison | **DONE** | Pure Flutter `CustomPainter` for `WeightTrendChart` and `StrengthProgressionChart`; side-by-side `PhotoComparisonView` with zoom/pan; `LogWeightDialog` with edit support; verified by widget tests |
 | **WP10** | Accessibility, responsive UI & localization | **DONE** | `_MainNavigationShell` (Workout \| Progress); 360-412dp adaptive layouts; 1.5x font scaling safety (0 overflows); Egyptian Arabic RTL primary & English LTR; verified by `progress_hub_test.dart` |
 | **WP11** | Privacy, security & manifest audit | **DONE** | Strict 0 permissions in `AndroidManifest.xml`; `allowBackup="false"`; comprehensive backup & D2D extraction rules (`data_extraction_rules.xml` & `backup_rules.xml`) across all domains (P5-R04); documented in `PHOTO_PRIVACY_AUDIT.md` |
-| **WP12** | Full regression, CI & handoff | **DONE** | `flutter analyze --fatal-infos` (0 issues); 86/86 tests pass; 4/4 Python quality checks pass; debug APK built (210,104,386 bytes); P5-FINAL-01 to P5-FINAL-05 integrated and verified |
+| **WP12** | Full regression, CI & handoff | **DONE** | `flutter analyze --fatal-infos` (0 issues); 89/89 tests pass; 4/4 Python quality checks pass; debug APK built (210,106,457 bytes); P5-FINAL-01..05 & P5-CLOSE-01..02 verified |
 
 ---
 
@@ -43,15 +43,24 @@
 
 ---
 
-## 3. Test Verification Ledger
+## 3. Photo Integrity Closeout Ledger (P5-CLOSE-01 and P5-CLOSE-02)
 
-- **Flutter Test Suite:** **86 / 86 tests passing (100%)** — comprehensive domain, migration, sandbox, flow, hub, and review regression suites.
+| Finding ID | Severity | Focus Area | Resolution Summary | Verification |
+| :--- | :--- | :--- | :--- | :--- |
+| **P5-CLOSE-01** | HIGH | Sweeper/Import Concurrency | Removed `cleanupOrphanPhotos` from routine `_loadAllData()`. Orphan sweep exclusively runs once as a serialized startup check in `HomesetsApp._checkInitialState`. Added interleaving tests verifying in-flight photos are never dropped. | `p5_review_repro_test.dart` |
+| **P5-CLOSE-02** | MEDIUM/HIGH | Partial Copy & Delete Recoverability | **Part A:** Compensating deletion in `AndroidPhotoService.copyToPrivateSandbox` deletes partial destination file on copy failure.<br>**Part B:** In `_onDeletePhotoPrompt`, distinguished DB deletion failure with localized message (`deletePhotoDbFailed`), provided actionable `Retry` SnackBarAction, and in `_showPhotoDetailDialog`, displayed truthful pending cleanup notice (`photoPendingCleanup`) with idempotent recovery. | `p5_review_repro_test.dart` |
+
+---
+
+## 4. Test Verification Ledger
+
+- **Flutter Test Suite:** **89 / 89 tests passing (100%)** — comprehensive domain, migration, sandbox, flow, hub, and review regression suites.
 - **Static Analysis:** `flutter analyze --fatal-infos` reporting **0 issues found**.
 - **Python Quality QA:** **4/4 suites passing** (`validate_fixtures.py`, `test_validation.py`, `validate_links.py`, `check_hygiene.py`).
 - **Android APK Build:** Successfully compiled debug APK via `flutter build apk --debug`:
   - Path: `build/app/outputs/flutter-apk/app-debug.apk`
-  - Size: 210,104,386 bytes (~200.4 MB)
-  - SHA-256: `206A405628AE581F2BE8A7B89FFB1AFB16DF21DE7D9E7597F4810AD749FEDA30`
+  - Size: 210,106,457 bytes (~200.4 MB)
+  - SHA-256: `85ECB78E0471820A1C17E2F7BD7B67336542C838F90638917DECD2654C64139A`
 - **Release Permissions:** Strictly **0 `<uses-permission>` tags** in `AndroidManifest.xml`.
 - **Direct Camera Capture:** Officially recorded as **BLOCKED / NOT IMPLEMENTED** under zero-permission constraints.
 - **Physical Phone Status:** Explicitly marked **UNVERIFIED** (deferred to C9 final integrated physical phone acceptance per GOV07/GOV22).

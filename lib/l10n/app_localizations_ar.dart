@@ -376,6 +376,17 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل حذف الصورة من التخزين. يرجى المحاولة مرة أخرى.';
 
   @override
+  String get deletePhotoDbFailed =>
+      'تم مسح ملف الصورة ولكن تعذر تحديث السجلات. اضغط لإعادة المحاولة.';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get photoPendingCleanup =>
+      'تم مسح ملف الصورة من التخزين. السجل بانتظار الإزالة.';
+
+  @override
   String get privateStorageNotice =>
       'حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.';
 }

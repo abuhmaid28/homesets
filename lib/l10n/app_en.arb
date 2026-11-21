@@ -146,5 +146,8 @@
   "bandFilterBodyweight": "Bodyweight",
   "saveFailed": "Failed to save. Please try again.",
   "deletePhotoFailed": "Failed to delete photo from storage. Please try again.",
+  "deletePhotoDbFailed": "Photo file removed, but database cleanup failed. Tap to retry.",
+  "retry": "Retry",
+  "photoPendingCleanup": "Photo file removed from storage. Database record pending removal.",
   "privateStorageNotice": "App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app."
 }

@@ -375,6 +375,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to delete photo from storage. Please try again.';
 
   @override
+  String get deletePhotoDbFailed =>
+      'Photo file removed, but database cleanup failed. Tap to retry.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get photoPendingCleanup =>
+      'Photo file removed from storage. Database record pending removal.';
+
+  @override
   String get privateStorageNotice =>
       'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.';
 }

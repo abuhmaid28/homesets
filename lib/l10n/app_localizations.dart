@@ -800,6 +800,24 @@ abstract class AppLocalizations {
   /// **'Failed to delete photo from storage. Please try again.'**
   String get deletePhotoFailed;
 
+  /// No description provided for @deletePhotoDbFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo file removed, but database cleanup failed. Tap to retry.'**
+  String get deletePhotoDbFailed;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @photoPendingCleanup.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo file removed from storage. Database record pending removal.'**
+  String get photoPendingCleanup;
+
   /// No description provided for @privateStorageNotice.
   ///
   /// In en, this message translates to:
