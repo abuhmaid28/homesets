@@ -1,12 +1,13 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// Local SQLite Database Helper with Versioned Schema & Immediate Write-Ordering (WP20).
+/// Local SQLite Database Helper with Versioned Schema & Immediate Write-Ordering (WP20, P5 WP02, P5-R03).
 /// Strictly offline, app-private, zero network sync.
 class DatabaseHelper {
   static const String _dbName = 'homesets.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   static Database? _database;
   static DatabaseFactory? _customFactory;
@@ -34,7 +35,8 @@ class DatabaseHelper {
         options: OpenDatabaseOptions(
           version: _dbVersion,
           onCreate: _onCreate,
-          onConfigure: _onConfigure,
+          onUpgrade: onUpgradeCallback,
+          onConfigure: onConfigureCallback,
         ),
       );
     } else {
@@ -44,13 +46,14 @@ class DatabaseHelper {
         dbPath,
         version: _dbVersion,
         onCreate: _onCreate,
-        onConfigure: _onConfigure,
+        onUpgrade: onUpgradeCallback,
+        onConfigure: onConfigureCallback,
       );
     }
   }
 
-  Future<void> _onConfigure(Database db) async {
-    // Enable foreign key constraints and WAL mode for crash resilience
+  /// Package-accessible database configuration callback ensuring foreign keys and WAL mode.
+  static Future<void> onConfigureCallback(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON;');
     // Ensure session_salvage_archive table exists for existing databases (WP-A)
     await db.execute('''
@@ -68,9 +71,65 @@ class DatabaseHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    await onCreateV1ForTesting(db);
+    if (version >= 2) {
+      await migrateToV2(db);
+    }
+  }
+
+  /// Production onUpgrade callback used by openDatabase and callable directly in migration tests.
+  static Future<void> onUpgradeCallback(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await migrateToV2(db);
+    }
+  }
+
+  /// Idempotent migration to v2 schema adding weight_entries, progress_photos, and daily_meal_checks.
+  static Future<void> migrateToV2(Database db) async {
+    // 7. Weight Entries Table (WP03)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS weight_entries (
+        id TEXT PRIMARY KEY,
+        weight_kg REAL NOT NULL,
+        logged_at TEXT NOT NULL,
+        notes TEXT
+      );
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_weight_entries_logged_at ON weight_entries (logged_at);
+    ''');
+
+    // 8. Progress Photos Table (WP07, WP08)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS progress_photos (
+        id TEXT PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        angle TEXT NOT NULL,
+        taken_at TEXT NOT NULL,
+        notes TEXT
+      );
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_progress_photos_taken_at ON progress_photos (taken_at);
+    ''');
+
+    // 9. Daily Meal Checks Table (WP06)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS daily_meal_checks (
+        date TEXT NOT NULL,
+        meal_slot INTEGER NOT NULL,
+        is_checked INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (date, meal_slot)
+      );
+    ''');
+  }
+
+  /// Creates original v1 tables (WP20) for migration testing.
+  @visibleForTesting
+  static Future<void> onCreateV1ForTesting(Database db) async {
     // 1. User Profile Table
     await db.execute('''
-      CREATE TABLE user_profile (
+      CREATE TABLE IF NOT EXISTS user_profile (
         id TEXT PRIMARY KEY,
         goal TEXT NOT NULL,
         wake_time_minutes INTEGER NOT NULL,
@@ -83,7 +142,7 @@ class DatabaseHelper {
 
     // 2. Equipment Inventory Table
     await db.execute('''
-      CREATE TABLE equipment_inventory (
+      CREATE TABLE IF NOT EXISTS equipment_inventory (
         id TEXT PRIMARY KEY,
         has_pull_up_bar INTEGER NOT NULL,
         has_bands INTEGER NOT NULL,
@@ -96,7 +155,7 @@ class DatabaseHelper {
 
     // 3. Completed Workout Sessions Table
     await db.execute('''
-      CREATE TABLE workout_sessions (
+      CREATE TABLE IF NOT EXISTS workout_sessions (
         id TEXT PRIMARY KEY,
         scheduled_session_id TEXT NOT NULL,
         routine_name TEXT NOT NULL,
@@ -111,7 +170,7 @@ class DatabaseHelper {
 
     // 4. Set Logs Table (Immediate Write-Order)
     await db.execute('''
-      CREATE TABLE set_logs (
+      CREATE TABLE IF NOT EXISTS set_logs (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         set_index INTEGER NOT NULL,
@@ -128,7 +187,7 @@ class DatabaseHelper {
 
     // 5. Active Session State Table (For crash recovery and app restart resume)
     await db.execute('''
-      CREATE TABLE active_session_state (
+      CREATE TABLE IF NOT EXISTS active_session_state (
         session_id TEXT PRIMARY KEY,
         routine_name TEXT NOT NULL,
         routine_name_ar TEXT NOT NULL,
@@ -141,7 +200,7 @@ class DatabaseHelper {
       );
     ''');
 
-    // 6. Session Salvage Archive Table (WP-A: Lossless durable quarantine for corrupt draft raw bytes)
+    // 6. Session Salvage Archive Table
     await db.execute('''
       CREATE TABLE IF NOT EXISTS session_salvage_archive (
         id TEXT PRIMARY KEY,

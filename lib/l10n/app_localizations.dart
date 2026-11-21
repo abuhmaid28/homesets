@@ -475,6 +475,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save & Exit'**
   String get quitWorkout;
+
+  /// No description provided for @navToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout'**
+  String get navToday;
+
+  /// No description provided for @navProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get navProgress;
+
+  /// No description provided for @progressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress Tracking'**
+  String get progressTitle;
+
+  /// No description provided for @tabOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get tabOverview;
+
+  /// No description provided for @tabWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get tabWeight;
+
+  /// No description provided for @tabPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get tabPhotos;
+
+  /// No description provided for @tabStrength.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength'**
+  String get tabStrength;
+
+  /// No description provided for @tabMeals.
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition'**
+  String get tabMeals;
+
+  /// No description provided for @currentWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Weight'**
+  String get currentWeight;
+
+  /// No description provided for @rollingAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'7-Day Average'**
+  String get rollingAverage;
+
+  /// No description provided for @logWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Log Weight'**
+  String get logWeight;
+
+  /// No description provided for @enterWeightKg.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight (kg)'**
+  String get enterWeightKg;
+
+  /// No description provided for @saveWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Weight'**
+  String get saveWeight;
+
+  /// No description provided for @weightHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight History'**
+  String get weightHistory;
+
+  /// No description provided for @noWeightEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No weight entries logged yet'**
+  String get noWeightEntries;
+
+  /// No description provided for @weightBoundsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight must be between 30 and 300 kg'**
+  String get weightBoundsError;
+
+  /// No description provided for @photosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Physique Photos'**
+  String get photosTitle;
+
+  /// No description provided for @addPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Photo'**
+  String get addPhoto;
+
+  /// No description provided for @comparePhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get comparePhotos;
+
+  /// No description provided for @exitCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get exitCompare;
+
+  /// No description provided for @selectTwoPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Select 2 photos to compare side-by-side'**
+  String get selectTwoPhotos;
+
+  /// No description provided for @frontAngle.
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get frontAngle;
+
+  /// No description provided for @sideAngle.
+  ///
+  /// In en, this message translates to:
+  /// **'Side'**
+  String get sideAngle;
+
+  /// No description provided for @backAngle.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backAngle;
+
+  /// No description provided for @allAngles.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allAngles;
+
+  /// No description provided for @deletePhotoConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Photo?'**
+  String get deletePhotoConfirmTitle;
+
+  /// No description provided for @deletePhotoConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete this photo from your private sandbox.'**
+  String get deletePhotoConfirmBody;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @noPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'No physique photos added yet'**
+  String get noPhotos;
+
+  /// No description provided for @strengthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Strength Progression'**
+  String get strengthTitle;
+
+  /// No description provided for @selectExercise.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Exercise'**
+  String get selectExercise;
+
+  /// No description provided for @noStrengthData.
+  ///
+  /// In en, this message translates to:
+  /// **'No completed strength sets yet'**
+  String get noStrengthData;
+
+  /// No description provided for @baselineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Baseline'**
+  String get baselineLabel;
+
+  /// No description provided for @bestLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All-time Best'**
+  String get bestLabel;
+
+  /// No description provided for @recentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recentLabel;
+
+  /// No description provided for @repsDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'{delta} reps vs baseline'**
+  String repsDelta(int delta);
+
+  /// No description provided for @mealsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Protein Checklist'**
+  String get mealsTitle;
+
+  /// No description provided for @mealBreakfast.
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get mealBreakfast;
+
+  /// No description provided for @mealLunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get mealLunch;
+
+  /// No description provided for @mealDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get mealDinner;
+
+  /// No description provided for @mealSnack1.
+  ///
+  /// In en, this message translates to:
+  /// **'Snack 1 (Optional)'**
+  String get mealSnack1;
+
+  /// No description provided for @mealSnack2.
+  ///
+  /// In en, this message translates to:
+  /// **'Snack 2 (Optional)'**
+  String get mealSnack2;
+
+  /// No description provided for @proteinHit.
+  ///
+  /// In en, this message translates to:
+  /// **'Protein goal met'**
+  String get proteinHit;
+
+  /// No description provided for @proteinMiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet'**
+  String get proteinMiss;
+
+  /// No description provided for @proteinTipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Inexpensive Egyptian Protein Ideas'**
+  String get proteinTipsTitle;
+
+  /// No description provided for @photoBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get photoBefore;
+
+  /// No description provided for @photoAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get photoAfter;
+
+  /// No description provided for @editWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Weight'**
+  String get editWeight;
+
+  /// No description provided for @appPrivateBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'App-Private'**
+  String get appPrivateBadge;
+
+  /// No description provided for @bandFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get bandFilterAll;
+
+  /// No description provided for @bandFilterBodyweight.
+  ///
+  /// In en, this message translates to:
+  /// **'Bodyweight'**
+  String get bandFilterBodyweight;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save. Please try again.'**
+  String get saveFailed;
+
+  /// No description provided for @deletePhotoFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete photo from storage. Please try again.'**
+  String get deletePhotoFailed;
+
+  /// No description provided for @deletePhotoDbFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo file removed, but database cleanup failed. Tap to retry.'**
+  String get deletePhotoDbFailed;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @photoPendingCleanup.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo file removed from storage. Database record pending removal.'**
+  String get photoPendingCleanup;
+
+  /// No description provided for @privateStorageNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.'**
+  String get privateStorageNotice;
 }
 
 class _AppLocalizationsDelegate

@@ -624,4 +624,245 @@ class WorkoutRepository {
     }
     return 'A';
   }
+
+  // =========================================================================
+  // P5 PROGRESS TRACKING PERSISTENCE (WP02, WP03, WP04, WP06, WP07, WP08)
+  // =========================================================================
+
+  /// Persists or updates a body weight entry (WP03).
+  Future<void> saveWeightEntry(WeightEntry entry) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'weight_entries',
+      entry.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Retrieves all body weight entries ordered chronologically descending (latest first).
+  Future<List<WeightEntry>> getWeightEntries() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'weight_entries',
+      orderBy: 'logged_at DESC',
+    );
+    return rows.map((r) => WeightEntry.fromMap(r)).toList();
+  }
+
+  /// Retrieves the single most recent body weight entry.
+  Future<WeightEntry?> getLatestWeightEntry() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'weight_entries',
+      orderBy: 'logged_at DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return WeightEntry.fromMap(rows.first);
+  }
+
+  /// Deletes a body weight entry by ID.
+  Future<void> deleteWeightEntry(String id) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'weight_entries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Persists metadata for an app-private progress photo (WP07, WP08).
+  Future<void> saveProgressPhoto(ProgressPhoto photo) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'progress_photos',
+      photo.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Retrieves all progress photos, optionally filtered by angle, ordered newest first.
+  Future<List<ProgressPhoto>> getProgressPhotos({PhotoAngle? angle}) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'progress_photos',
+      where: angle != null ? 'angle = ?' : null,
+      whereArgs: angle != null ? [angle.toDbString()] : null,
+      orderBy: 'taken_at DESC',
+    );
+    return rows.map((r) => ProgressPhoto.fromMap(r)).toList();
+  }
+
+  /// Deletes a progress photo record by ID.
+  Future<void> deleteProgressPhoto(String id) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'progress_photos',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Persists a checkbox state for a daily meal slot (WP06).
+  Future<void> saveMealCheck(String date, int mealSlot, bool isChecked) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'daily_meal_checks',
+      {
+        'date': date,
+        'meal_slot': mealSlot,
+        'is_checked': isChecked ? 1 : 0,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Retrieves all meal check states for a specific date (YYYY-MM-DD).
+  Future<Map<int, bool>> getMealChecksForDate(String date) async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'daily_meal_checks',
+      where: 'date = ?',
+      whereArgs: [date],
+    );
+    final map = <int, bool>{};
+    for (final r in rows) {
+      map[r['meal_slot'] as int] = (r['is_checked'] as int) == 1;
+    }
+    return map;
+  }
+
+  /// Retrieves distinct exercise IDs that have at least one completed non-pain set (WP04).
+  Future<List<String>> getLoggedExerciseIds() async {
+    final db = await _dbHelper.database;
+    final rows = await db.rawQuery('''
+      SELECT DISTINCT sl.exercise_id
+      FROM set_logs sl
+      JOIN workout_sessions ws ON sl.session_id = ws.id
+      WHERE sl.is_pain_stopped = 0
+        AND sl.performed_reps > 0
+        AND ws.is_emergency_stopped = 0
+      ORDER BY sl.completed_at DESC
+    ''');
+    return rows.map((r) => r['exercise_id'] as String).toList();
+  }
+
+  /// Retrieves distinct band configurations logged for [exerciseId] to enable like-for-like comparison (P5-R05).
+  /// Returns 'none' for unassisted bodyweight sets, plus any specific band identifiers.
+  Future<List<String>> getAvailableBandConfigurations(String exerciseId) async {
+    final db = await _dbHelper.database;
+    final rows = await db.rawQuery('''
+      SELECT DISTINCT sl.band_used
+      FROM set_logs sl
+      JOIN workout_sessions ws ON sl.session_id = ws.id
+      WHERE sl.exercise_id = ?
+        AND sl.is_pain_stopped = 0
+        AND sl.performed_reps > 0
+        AND ws.is_emergency_stopped = 0
+    ''', [exerciseId]);
+
+    final configs = <String>{};
+    for (final r in rows) {
+      final band = r['band_used'] as String?;
+      if (band == null || band.trim().isEmpty) {
+        configs.add('none');
+      } else {
+        configs.add(band.trim());
+      }
+    }
+    final sorted = configs.toList();
+    sorted.sort();
+    return sorted;
+  }
+
+  /// Computes aggregated strength data points over time for a given exercise (WP04, P5-R05).
+  /// Excludes emergency-stopped sessions, pain-stopped sets, and zero-rep logs.
+  /// If [bandFilter] is provided ('none' for bodyweight, or a specific band id), strictly filters to that configuration.
+  Future<List<StrengthDataPoint>> getStrengthHistoryForExercise(
+    String exerciseId, {
+    String? bandFilter,
+  }) async {
+    final db = await _dbHelper.database;
+    String filterClause = '';
+    final args = <dynamic>[exerciseId];
+
+    if (bandFilter != null && bandFilter != 'all') {
+      if (bandFilter == 'none' || bandFilter == 'bodyweight') {
+        filterClause = "AND (sl.band_used IS NULL OR sl.band_used = '')";
+      } else {
+        filterClause = 'AND sl.band_used = ?';
+        args.add(bandFilter);
+      }
+    }
+
+    final rows = await db.rawQuery('''
+      SELECT 
+        sl.session_id,
+        ws.is_lite_mode,
+        sl.performed_reps,
+        sl.band_used,
+        sl.completed_at
+      FROM set_logs sl
+      JOIN workout_sessions ws ON sl.session_id = ws.id
+      WHERE sl.exercise_id = ?
+        AND sl.is_pain_stopped = 0
+        AND sl.performed_reps > 0
+        AND ws.is_emergency_stopped = 0
+        $filterClause
+      ORDER BY sl.completed_at ASC
+    ''', args);
+
+    if (rows.isEmpty) return [];
+
+    // Group rows by session_id AND band_used to prevent mixing assisted and unassisted sets in the same session
+    final groupMap = <String, List<Map<String, dynamic>>>{};
+    for (final row in rows) {
+      final sessId = row['session_id'] as String;
+      final band = (row['band_used'] as String?)?.trim() ?? '';
+      final groupKey = '$sessId##$band';
+      groupMap.putIfAbsent(groupKey, () => []).add(row);
+    }
+
+    final dataPoints = <StrengthDataPoint>[];
+    for (final entry in groupMap.entries) {
+      final sessRows = entry.value;
+      int maxReps = 0;
+      int totalReps = 0;
+      String? bandUsed;
+      DateTime? sessionDate;
+      bool isLite = false;
+      final sessId = sessRows.first['session_id'] as String;
+
+      for (final r in sessRows) {
+        final reps = r['performed_reps'] as int;
+        if (reps > maxReps) maxReps = reps;
+        totalReps += reps;
+        final b = (r['band_used'] as String?)?.trim();
+        if (b != null && b.isNotEmpty) {
+          bandUsed = b;
+        }
+        final completedAt = DateTime.parse(r['completed_at'] as String);
+        if (sessionDate == null || completedAt.isAfter(sessionDate)) {
+          sessionDate = completedAt;
+        }
+        isLite = (r['is_lite_mode'] as int) == 1;
+      }
+
+      if (sessionDate != null && maxReps > 0) {
+        dataPoints.add(StrengthDataPoint(
+          date: sessionDate,
+          maxReps: maxReps,
+          totalReps: totalReps,
+          setsCount: sessRows.length,
+          bandUsed: bandUsed,
+          isLiteMode: isLite,
+          sessionId: sessId,
+        ));
+      }
+    }
+
+    // Sort chronologically ascending
+    dataPoints.sort((a, b) => a.date.compareTo(b.date));
+    return dataPoints;
+  }
 }

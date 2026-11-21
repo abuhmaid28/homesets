@@ -208,4 +208,185 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get quitWorkout => 'حفظ وخروج';
+
+  @override
+  String get navToday => 'التمرين';
+
+  @override
+  String get navProgress => 'التطور';
+
+  @override
+  String get progressTitle => 'متابعة التطور والنتائج';
+
+  @override
+  String get tabOverview => 'نظرة عامة';
+
+  @override
+  String get tabWeight => 'الوزن';
+
+  @override
+  String get tabPhotos => 'الصور';
+
+  @override
+  String get tabStrength => 'القوة';
+
+  @override
+  String get tabMeals => 'التغذية';
+
+  @override
+  String get currentWeight => 'الوزن الحالي';
+
+  @override
+  String get rollingAverage => 'متوسط ٧ أيام';
+
+  @override
+  String get logWeight => 'تسجيل الوزن';
+
+  @override
+  String get enterWeightKg => 'الوزن (كجم)';
+
+  @override
+  String get saveWeight => 'حفظ الوزن';
+
+  @override
+  String get weightHistory => 'سجل الوزن';
+
+  @override
+  String get noWeightEntries => 'لم تسجل أي وزن حتى الآن';
+
+  @override
+  String get weightBoundsError => 'الوزن يجب أن يكون بين ٣٠ و ٣٠٠ كجم';
+
+  @override
+  String get photosTitle => 'صور الجسم والتطور';
+
+  @override
+  String get addPhoto => 'إضافة صورة';
+
+  @override
+  String get comparePhotos => 'مقارنة صورتين';
+
+  @override
+  String get exitCompare => 'تم';
+
+  @override
+  String get selectTwoPhotos => 'اختر صورتين للمقارنة جنباً لجنب';
+
+  @override
+  String get frontAngle => 'أمام';
+
+  @override
+  String get sideAngle => 'جانب';
+
+  @override
+  String get backAngle => 'خلف';
+
+  @override
+  String get allAngles => 'الكل';
+
+  @override
+  String get deletePhotoConfirmTitle => 'حذف الصورة؟';
+
+  @override
+  String get deletePhotoConfirmBody =>
+      'سيتم مسح هذه الصورة نهائياً من مساحة التطبيق الخاصة.';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get noPhotos => 'لم تقم بإضافة أي صور بعد';
+
+  @override
+  String get strengthTitle => 'تطور القوة والمجاميع';
+
+  @override
+  String get selectExercise => 'اختر التمرين';
+
+  @override
+  String get noStrengthData => 'لم تسجل مجاميع قوة مكتملة بعد';
+
+  @override
+  String get baselineLabel => 'البداية';
+
+  @override
+  String get bestLabel => 'أفضل أداء';
+
+  @override
+  String get recentLabel => 'آخر تمرين';
+
+  @override
+  String repsDelta(int delta) {
+    return '$delta عدة مقارنة بالبداية';
+  }
+
+  @override
+  String get mealsTitle => 'متابعة البروتين اليومي';
+
+  @override
+  String get mealBreakfast => 'الفطار';
+
+  @override
+  String get mealLunch => 'الغداء';
+
+  @override
+  String get mealDinner => 'العشاء';
+
+  @override
+  String get mealSnack1 => 'سناك ١ (اختياري)';
+
+  @override
+  String get mealSnack2 => 'سناك ٢ (اختياري)';
+
+  @override
+  String get proteinHit => 'تم تحقيق هدف البروتين';
+
+  @override
+  String get proteinMiss => 'لم يتحقق بعد';
+
+  @override
+  String get proteinTipsTitle => 'أفكار بروتين اقتصادية وسريعة';
+
+  @override
+  String get photoBefore => 'قبل';
+
+  @override
+  String get photoAfter => 'بعد';
+
+  @override
+  String get editWeight => 'تعديل الوزن';
+
+  @override
+  String get appPrivateBadge => 'حفظ محلي خاص';
+
+  @override
+  String get bandFilterAll => 'الكل';
+
+  @override
+  String get bandFilterBodyweight => 'وزن الجسم';
+
+  @override
+  String get saveFailed => 'فشل الحفظ. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get deletePhotoFailed =>
+      'فشل حذف الصورة من التخزين. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get deletePhotoDbFailed =>
+      'تم مسح ملف الصورة ولكن تعذر تحديث السجلات. اضغط لإعادة المحاولة.';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get photoPendingCleanup =>
+      'تم مسح ملف الصورة من التخزين. السجل بانتظار الإزالة.';
+
+  @override
+  String get privateStorageNotice =>
+      'حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.';
 }

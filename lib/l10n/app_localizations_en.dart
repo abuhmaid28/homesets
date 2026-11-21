@@ -207,4 +207,185 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get quitWorkout => 'Save & Exit';
+
+  @override
+  String get navToday => 'Workout';
+
+  @override
+  String get navProgress => 'Progress';
+
+  @override
+  String get progressTitle => 'Progress Tracking';
+
+  @override
+  String get tabOverview => 'Overview';
+
+  @override
+  String get tabWeight => 'Weight';
+
+  @override
+  String get tabPhotos => 'Photos';
+
+  @override
+  String get tabStrength => 'Strength';
+
+  @override
+  String get tabMeals => 'Nutrition';
+
+  @override
+  String get currentWeight => 'Current Weight';
+
+  @override
+  String get rollingAverage => '7-Day Average';
+
+  @override
+  String get logWeight => 'Log Weight';
+
+  @override
+  String get enterWeightKg => 'Weight (kg)';
+
+  @override
+  String get saveWeight => 'Save Weight';
+
+  @override
+  String get weightHistory => 'Weight History';
+
+  @override
+  String get noWeightEntries => 'No weight entries logged yet';
+
+  @override
+  String get weightBoundsError => 'Weight must be between 30 and 300 kg';
+
+  @override
+  String get photosTitle => 'Physique Photos';
+
+  @override
+  String get addPhoto => 'Add Photo';
+
+  @override
+  String get comparePhotos => 'Compare';
+
+  @override
+  String get exitCompare => 'Done';
+
+  @override
+  String get selectTwoPhotos => 'Select 2 photos to compare side-by-side';
+
+  @override
+  String get frontAngle => 'Front';
+
+  @override
+  String get sideAngle => 'Side';
+
+  @override
+  String get backAngle => 'Back';
+
+  @override
+  String get allAngles => 'All';
+
+  @override
+  String get deletePhotoConfirmTitle => 'Delete Photo?';
+
+  @override
+  String get deletePhotoConfirmBody =>
+      'This will permanently delete this photo from your private sandbox.';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get noPhotos => 'No physique photos added yet';
+
+  @override
+  String get strengthTitle => 'Strength Progression';
+
+  @override
+  String get selectExercise => 'Select Exercise';
+
+  @override
+  String get noStrengthData => 'No completed strength sets yet';
+
+  @override
+  String get baselineLabel => 'Baseline';
+
+  @override
+  String get bestLabel => 'All-time Best';
+
+  @override
+  String get recentLabel => 'Recent';
+
+  @override
+  String repsDelta(int delta) {
+    return '$delta reps vs baseline';
+  }
+
+  @override
+  String get mealsTitle => 'Daily Protein Checklist';
+
+  @override
+  String get mealBreakfast => 'Breakfast';
+
+  @override
+  String get mealLunch => 'Lunch';
+
+  @override
+  String get mealDinner => 'Dinner';
+
+  @override
+  String get mealSnack1 => 'Snack 1 (Optional)';
+
+  @override
+  String get mealSnack2 => 'Snack 2 (Optional)';
+
+  @override
+  String get proteinHit => 'Protein goal met';
+
+  @override
+  String get proteinMiss => 'Not yet';
+
+  @override
+  String get proteinTipsTitle => 'Inexpensive Egyptian Protein Ideas';
+
+  @override
+  String get photoBefore => 'Before';
+
+  @override
+  String get photoAfter => 'After';
+
+  @override
+  String get editWeight => 'Edit Weight';
+
+  @override
+  String get appPrivateBadge => 'App-Private';
+
+  @override
+  String get bandFilterAll => 'All';
+
+  @override
+  String get bandFilterBodyweight => 'Bodyweight';
+
+  @override
+  String get saveFailed => 'Failed to save. Please try again.';
+
+  @override
+  String get deletePhotoFailed =>
+      'Failed to delete photo from storage. Please try again.';
+
+  @override
+  String get deletePhotoDbFailed =>
+      'Photo file removed, but database cleanup failed. Tap to retry.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get photoPendingCleanup =>
+      'Photo file removed from storage. Database record pending removal.';
+
+  @override
+  String get privateStorageNotice =>
+      'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.';
 }
