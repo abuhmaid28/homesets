@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:path_provider/path_provider.dart';
 import 'core/theme/homesets_colors.dart';
 import 'core/theme/homesets_theme.dart';
 import 'data/repositories/workout_repository.dart';
+import 'data/services/backup_archive_service.dart';
+import 'data/services/backup_platform_service.dart';
+import 'data/services/backup_staging_manager.dart';
 import 'data/services/photo_service.dart';
+import 'data/services/reminder_platform_service.dart';
 import 'domain/models/domain_models.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/settings/settings_screen.dart';
 import 'features/today/today_screen.dart';
 import 'features/progress/progress_hub_screen.dart';
 import 'features/workout/workout_player_screen.dart';
@@ -21,12 +27,20 @@ void main() async {
 class HomesetsApp extends StatefulWidget {
   final WorkoutRepository repository;
   final PhotoService? photoService;
+  final BackupPlatformService? backupPlatformService;
+  final BackupArchiveService? backupArchiveService;
+  final BackupStagingManager? backupStagingManager;
+  final ReminderPlatformService? reminderPlatformService;
   final Locale? locale;
 
   const HomesetsApp({
     super.key,
     required this.repository,
     this.photoService,
+    this.backupPlatformService,
+    this.backupArchiveService,
+    this.backupStagingManager,
+    this.reminderPlatformService,
     this.locale,
   });
 
@@ -38,8 +52,17 @@ class _HomesetsAppState extends State<HomesetsApp> {
   bool _isLoading = true;
   bool _hasProfile = false;
   bool _isEditingSettings = false;
+  bool _isViewingSettings = false;
   int _currentNavIndex = 0; // 0=Today, 1=Progress
   late final PhotoService _photoService = widget.photoService ?? AndroidPhotoService();
+  late final BackupPlatformService _backupPlatformService =
+      widget.backupPlatformService ?? const AndroidBackupPlatformService();
+  late final BackupArchiveService _backupArchiveService =
+      widget.backupArchiveService ?? const BackupArchiveService();
+  BackupStagingManager? _backupStagingManager;
+  late final ReminderPlatformService _reminderPlatformService =
+      widget.reminderPlatformService ?? const AndroidReminderPlatformService();
+
   UserProfile? _currentProfile;
   EquipmentInventory? _currentInventory;
   ScheduledSession? _activeSession;
@@ -62,6 +85,15 @@ class _HomesetsAppState extends State<HomesetsApp> {
       final validPaths = photos.map((p) => p.filePath).toList();
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
+
+    if (widget.backupStagingManager != null) {
+      _backupStagingManager = widget.backupStagingManager;
+    } else {
+      try {
+        final docsDir = await getApplicationDocumentsDirectory();
+        _backupStagingManager = BackupStagingManager(appDocsDir: docsDir);
+      } catch (_) {}
+    }
 
     if (!mounted) return;
     setState(() {
@@ -143,6 +175,31 @@ class _HomesetsAppState extends State<HomesetsApp> {
       );
     }
 
+    if (_isViewingSettings && _backupStagingManager != null) {
+      return SettingsScreen(
+        repository: widget.repository,
+        backupPlatformService: _backupPlatformService,
+        backupArchiveService: _backupArchiveService,
+        backupStagingManager: _backupStagingManager!,
+        reminderPlatformService: _reminderPlatformService,
+        onEditProfile: () async {
+          final profile = await widget.repository.getUserProfile();
+          final inventory = await widget.repository.getEquipmentInventory();
+          setState(() {
+            _currentProfile = profile;
+            _currentInventory = inventory;
+            _isEditingSettings = true;
+            _isViewingSettings = false;
+          });
+        },
+        onBack: () => setState(() => _isViewingSettings = false),
+        onDataRestored: () async {
+          await _checkInitialState();
+          if (mounted) setState(() => _isViewingSettings = false);
+        },
+      );
+    }
+
     if (_completedSession != null) {
       return SummaryScreen(
         session: _completedSession!,
@@ -167,14 +224,8 @@ class _HomesetsAppState extends State<HomesetsApp> {
           ? TodayScreen(
               repository: widget.repository,
               onStartWorkout: _onStartWorkout,
-              onOpenSettings: () async {
-                final profile = await widget.repository.getUserProfile();
-                final inventory = await widget.repository.getEquipmentInventory();
-                setState(() {
-                  _currentProfile = profile;
-                  _currentInventory = inventory;
-                  _isEditingSettings = true;
-                });
+              onOpenSettings: () {
+                setState(() => _isViewingSettings = true);
               },
             )
           : ProgressHubScreen(

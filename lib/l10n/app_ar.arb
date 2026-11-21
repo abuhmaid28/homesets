@@ -149,5 +149,76 @@
   "deletePhotoDbFailed": "تم مسح ملف الصورة ولكن تعذر تحديث السجلات. اضغط لإعادة المحاولة.",
   "retry": "إعادة المحاولة",
   "photoPendingCleanup": "تم مسح ملف الصورة من التخزين. السجل بانتظار الإزالة.",
-  "privateStorageNotice": "حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق."
+  "privateStorageNotice": "حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.",
+  "settingsTitle": "الإعدادات",
+  "profileEquipmentSettings": "الأدوات وسلامة المفاصل",
+  "profileEquipmentSubtitle": "تعديل عقلة الباب، أشرطة المقاومة، وإعدادات المفاصل",
+  "editProfile": "تعديل الأدوات والجدول",
+  "remindersSectionTitle": "التذكير اليومي المحلي",
+  "remindersToggle": "تفعيل تذكير التمرين",
+  "reminderTimeLabel": "وقت التذكير",
+  "changeTime": "تغيير الوقت",
+  "reminderShameFreeDesc": "تذكير يومي لطيف في الوقت اللي يناسب شيفتك، بدون أي لوم أو ضغط.",
+  "notificationsDisabledWarning": "الإشعارات معطلة في إعدادات النظام. يرجى تفعيلها لاستلام التذكير اليومي.",
+  "backupSectionTitle": "النسخ الاحتياطي والبيانات",
+  "backupPrivacyNotice": "تنبيه خصوصية: ملف النسخ الاحتياطي يحتوي على صور تقدمك وسجلات تمرينك الخاصة. احفظ الملف في مكان آمن ولا تشاركه مع أي شخص.",
+  "createBackup": "إنشاء نسخة احتياطية محلية",
+  "creatingBackup": "جاري تجهيز النسخة المشفرة...",
+  "backupSuccess": "تم تصدير النسخة الاحتياطية بنجاح.",
+  "backupFailed": "فشل إنشاء أو تصدير النسخة: {error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "restoreBackup": "استعادة من نسخة احتياطية",
+  "restoringBackup": "جاري استعادة البيانات والصور...",
+  "restoreSuccess": "تمت استعادة البيانات والصور بنجاح.",
+  "restoreFailed": "فشلت الاستعادة: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "restorePreviewTitle": "معاينة النسخة الاحتياطية",
+  "restoreCreatedAt": "تاريخ الإنشاء: {date}",
+  "@restoreCreatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "restoreAppVersion": "إصدار التطبيق: {version}",
+  "@restoreAppVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "restoreRecordCountsTitle": "محتويات النسخة:",
+  "restoreWorkoutsCount": "جلسات التمرين: {count}",
+  "@restoreWorkoutsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreSetsCount": "سجلات المجاميع: {count}",
+  "@restoreSetsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreWeightsCount": "سجلات الوزن: {count}",
+  "@restoreWeightsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restorePhotosCount": "صور التقدم: {count}",
+  "@restorePhotosCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreDestructiveWarning": "تنبيه هام: الاستعادة ستستبدل جميع سجلاتك الحالية، الصور، والإعدادات بالبيانات الموجودة في ملف النسخة الاحتياطية. هذا الإجراء نهائي ولا يمكن التراجع عنه.",
+  "restoreConfirmButton": "استبدال البيانات واستعادة",
+  "restoreCancelButton": "إلغاء"
 }
