@@ -16,9 +16,9 @@
 
 | WP | Focus Area | Status | Deliverables & Verification Evidence |
 | :--- | :--- | :--- | :--- |
-| **WP01** | Baseline & Repo Preflight | **IN PROGRESS** | Clean branch `campaign/p6-reliability` from verified `main` (`162854f`); baseline CI green (#44941791205); checkpoint established. |
-| **WP02** | Architecture & Threat Model | **PENDING** | `docs/architecture/BACKUP_RESTORE_THREAT_MODEL.md` documenting trust boundaries, zip-slip, decompression bombs, and rollback rules. |
-| **WP03** | Dependency/License/Permission Packet | **PENDING** | `docs/proposals/P6_DEPENDENCY_AND_PERMISSION_PROPOSAL.md` evaluating `archive`, `crypto`, `flutter_local_notifications`, `POST_NOTIFICATIONS`. |
+| **WP01** | Baseline & Repo Preflight | **DONE** | Clean branch `campaign/p6-reliability` from verified `main` (`162854f`); baseline CI green (#44941791205); checkpoint established; Draft PR #18 opened. |
+| **WP02** | Architecture & Threat Model | **DONE** | `docs/architecture/BACKUP_RESTORE_THREAT_MODEL.md` documenting trust boundaries, zip-slip, decompression bombs, and rollback rules. |
+| **WP03** | Dependency/License/Permission Packet | **DONE** | `docs/proposals/P6_DEPENDENCY_AND_PERMISSION_PROPOSAL.md` evaluating `archive`, `crypto`, `flutter_local_notifications`, `POST_NOTIFICATIONS`; Option A (0 new deps) recommended. |
 | **WP04** | Full Data Snapshot Contract | **PENDING** | `lib/domain/backup/backup_models.dart` defining complete P0–P5 snapshot contract across all SQLite tables. |
 | **WP05** | Backup Manifest & Integrity Checks | **PENDING** | Deterministic manifest schema, SHA-256 checksums, version checks, file inventory. |
 | **WP06** | Bounded Archive Serialization | **PENDING** | Bounded memory/size archive container format, path traversal protection, duplicate entry rejection. |
