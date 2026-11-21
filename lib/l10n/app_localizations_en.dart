@@ -388,4 +388,118 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get privateStorageNotice =>
       'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get profileEquipmentSettings => 'Equipment & Joint Profile';
+
+  @override
+  String get profileEquipmentSubtitle =>
+      'Adjust pull-up bar, resistance bands, and joint safety preferences';
+
+  @override
+  String get editProfile => 'Edit Profile & Equipment';
+
+  @override
+  String get remindersSectionTitle => 'Daily Local Reminder';
+
+  @override
+  String get remindersToggle => 'Enable Workout Reminder';
+
+  @override
+  String get reminderTimeLabel => 'Reminder Time';
+
+  @override
+  String get changeTime => 'Change Time';
+
+  @override
+  String get reminderShameFreeDesc =>
+      'A gentle daily nudge for your workout when it fits your shift, completely guilt-free.';
+
+  @override
+  String get notificationsDisabledWarning =>
+      'Notifications are disabled in system settings. Enable notifications to receive daily reminders.';
+
+  @override
+  String get backupSectionTitle => 'Backup & Local Data';
+
+  @override
+  String get backupPrivacyNotice =>
+      'Privacy Notice: The backup file includes your private progress photos, workout history, and personal logs. Store it safely and do not share it with untrusted parties.';
+
+  @override
+  String get createBackup => 'Create Offline Backup';
+
+  @override
+  String get creatingBackup => 'Packaging secure backup...';
+
+  @override
+  String get backupSuccess => 'Backup exported successfully.';
+
+  @override
+  String backupFailed(String error) {
+    return 'Failed to create or export backup: $error';
+  }
+
+  @override
+  String get restoreBackup => 'Restore from Backup';
+
+  @override
+  String get restoringBackup => 'Restoring backup data...';
+
+  @override
+  String get restoreSuccess => 'Data and photos restored successfully.';
+
+  @override
+  String restoreFailed(String error) {
+    return 'Restore failed: $error';
+  }
+
+  @override
+  String get restorePreviewTitle => 'Restore Backup Preview';
+
+  @override
+  String restoreCreatedAt(String date) {
+    return 'Created: $date';
+  }
+
+  @override
+  String restoreAppVersion(String version) {
+    return 'App Version: $version';
+  }
+
+  @override
+  String get restoreRecordCountsTitle => 'Archive Contents:';
+
+  @override
+  String restoreWorkoutsCount(int count) {
+    return 'Workout Sessions: $count';
+  }
+
+  @override
+  String restoreSetsCount(int count) {
+    return 'Set Logs: $count';
+  }
+
+  @override
+  String restoreWeightsCount(int count) {
+    return 'Weight Logs: $count';
+  }
+
+  @override
+  String restorePhotosCount(int count) {
+    return 'Progress Photos: $count';
+  }
+
+  @override
+  String get restoreDestructiveWarning =>
+      'WARNING: Restoring will completely replace all existing workout logs, settings, and progress photos with the contents of this backup file. This action cannot be undone.';
+
+  @override
+  String get restoreConfirmButton => 'Replace Data & Restore';
+
+  @override
+  String get restoreCancelButton => 'Cancel';
 }

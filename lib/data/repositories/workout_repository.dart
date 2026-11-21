@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import '../../domain/backup/backup_models.dart';
 import '../../domain/models/domain_models.dart';
+import '../../domain/models/reminder_settings.dart';
 import '../database/database_helper.dart';
 
 class ActiveSessionSnapshot {
@@ -880,6 +881,7 @@ class WorkoutRepository {
     final weightRows = await db.query('weight_entries');
     final photoRows = await db.query('progress_photos');
     final mealRows = await db.query('daily_meal_checks');
+    final reminderRows = await db.query('reminder_settings', limit: 1);
 
     return HomesetsDataSnapshot(
       userProfile: profileRows.isNotEmpty ? profileRows.first : null,
@@ -891,6 +893,7 @@ class WorkoutRepository {
       weightEntries: weightRows,
       progressPhotos: photoRows,
       dailyMealChecks: mealRows,
+      reminderSettings: reminderRows.isNotEmpty ? reminderRows.first : null,
     );
   }
 
@@ -909,6 +912,7 @@ class WorkoutRepository {
       await txn.delete('weight_entries');
       await txn.delete('progress_photos');
       await txn.delete('daily_meal_checks');
+      await txn.delete('reminder_settings');
 
       // 2. Insert user profile
       if (snapshot.userProfile != null) {
@@ -963,6 +967,32 @@ class WorkoutRepository {
         await txn.insert('daily_meal_checks', row,
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
+
+      // 11. Insert reminder settings
+      if (snapshot.reminderSettings != null) {
+        await txn.insert('reminder_settings', snapshot.reminderSettings!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
     });
+  }
+
+  /// Retrieves local daily reminder settings (WP16).
+  Future<ReminderSettings> getReminderSettings() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('reminder_settings', limit: 1);
+    if (rows.isEmpty) {
+      return ReminderSettings(updatedAt: DateTime.now());
+    }
+    return ReminderSettings.fromMap(rows.first);
+  }
+
+  /// Persists local daily reminder settings (WP16).
+  Future<void> saveReminderSettings(ReminderSettings settings) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'reminder_settings',
+      settings.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }

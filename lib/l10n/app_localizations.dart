@@ -823,6 +823,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.'**
   String get privateStorageNotice;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @profileEquipmentSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment & Joint Profile'**
+  String get profileEquipmentSettings;
+
+  /// No description provided for @profileEquipmentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust pull-up bar, resistance bands, and joint safety preferences'**
+  String get profileEquipmentSubtitle;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile & Equipment'**
+  String get editProfile;
+
+  /// No description provided for @remindersSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Local Reminder'**
+  String get remindersSectionTitle;
+
+  /// No description provided for @remindersToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Workout Reminder'**
+  String get remindersToggle;
+
+  /// No description provided for @reminderTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder Time'**
+  String get reminderTimeLabel;
+
+  /// No description provided for @changeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Time'**
+  String get changeTime;
+
+  /// No description provided for @reminderShameFreeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'A gentle daily nudge for your workout when it fits your shift, completely guilt-free.'**
+  String get reminderShameFreeDesc;
+
+  /// No description provided for @notificationsDisabledWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are disabled in system settings. Enable notifications to receive daily reminders.'**
+  String get notificationsDisabledWarning;
+
+  /// No description provided for @backupSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Local Data'**
+  String get backupSectionTitle;
+
+  /// No description provided for @backupPrivacyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Notice: The backup file includes your private progress photos, workout history, and personal logs. Store it safely and do not share it with untrusted parties.'**
+  String get backupPrivacyNotice;
+
+  /// No description provided for @createBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Offline Backup'**
+  String get createBackup;
+
+  /// No description provided for @creatingBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Packaging secure backup...'**
+  String get creatingBackup;
+
+  /// No description provided for @backupSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported successfully.'**
+  String get backupSuccess;
+
+  /// No description provided for @backupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to create or export backup: {error}'**
+  String backupFailed(String error);
+
+  /// No description provided for @restoreBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from Backup'**
+  String get restoreBackup;
+
+  /// No description provided for @restoringBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring backup data...'**
+  String get restoringBackup;
+
+  /// No description provided for @restoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Data and photos restored successfully.'**
+  String get restoreSuccess;
+
+  /// No description provided for @restoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed: {error}'**
+  String restoreFailed(String error);
+
+  /// No description provided for @restorePreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Backup Preview'**
+  String get restorePreviewTitle;
+
+  /// No description provided for @restoreCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Created: {date}'**
+  String restoreCreatedAt(String date);
+
+  /// No description provided for @restoreAppVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'App Version: {version}'**
+  String restoreAppVersion(String version);
+
+  /// No description provided for @restoreRecordCountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive Contents:'**
+  String get restoreRecordCountsTitle;
+
+  /// No description provided for @restoreWorkoutsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Sessions: {count}'**
+  String restoreWorkoutsCount(int count);
+
+  /// No description provided for @restoreSetsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Logs: {count}'**
+  String restoreSetsCount(int count);
+
+  /// No description provided for @restoreWeightsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight Logs: {count}'**
+  String restoreWeightsCount(int count);
+
+  /// No description provided for @restorePhotosCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress Photos: {count}'**
+  String restorePhotosCount(int count);
+
+  /// No description provided for @restoreDestructiveWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Restoring will completely replace all existing workout logs, settings, and progress photos with the contents of this backup file. This action cannot be undone.'**
+  String get restoreDestructiveWarning;
+
+  /// No description provided for @restoreConfirmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace Data & Restore'**
+  String get restoreConfirmButton;
+
+  /// No description provided for @restoreCancelButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get restoreCancelButton;
 }
 
 class _AppLocalizationsDelegate

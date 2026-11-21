@@ -11,6 +11,7 @@ class HomesetsDataSnapshot {
   final List<Map<String, dynamic>> weightEntries;
   final List<Map<String, dynamic>> progressPhotos;
   final List<Map<String, dynamic>> dailyMealChecks;
+  final Map<String, dynamic>? reminderSettings;
 
   const HomesetsDataSnapshot({
     this.userProfile,
@@ -22,6 +23,7 @@ class HomesetsDataSnapshot {
     this.weightEntries = const [],
     this.progressPhotos = const [],
     this.dailyMealChecks = const [],
+    this.reminderSettings,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class HomesetsDataSnapshot {
       'weight_entries': weightEntries,
       'progress_photos': progressPhotos,
       'daily_meal_checks': dailyMealChecks,
+      'reminder_settings': reminderSettings,
     };
   }
 
@@ -68,6 +71,7 @@ class HomesetsDataSnapshot {
               ?.map((e) => Map<String, dynamic>.from(e as Map))
               .toList() ??
           const [],
+      reminderSettings: json['reminder_settings'] as Map<String, dynamic>?,
     );
   }
 
@@ -82,6 +86,7 @@ class HomesetsDataSnapshot {
       'weight_entries': weightEntries.length,
       'progress_photos': progressPhotos.length,
       'daily_meal_checks': dailyMealChecks.length,
+      'reminder_settings': reminderSettings != null ? 1 : 0,
     };
   }
 }
