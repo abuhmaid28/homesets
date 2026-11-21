@@ -58,7 +58,12 @@ This document fulfills **WP03** by comparing:
 ## 3. Specific Owner Decisions Requested (GOV25-PENDING)
 
 ### Decision Item 1: Android Manifest Permissions for Reminders
-- **Proposed Diff to `android/app/src/main/AndroidManifest.xml`:**
+- **Current State (GOV24 / GOV25-PENDING):**
+  - Release `AndroidManifest.xml` has **0 permissions**.
+  - `HomesetsReminderReceiver` is declared as an internal receiver (`android:exported="false"`, requiring 0 permissions).
+  - Alarms schedule via `AlarmManager.setInexactRepeating` (requiring 0 exact-alarm permissions).
+  - On Android 13+ without `POST_NOTIFICATIONS`, notification dispatch is safely bypassed, and Settings UI displays an informative banner informing the user that notifications are disabled.
+- **Proposed Diff to `android/app/src/main/AndroidManifest.xml` upon GOV25 approval:**
   ```xml
   <!-- Optional daily workout reminder on Android 13+ (API 33+) -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -72,8 +77,9 @@ This document fulfills **WP03** by comparing:
 
 ### Decision Item 2: Dependency Strategy
 - **Recommendation:** **Zero new dependencies.**
-  Implement backup archive container using native Android `java.util.zip` and pure Dart container codec, and reminders using native Android `NotificationManager` via `MethodChannel`.
-  This maintains strict compliance with GOV16/GOV21 lockfile enforcement.
+  - Backup archive container implemented with standard PKWARE ZIP codec (`ZipCodec`) and bounded stream inflation, protected against zip-bombs and zip-slip.
+  - Cryptographic checksums implemented with pure Dart 256-bit hash, documented honestly in `manifest.checksumAlgorithm = "homesets-v1-digest"`. If standard FIPS 180-4 SHA-256 is desired, official `package:crypto` can be approved under GOV25.
+  - Maintains strict compliance with GOV16/GOV21 lockfile enforcement.
 
 ---
 

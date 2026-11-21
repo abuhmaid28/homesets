@@ -411,10 +411,12 @@ class MainActivity : FlutterActivity() {
 
     private fun scheduleAlarm(hour: Int, minute: Int, title: String, body: String) {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
+            action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
+            putExtra("title", title)
+            putExtra("body", body)
         }
-        val pendingIntent = PendingIntent.getActivity(
+        val pendingIntent = PendingIntent.getBroadcast(
             this,
             REMINDER_REQUEST_CODE,
             intent,
@@ -442,8 +444,10 @@ class MainActivity : FlutterActivity() {
 
     private fun cancelAlarm() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
+        val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
+            action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
             this,
             REMINDER_REQUEST_CODE,
             intent,

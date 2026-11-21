@@ -274,7 +274,10 @@ void main() {
       // Tap "Replace Data & Restore"
       final confirmBtn = find.text('Replace Data & Restore');
       await tester.tap(confirmBtn);
-      await pumpAsync(tester, 15);
+      for (var i = 0; i < 40; i++) {
+        await pumpAsync(tester, 2);
+        if (dataRestoredCalled) break;
+      }
 
       expect(dataRestoredCalled, isTrue);
       expect(find.text('Data and photos restored successfully.'), findsOneWidget);

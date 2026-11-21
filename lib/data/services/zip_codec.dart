@@ -155,14 +155,31 @@ class ZipCodec {
     return out.toBytes();
   }
 
+  static const int defaultMaxFileCount = 1000;
+  static const int defaultMaxArchiveBytes = 250 * 1024 * 1024; // 250 MB
+  static const int defaultMaxUncompressedBytes = 500 * 1024 * 1024; // 500 MB
+  static const int defaultMaxEntryUncompressedBytes = 250 * 1024 * 1024; // 250 MB
+  static const int defaultMaxExpansionRatio = 100;
+
   /// Decodes a ZIP archive binary into a list of [ZipEntry] items.
   /// Throws [FormatException] on invalid or truncated data.
-  static List<ZipEntry> decode(Uint8List zipBytes) {
-    final byteData = ByteData.sublistView(zipBytes);
+  static List<ZipEntry> decode(
+    Uint8List zipBytes, {
+    int maxFileCount = defaultMaxFileCount,
+    int maxArchiveBytes = defaultMaxArchiveBytes,
+    int maxUncompressedBytes = defaultMaxUncompressedBytes,
+    int maxEntryUncompressedBytes = defaultMaxEntryUncompressedBytes,
+    int maxExpansionRatio = defaultMaxExpansionRatio,
+  }) {
     final len = zipBytes.length;
+    if (len > maxArchiveBytes) {
+      throw FormatException('Archive exceeds maximum allowed size ($len > $maxArchiveBytes bytes)');
+    }
     if (len < 22) {
       throw const FormatException('File too small to be a valid ZIP archive');
     }
+
+    final byteData = ByteData.sublistView(zipBytes);
 
     // Search for End of Central Directory (EOCD) signature from the back
     var eocdOffset = -1;
@@ -178,6 +195,10 @@ class ZipCodec {
     }
 
     final totalEntries = byteData.getUint16(eocdOffset + 10, Endian.little);
+    if (totalEntries > maxFileCount) {
+      throw FormatException('Archive contains $totalEntries entries, exceeding maximum file count of $maxFileCount');
+    }
+
     final cdSize = byteData.getUint32(eocdOffset + 12, Endian.little);
     final cdOffset = byteData.getUint32(eocdOffset + 16, Endian.little);
 
@@ -186,6 +207,8 @@ class ZipCodec {
     }
 
     final entries = <ZipEntry>[];
+    final seenPaths = <String>{};
+    var cumulativeUncompressedBytes = 0;
     var offset = cdOffset;
 
     for (var i = 0; i < totalEntries; i++) {
@@ -215,6 +238,24 @@ class ZipCodec {
       final path = utf8.decode(zipBytes.sublist(nameStart, nameStart + nameLen));
       offset += 46 + nameLen + extraLen + commentLen;
 
+      // Hostile zip checks BEFORE decompression
+      if (path.contains('..') || path.startsWith('/') || path.startsWith('\\') || path.contains(':')) {
+        throw FormatException('Path traversal attempt in entry: $path');
+      }
+      if (!seenPaths.add(path)) {
+        throw FormatException('Duplicate entry path in archive: $path');
+      }
+      if (uncompressedSize > maxEntryUncompressedBytes) {
+        throw FormatException('Entry $path uncompressed size ($uncompressedSize) exceeds limit ($maxEntryUncompressedBytes)');
+      }
+      cumulativeUncompressedBytes += uncompressedSize;
+      if (cumulativeUncompressedBytes > maxUncompressedBytes) {
+        throw FormatException('Archive cumulative uncompressed size exceeds limit ($maxUncompressedBytes bytes)');
+      }
+      if (compressedSize > 0 && (uncompressedSize ~/ compressedSize) > maxExpansionRatio) {
+        throw FormatException('Suspicious compression ratio (zip bomb) in $path: $uncompressedSize / $compressedSize');
+      }
+
       // Read from Local Header to extract file data
       if (localHeaderOffset + 30 > len) {
         throw const FormatException('Corrupt ZIP: Local header offset extends beyond archive');
@@ -239,7 +280,21 @@ class ZipCodec {
       if (method == 0) {
         decompressed = rawBytes;
       } else if (method == 8) {
-        decompressed = Uint8List.fromList(ZLibDecoder(raw: true).convert(rawBytes));
+        final out = BytesBuilder(copy: false);
+        var written = 0;
+        final sink = ChunkedConversionSink<List<int>>.withCallback((chunks) {
+          for (final chunk in chunks) {
+            written += chunk.length;
+            if (written > uncompressedSize) {
+              throw FormatException('Decompressed bytes exceed declared header size in $path');
+            }
+            out.add(chunk);
+          }
+        });
+        final inputSink = ZLibDecoder(raw: true).startChunkedConversion(sink);
+        inputSink.add(rawBytes);
+        inputSink.close();
+        decompressed = out.toBytes();
       } else {
         throw FormatException('Unsupported ZIP compression method: $method');
       }

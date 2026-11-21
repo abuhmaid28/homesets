@@ -89,6 +89,17 @@ class HomesetsDataSnapshot {
       'reminder_settings': reminderSettings != null ? 1 : 0,
     };
   }
+
+  Map<String, int> get recordCounts => computeRecordCounts();
+}
+
+/// Thrown when validation or creation of a backup fails closed.
+class BackupValidationException implements Exception {
+  final String message;
+  const BackupValidationException(this.message);
+
+  @override
+  String toString() => 'BackupValidationException: $message';
 }
 
 /// Metadata entry for a single physical file bundled in a backup (WP05).
@@ -128,6 +139,7 @@ class BackupManifest {
   final String createdAt;
   final String devicePlatform;
   final String dataSnapshotChecksum;
+  final String checksumAlgorithm;
   final Map<String, int> recordCounts;
   final List<BackupFileEntry> files;
   final int totalFilesCount;
@@ -140,6 +152,7 @@ class BackupManifest {
     required this.createdAt,
     required this.devicePlatform,
     required this.dataSnapshotChecksum,
+    this.checksumAlgorithm = 'homesets-v1-digest',
     required this.recordCounts,
     required this.files,
     required this.totalFilesCount,
@@ -153,6 +166,7 @@ class BackupManifest {
         'createdAt': createdAt,
         'devicePlatform': devicePlatform,
         'dataSnapshotChecksum': dataSnapshotChecksum,
+        'checksumAlgorithm': checksumAlgorithm,
         'recordCounts': recordCounts,
         'files': files.map((f) => f.toJson()).toList(),
         'totalFilesCount': totalFilesCount,
@@ -160,12 +174,13 @@ class BackupManifest {
       };
 
   factory BackupManifest.fromJson(Map<String, dynamic> json) => BackupManifest(
-        formatVersion: json['formatVersion'] as int? ?? 1,
+        formatVersion: json['formatVersion'] as int,
         appVersion: json['appVersion'] as String? ?? '1.0.0+1',
-        databaseSchemaVersion: json['databaseSchemaVersion'] as int? ?? 2,
+        databaseSchemaVersion: json['databaseSchemaVersion'] as int,
         createdAt: json['createdAt'] as String,
         devicePlatform: json['devicePlatform'] as String? ?? 'android',
         dataSnapshotChecksum: json['dataSnapshotChecksum'] as String,
+        checksumAlgorithm: json['checksumAlgorithm'] as String? ?? 'homesets-v1-digest',
         recordCounts: Map<String, int>.from(json['recordCounts'] as Map),
         files: (json['files'] as List<dynamic>?)
                 ?.map((e) => BackupFileEntry.fromJson(Map<String, dynamic>.from(e as Map)))

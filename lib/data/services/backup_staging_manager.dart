@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:homesets/domain/backup/backup_models.dart';
 
@@ -11,7 +12,7 @@ class BackupRestoreException implements Exception {
   String toString() => 'BackupRestoreException: $message ${cause != null ? '($cause)' : ''}';
 }
 
-/// Manages staging directories, atomic file swaps, and failure rollbacks for backups.
+/// Manages staging directories, atomic file swaps, crash journals, and failure rollbacks for backups.
 class BackupStagingManager {
   final Directory appDocsDir;
 
@@ -20,6 +21,7 @@ class BackupStagingManager {
   Directory get stagingDir => Directory('${appDocsDir.path}/backup_staging');
   Directory get photosDir => Directory('${appDocsDir.path}/progress_photos');
   Directory get photosBackupDir => Directory('${appDocsDir.path}/progress_photos_rollback');
+  File get journalFile => File('${appDocsDir.path}/.restore_journal.json');
 
   /// Completely purges the backup staging directory.
   Future<void> cleanStaging() async {
@@ -44,28 +46,81 @@ class BackupStagingManager {
     return stagingDir;
   }
 
-  /// Executes a resilient two-phase restoration of both photo files and SQLite database.
-  ///
-  /// If any error occurs during either the file copy or the database restoration,
-  /// original photo files and database state are rolled back cleanly, leaving
-  /// current user data untouched.
+  /// Recovers any pending restoration from a crash or process kill based on the persistent journal.
+  Future<bool> recoverPendingJournal() async {
+    try {
+      if (await journalFile.exists()) {
+        final content = await journalFile.readAsString();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        final phase = data['phase'] as String? ?? '';
+        final hadOriginalPhotos = data['hadOriginalPhotos'] as bool? ?? true;
+
+        if (phase == 'PHOTOS_PRESERVED') {
+          // Crash occurred before DB commit; roll back photos to original state
+          if (await photosDir.exists()) {
+            await photosDir.delete(recursive: true);
+          }
+          if (hadOriginalPhotos && await photosBackupDir.exists()) {
+            await _restoreBackupDir();
+          }
+        } else if (phase == 'DB_COMMITTED') {
+          // Crash occurred after DB commit; finalize photos by removing backup directory
+          if (await photosBackupDir.exists()) {
+            await photosBackupDir.delete(recursive: true);
+          }
+        }
+
+        await cleanStaging();
+        if (await journalFile.exists()) {
+          await journalFile.delete();
+        }
+        return true;
+      } else if (await photosBackupDir.exists()) {
+        if (!await photosDir.exists()) {
+          await _restoreBackupDir();
+        } else {
+          await photosBackupDir.delete(recursive: true);
+        }
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Executes a durable restart-safe two-phase restoration of both photo files and SQLite database.
   Future<void> executeTwoPhaseRestore({
     required HomesetsDataSnapshot snapshot,
     required List<File> stagedPhotos,
     required Future<void> Function() onDbRestore,
   }) async {
-    var photosSwapped = false;
+    // 1. Recover any pending journal before starting
+    await recoverPendingJournal();
+
+    var hadOriginalPhotos = false;
+    if (await photosDir.exists()) {
+      final list = await photosDir.list().toList();
+      hadOriginalPhotos = list.isNotEmpty;
+    }
+
+    var phase = 'INIT';
 
     try {
-      // Clean any leftover rollback directory
-      if (await photosBackupDir.exists()) {
-        await photosBackupDir.delete(recursive: true);
-      }
+      // Step 1: Write journal before modifying photos on disk
+      await journalFile.writeAsString(
+        jsonEncode({
+          'phase': 'PHOTOS_PRESERVED',
+          'hadOriginalPhotos': hadOriginalPhotos,
+          'timestamp': DateTime.now().toUtc().toIso8601String(),
+        }),
+        flush: true,
+      );
+      phase = 'PHOTOS_PRESERVED';
 
-      // Step 1: Preserve existing photos directory if it exists
-      if (await photosDir.exists()) {
+      if (hadOriginalPhotos) {
+        if (await photosBackupDir.exists()) {
+          await photosBackupDir.delete(recursive: true);
+        }
         await photosDir.rename(photosBackupDir.path);
-        photosSwapped = true;
       }
       await photosDir.create(recursive: true);
 
@@ -79,40 +134,76 @@ class BackupStagingManager {
       // Step 3: Execute atomic database transaction
       await onDbRestore();
 
-      // Step 4: Success - commit by purging the rollback backup directory
-      if (photosSwapped && await photosBackupDir.exists()) {
+      // Step 4: Record DB_COMMITTED in journal
+      await journalFile.writeAsString(
+        jsonEncode({
+          'phase': 'DB_COMMITTED',
+          'hadOriginalPhotos': hadOriginalPhotos,
+          'timestamp': DateTime.now().toUtc().toIso8601String(),
+        }),
+        flush: true,
+      );
+      phase = 'DB_COMMITTED';
+
+      // Step 5: Success - purge rollback backup directory and journal
+      if (hadOriginalPhotos && await photosBackupDir.exists()) {
         await photosBackupDir.delete(recursive: true);
       }
       await cleanStaging();
+      if (await journalFile.exists()) {
+        await journalFile.delete();
+      }
     } catch (e) {
-      // Step 5: Rollback on failure
+      // Step 6: Rollback on failure
+      var rollbackSucceeded = false;
       try {
-        if (photosSwapped) {
+        if (phase == 'DB_COMMITTED') {
+          // DB was already committed; do NOT revert photos
+          if (await photosBackupDir.exists()) {
+            await photosBackupDir.delete(recursive: true);
+          }
+          rollbackSucceeded = true;
+        } else if (phase == 'PHOTOS_PRESERVED') {
           if (await photosDir.exists()) {
             await photosDir.delete(recursive: true);
           }
-          if (await photosBackupDir.exists()) {
-            try {
-              await photosBackupDir.rename(photosDir.path);
-            } catch (_) {
-              // Fallback if atomic rename across mounts or locks fails
-              await photosDir.create(recursive: true);
-              await for (final entity in photosBackupDir.list(recursive: false)) {
-                if (entity is File) {
-                  final filename = entity.uri.pathSegments.last;
-                  await entity.copy('${photosDir.path}/$filename');
-                }
-              }
-              await photosBackupDir.delete(recursive: true);
-            }
+          if (hadOriginalPhotos && await photosBackupDir.exists()) {
+            await _restoreBackupDir();
+            rollbackSucceeded = await photosDir.exists();
+          } else if (!hadOriginalPhotos) {
+            rollbackSucceeded = true;
           }
+        } else {
+          rollbackSucceeded = true;
         }
-      } catch (rollbackError) {
-        // Log rollback error while retaining root cause
+      } catch (_) {
+        rollbackSucceeded = false;
       } finally {
         await cleanStaging();
+        if (await journalFile.exists()) {
+          await journalFile.delete();
+        }
+      }
+
+      if (!rollbackSucceeded) {
+        throw BackupRestoreException('Failed to restore backup and rollback encountered errors', e);
       }
       throw BackupRestoreException('Failed to restore backup, rolled back to original state', e);
+    }
+  }
+
+  Future<void> _restoreBackupDir() async {
+    try {
+      await photosBackupDir.rename(photosDir.path);
+    } catch (_) {
+      await photosDir.create(recursive: true);
+      await for (final entity in photosBackupDir.list(recursive: false)) {
+        if (entity is File) {
+          final filename = entity.uri.pathSegments.last;
+          await entity.copy('${photosDir.path}/$filename');
+        }
+      }
+      await photosBackupDir.delete(recursive: true);
     }
   }
 }

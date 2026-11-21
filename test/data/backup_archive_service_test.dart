@@ -121,7 +121,7 @@ void main() {
       );
 
       expect(result.isValid, isFalse);
-      expect(result.error, contains('Path traversal attempt detected'));
+      expect(result.error, contains('Path traversal attempt'));
 
       // Verify that malicious file was not written outside staging
       final outsideFile = File('${tempDir.path}/outside_file.txt');
@@ -224,10 +224,10 @@ void main() {
       );
 
       expect(result.isValid, isFalse);
-      expect(result.error, contains('format version (99) is newer than supported'));
+      expect(result.error, contains('format version (99)'));
     });
 
-    test('THREAT-05: Missing referenced photo is reported in warnings', () async {
+    test('THREAT-05: Missing referenced photo throws BackupValidationException on export', () async {
       const snapshot = HomesetsDataSnapshot(
         workoutSessions: [],
         setLogs: [],
@@ -245,20 +245,14 @@ void main() {
       );
 
       final archivePath = '${tempDir.path}/missing_photo.homesets';
-      final file = await archiveService.createBackupArchive(
-        snapshot: snapshot,
-        photoFiles: [], // Photo not included in archive
-        outputFilePath: archivePath,
+      expect(
+        () => archiveService.createBackupArchive(
+          snapshot: snapshot,
+          photoFiles: [], // Photo not included in archive
+          outputFilePath: archivePath,
+        ),
+        throwsA(isA<BackupValidationException>()),
       );
-
-      final result = await archiveService.validateAndExtractArchive(
-        archiveFile: file,
-        stagingDir: stagingDir,
-      );
-
-      expect(result.isValid, isTrue);
-      expect(result.warnings.length, equals(1));
-      expect(result.warnings.first, contains('is missing from archive files'));
     });
 
     test('BackupStagingManager two-phase restore rolls back photos when DB restore fails', () async {

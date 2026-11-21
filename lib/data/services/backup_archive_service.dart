@@ -76,7 +76,7 @@ class BackupArchiveService {
 
     for (final photoFile in photoFiles) {
       if (!await photoFile.exists()) {
-        continue;
+        throw BackupValidationException('Missing tracked photo file on disk: ${photoFile.path}');
       }
       final rawPhotoBytes = await photoFile.readAsBytes();
       final filename = photoFile.uri.pathSegments.last;
@@ -95,6 +95,12 @@ class BackupArchiveService {
       ));
 
       totalBytes += rawPhotoBytes.length;
+    }
+
+    if (fileEntries.length != snapshot.progressPhotos.length) {
+      throw BackupValidationException(
+        'Photo count mismatch: snapshot declares ${snapshot.progressPhotos.length} photos, but ${fileEntries.length} files were provided',
+      );
     }
 
     // 3. Create Manifest
@@ -252,17 +258,17 @@ class BackupArchiveService {
         return BackupValidationResult.failure('Invalid manifest.json content: $e');
       }
 
-      if (manifest.formatVersion > supportedFormatVersion) {
+      if (manifest.formatVersion < 1 || manifest.formatVersion > supportedFormatVersion) {
         await _purgeDirectory(extractDir);
         return BackupValidationResult.failure(
-          'Backup format version (${manifest.formatVersion}) is newer than supported ($supportedFormatVersion). Please update HOMESETS.',
+          'Backup format version (${manifest.formatVersion}) is not supported. Supported versions: 1 to $supportedFormatVersion.',
         );
       }
 
-      if (manifest.databaseSchemaVersion > currentDatabaseSchemaVersion) {
+      if (manifest.databaseSchemaVersion < 1 || manifest.databaseSchemaVersion > currentDatabaseSchemaVersion) {
         await _purgeDirectory(extractDir);
         return BackupValidationResult.failure(
-          'Database schema version (${manifest.databaseSchemaVersion}) is newer than supported ($currentDatabaseSchemaVersion). Please update HOMESETS.',
+          'Database schema version (${manifest.databaseSchemaVersion}) is not supported. Supported versions: 1 to $currentDatabaseSchemaVersion.',
         );
       }
 
@@ -295,7 +301,7 @@ class BackupArchiveService {
         }
       }
 
-      // 8. Parse Data Snapshot & Check Referential Integrity (THREAT-05)
+      // 8. Parse Data Snapshot & Strict Record & Photo Matching (THREAT-05 & P6-R06)
       HomesetsDataSnapshot snapshot;
       try {
         final snapshotMap = jsonDecode(utf8.decode(dataEntry.data)) as Map<String, dynamic>;
@@ -305,16 +311,47 @@ class BackupArchiveService {
         return BackupValidationResult.failure('Invalid data.json content: $e');
       }
 
-      final warnings = <String>[];
+      // Strict record count verification
+      final actualCounts = snapshot.computeRecordCounts();
+      for (final entry in manifest.recordCounts.entries) {
+        final actual = actualCounts[entry.key] ?? 0;
+        if (actual != entry.value) {
+          await _purgeDirectory(extractDir);
+          return BackupValidationResult.failure(
+            'Record count mismatch for ${entry.key}: manifest declared ${entry.value}, snapshot has $actual',
+          );
+        }
+      }
+
+      // Strict bidirectional photo file verification
       final extractedPhotoNames = extractedPhotos.map((f) => f.uri.pathSegments.last).toSet();
+      final snapshotPhotoNames = <String>{};
 
       for (final photoEntry in snapshot.progressPhotos) {
         final filePath = photoEntry['file_path'] as String? ?? '';
         final photoId = photoEntry['id'] as String? ?? 'unknown';
         final expectedName = filePath.split('/').last.split('\\').last;
-        if (expectedName.isNotEmpty && !extractedPhotoNames.contains(expectedName)) {
-          warnings.add('Photo entry $photoId ($expectedName) is missing from archive files');
+        if (expectedName.isEmpty || !extractedPhotoNames.contains(expectedName)) {
+          await _purgeDirectory(extractDir);
+          return BackupValidationResult.failure(
+            'Referenced photo file for entry $photoId ($expectedName) is missing from archive',
+          );
         }
+        snapshotPhotoNames.add(expectedName);
+      }
+
+      if (extractedPhotos.length != manifest.files.length) {
+        await _purgeDirectory(extractDir);
+        return BackupValidationResult.failure(
+          'Extracted photo count (${extractedPhotos.length}) does not match manifest file count (${manifest.files.length})',
+        );
+      }
+
+      if (manifest.files.length != snapshot.progressPhotos.length) {
+        await _purgeDirectory(extractDir);
+        return BackupValidationResult.failure(
+          'Manifest file count (${manifest.files.length}) does not match snapshot photo count (${snapshot.progressPhotos.length})',
+        );
       }
 
       return BackupValidationResult(
@@ -322,7 +359,7 @@ class BackupArchiveService {
         manifest: manifest,
         snapshot: snapshot,
         photoFiles: extractedPhotos,
-        warnings: warnings,
+        warnings: const [],
       );
     } catch (e) {
       return BackupValidationResult.failure('Archive validation error: $e');

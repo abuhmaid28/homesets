@@ -58,6 +58,8 @@ class DefaultBackupHashProvider implements BackupHashProvider {
   }
 
   static String _toHex64(int val) {
-    return (val & 0xFFFFFFFFFFFFFFFF).toRadixString(16).padLeft(16, '0');
+    final high = (val >>> 32) & 0xFFFFFFFF;
+    final low = val & 0xFFFFFFFF;
+    return high.toRadixString(16).padLeft(8, '0') + low.toRadixString(16).padLeft(8, '0');
   }
 }

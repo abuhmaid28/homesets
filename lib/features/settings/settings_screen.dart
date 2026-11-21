@@ -7,6 +7,7 @@ import '../../data/services/backup_archive_service.dart';
 import '../../data/services/backup_platform_service.dart';
 import '../../data/services/backup_staging_manager.dart';
 import '../../data/services/reminder_platform_service.dart';
+import '../../domain/backup/backup_models.dart';
 import '../../domain/models/reminder_settings.dart';
 import '../../l10n/app_localizations.dart';
 import '../shared/homesets_header.dart';
@@ -72,22 +73,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _toggleReminders(bool value) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (value) {
+      final success = await widget.reminderPlatformService.scheduleDailyReminder(
+        hour: _reminderSettings.hour,
+        minute: _reminderSettings.minute,
+        title: 'HOMESETS',
+        body: 'Time for your workout!',
+      );
+      if (!success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.notificationsDisabledWarning),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
+    } else {
+      await widget.reminderPlatformService.cancelDailyReminder();
+    }
+
     final updated = _reminderSettings.copyWith(
       isEnabled: value,
       updatedAt: DateTime.now(),
     );
     await widget.repository.saveReminderSettings(updated);
-
-    if (value) {
-      await widget.reminderPlatformService.scheduleDailyReminder(
-        hour: updated.hour,
-        minute: updated.minute,
-        title: 'HOMESETS',
-        body: 'Time for your workout!',
-      );
-    } else {
-      await widget.reminderPlatformService.cancelDailyReminder();
-    }
 
     if (mounted) {
       setState(() => _reminderSettings = updated);
@@ -95,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickReminderTime() async {
+    final l10n = AppLocalizations.of(context)!;
     final initial = TimeOfDay(hour: _reminderSettings.hour, minute: _reminderSettings.minute);
     final picked = await showTimePicker(
       context: context,
@@ -120,18 +134,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
         minute: picked.minute,
         updatedAt: DateTime.now(),
       );
-      await widget.repository.saveReminderSettings(updated);
 
       if (updated.isEnabled) {
-        await widget.reminderPlatformService.scheduleDailyReminder(
+        final success = await widget.reminderPlatformService.scheduleDailyReminder(
           hour: updated.hour,
           minute: updated.minute,
           title: 'HOMESETS',
           body: 'Time for your workout!',
         );
+        if (!success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.notificationsDisabledWarning),
+                backgroundColor: HomesetsColors.orange,
+              ),
+            );
+          }
+          return;
+        }
       }
 
-      setState(() => _reminderSettings = updated);
+      await widget.repository.saveReminderSettings(updated);
+
+      if (mounted) {
+        setState(() => _reminderSettings = updated);
+      }
     }
   }
 
@@ -143,7 +171,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final stagingDir = await widget.backupStagingManager.prepareExportStaging();
       final snapshot = await widget.repository.createDataSnapshot();
       final photos = await widget.repository.getProgressPhotos();
-      final photoFiles = photos.map((p) => File(p.filePath)).toList();
+      final photoFiles = photos.map((p) {
+        final path = p.filePath;
+        if (path.startsWith('/') || path.contains(':')) {
+          return File(path);
+        }
+        return File('${widget.backupStagingManager.appDocsDir.path}/$path');
+      }).toList();
+
+      for (final pf in photoFiles) {
+        if (!await pf.exists()) {
+          throw BackupValidationException(
+            'Tracked photo file does not exist on disk: ${pf.path}',
+          );
+        }
+      }
 
       final archiveFile = await widget.backupArchiveService.createBackupArchive(
         snapshot: snapshot,

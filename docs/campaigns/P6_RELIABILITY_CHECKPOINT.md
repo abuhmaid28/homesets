@@ -89,22 +89,36 @@
 
 ---
 
-## 4. Verification Evidence & Test Execution Suite
+## 4. P6-R Review Corrections Matrix (P6-R01 to P6-R07)
+
+| Item ID | Severity | Finding & Defect Description | Resolution & Architectural Hardening | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-R01** | **CRITICAL** | Photos omitted from Settings export due to relative path resolution; missing photos skipped silently. | Resolved `photo.filePath` against `appDocsDir` in `SettingsScreen`. Enforced fatal `BackupValidationException` if any tracked photo is missing on disk; no normal success with partial backup. | `test/data/p6_review_hardening_test.dart` & `test/features/settings_screen_test.dart`. |
+| **P6-R02** | **CRITICAL** | Eager uncompressed `ZLibDecoder` prior to limit checks (vulnerable to zip-bombs, duplicate entries, zip-slip). | Implemented pre-decompression limit checks in `ZipCodec.decode` (max file count 1000, max uncompressed 500MB, max entry 250MB, max ratio 100:1, duplicate path rejection, path traversal rejection) and streaming chunked decompression bounds. | `test/data/p6_review_hardening_test.dart` (5 tests pass). |
+| **P6-R03** | **HIGH** | Rolling hash falsely documented as SHA-256 in manifest. | Explicitly declared `manifest.checksumAlgorithm = "homesets-v1-digest"` and formatted hash output as unsigned 64-hex chars. Grouped official `crypto` package proposal into GOV25 packet. | `lib/data/services/backup_hash_provider.dart` & `test/data/p6_review_hardening_test.dart`. |
+| **P6-R04** | **CRITICAL/HIGH** | Two-resource restore lacked crash safety; rollback dir purged on next restore; false rollback claims on failure. | Implemented persistent `.restore_journal.json` tracking phase state (`PHOTOS_PRESERVED` -> `DB_COMMITTED`); cold startup `recoverPendingJournal()` rolls back photos if interrupted pre-commit and finalizes post-commit. Handled no-original-photos cleanly. | `test/data/p6_review_hardening_test.dart` (3 cold recovery tests pass). |
+| **P6-R05** | **HIGH** | Reminders used `PendingIntent.getActivity(MainActivity)` opening app on alarm; no notification broadcast receiver; Settings saved before scheduling. | Replaced `getActivity` with `HomesetsReminderReceiver` broadcast receiver; checks notification permission and prevents unauthorized posting; Settings reverts toggle and displays error if platform scheduling fails. | `HomesetsReminderReceiver.kt`, `MainActivity.kt`, and `settings_screen.dart`. |
+| **P6-R06** | **MEDIUM/HIGH** | Lax backup manifest checks (permitted version 0, allowed missing photos as warnings, count discrepancies). | Added strict version boundaries (`formatVersion == 1`, `schemaVersion in [1, 2]`), exact `recordCounts` match across all 9 tables, and strict bidirectional photo file verification. | `lib/data/services/backup_archive_service.dart` & `test/data/p6_review_hardening_test.dart`. |
+| **P6-R07** | **MEDIUM** | Settings restore lacked full round-trip verification and error resilience. | Validated end-to-end Settings -> SAF mock export -> SAF mock import -> dry-run preview -> confirmation -> refreshed app state with verified SQLite data. | `test/features/settings_screen_test.dart` (7 tests pass). |
+
+---
+
+## 5. Verification Evidence & Test Execution Suite
 
 | Verification Step | Command / Tool | Result | Details |
 | :--- | :--- | :--- | :--- |
 | **Dart Analyzer** | `flutter analyze --fatal-infos` | **PASS (0 issues)** | Zero errors, zero warnings, zero infos across all packages and test files. |
-| **Unit & Widget Tests** | `flutter test` | **PASS (117/117)** | All 117 tests green across data, domain, and feature suites. |
+| **Unit & Widget Tests** | `flutter test` | **PASS (128/128)** | All 128 tests green across data, domain, and feature suites (+11 new hardening tests). |
 | **Python Quality Suite** | `python tools/quality/run_all_checks.py` | **PASS (4/4 suites)** | Fixtures, links, secrets, media scan, and code fence hygiene verified. |
-| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 36.5s. |
+| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 35.5s. |
 | **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Triggered on push to `campaign/p6-reliability`. |
 
 ---
 
-## 5. Commit History & PR Status
+## 6. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** Complete, all 20 WPs delivered. Kept **UNMERGED** awaiting independent lead review under GOV08.
+- **Status:** Hardened, all review findings addressed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet
@@ -114,3 +128,5 @@
   - `aecba9f` test(p6): WP19 responsive layouts, text scale 1.5x, and RTL audit
   - `f46eea9` docs(p6): WP20 review passes and campaign checkpoint update
   - `a0d427b` fix(p6): await two-phase restore rollback and add fallback file copy on rename failure
+  - `78ce661` docs(p6): record rollback fix in checkpoint ledger
+  - `82ac35c` feat(p6): P6-R01 to P6-R07 security hardening, hostile archive defenses, crash journal, and reminder receiver
