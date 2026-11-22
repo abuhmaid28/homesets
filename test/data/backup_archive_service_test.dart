@@ -33,7 +33,10 @@ void main() {
     test('End-to-end archive creation and validation round-trip with photos', () async {
       // 1. Create a dummy photo file
       final photoFile = File('${tempDir.path}/photo_1001.jpg');
-      final dummyPhotoBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04]);
+      final dummyPhotoBytes = Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]);
       await photoFile.writeAsBytes(dummyPhotoBytes);
 
       // 2. Create sample snapshot using raw maps

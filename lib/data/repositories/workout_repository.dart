@@ -4,6 +4,8 @@ import '../../domain/backup/backup_models.dart';
 import '../../domain/models/domain_models.dart';
 import '../../domain/models/reminder_settings.dart';
 import '../database/database_helper.dart';
+import '../services/backup_archive_service.dart';
+import '../services/photo_service.dart';
 
 class ActiveSessionSnapshot {
   final String sessionId;
@@ -673,8 +675,14 @@ class WorkoutRepository {
     );
   }
 
-  /// Persists metadata for an app-private progress photo (WP07, WP08).
+  /// Persists metadata for an app-private progress photo (WP07, WP08, P6-EXIT-03).
   Future<void> saveProgressPhoto(ProgressPhoto photo) async {
+    if (!PhotoService.isValidCanonicalPath(photo.filePath)) {
+      throw ArgumentError(
+        'Unsafe or non-canonical photo path: "${photo.filePath}". '
+        'Must strictly match progress_photos/<id>.(jpg|jpeg) without traversal or absolute paths.',
+      );
+    }
     final db = await _dbHelper.database;
     await db.insert(
       'progress_photos',
@@ -959,8 +967,14 @@ class WorkoutRepository {
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
-      // 9. Insert progress photos
+      // 9. Insert progress photos (P6-EXIT-03)
       for (final row in snapshot.progressPhotos) {
+        final filePath = row['file_path'] as String? ?? '';
+        if (!PhotoService.isValidCanonicalPath(filePath)) {
+          throw BackupSecurityException(
+            'Refusing to restore non-canonical or unsafe photo path into SQLite: "$filePath"',
+          );
+        }
         await txn.insert('progress_photos', row,
             conflictAlgorithm: ConflictAlgorithm.replace);
       }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:homesets/data/repositories/workout_repository.dart';
+import 'package:homesets/data/services/photo_service.dart';
 import 'package:homesets/domain/backup/backup_models.dart';
 
 /// Exception thrown during the two-phase backup restoration process.
@@ -58,24 +59,35 @@ class BackupStagingManager {
     'PHOTOS_PRESERVED',
   };
 
-  /// Resolves a photo path from SQLite against the app documents / photos directory.
-  File _resolvePhotoFile(String filePath) {
-    if (filePath.startsWith('progress_photos/') || filePath.startsWith(r'progress_photos\')) {
-      final f = File('${appDocsDir.path}/$filePath');
-      if (f.existsSync()) return f;
+  /// Resolves an app-private progress photo file EXCLUSIVELY inside [photosDir].
+  ///
+  /// Rejects directory traversal (..), backslashes, absolute paths, URI schemes,
+  /// rollback directory references, and non-canonical extensions (P6-EXIT-03).
+  /// Returns null if [filePath] violates canonical bounds.
+  File? resolveActivePhotoFile(String filePath) {
+    if (filePath.contains('..') ||
+        filePath.contains('\\') ||
+        filePath.startsWith('/') ||
+        filePath.contains(':') ||
+        filePath.contains('progress_photos_rollback')) {
+      return null;
     }
-    final filename = filePath.split(RegExp(r'[/\\]')).last;
-    final inPhotos = File('${photosDir.path}/$filename');
-    if (inPhotos.existsSync()) return inPhotos;
 
-    final direct = File(filePath);
-    if (direct.isAbsolute && direct.existsSync()) return direct;
+    String filename;
+    if (PhotoService.canonicalRelativePathPattern.hasMatch(filePath)) {
+      filename = filePath.substring('progress_photos/'.length);
+    } else if (PhotoService.canonicalFilenamePattern.hasMatch(filePath)) {
+      filename = filePath;
+    } else {
+      return null;
+    }
 
-    return inPhotos;
+    // Resolve EXCLUSIVELY within the active private photosDir
+    return File('${photosDir.path}/$filename');
   }
 
-  /// Validates that all committed photo records in SQLite are present on disk in [photosDir]
-  /// and are non-empty files (P6-EXIT-01).
+  /// Validates that all committed photo records in SQLite conform to canonical relative paths,
+  /// exist on disk EXCLUSIVELY within [photosDir], and are complete, valid, non-truncated images (P6-EXIT-01, P6-EXIT-03).
   Future<bool> validateActivePhotos(WorkoutRepository repository) async {
     final photoRecords = await repository.getProgressPhotos();
     if (photoRecords.isEmpty) {
@@ -85,12 +97,15 @@ class BackupStagingManager {
       return false;
     }
     for (final photo in photoRecords) {
-      final file = _resolvePhotoFile(photo.filePath);
+      final file = resolveActivePhotoFile(photo.filePath);
+      if (file == null) {
+        return false;
+      }
       if (!await file.exists()) {
         return false;
       }
-      final length = await file.length();
-      if (length <= 0) {
+      final isComplete = await PhotoService.isCompleteImageFile(file);
+      if (!isComplete) {
         return false;
       }
     }

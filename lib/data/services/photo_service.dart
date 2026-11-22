@@ -29,6 +29,77 @@ abstract class PhotoService {
   /// Unregisters an in-flight import once committed to SQLite or rolled back (P5-FINAL-02).
   void completePendingImport(String relativePath);
 
+  static final RegExp canonicalRelativePathPattern =
+      RegExp(r'^progress_photos/[a-zA-Z0-9_\-]+\.(jpg|jpeg)$');
+  static final RegExp canonicalFilenamePattern =
+      RegExp(r'^[a-zA-Z0-9_\-]+\.(jpg|jpeg)$');
+
+  /// Verifies that [path] conforms to the canonical app-private photo relative path:
+  /// `progress_photos/<photoId>.(jpg|jpeg)` with no directory traversal, backslashes,
+  /// drive letters, URI schemes, or rollback directory references (P6-EXIT-03).
+  static bool isValidCanonicalPath(String path) {
+    if (path.contains('..') ||
+        path.contains('\\') ||
+        path.startsWith('/') ||
+        path.contains(':') ||
+        path.contains('progress_photos_rollback')) {
+      return false;
+    }
+    return canonicalRelativePathPattern.hasMatch(path);
+  }
+
+  /// Verifies that [file] exists on disk, is within size bounds (16 bytes to 15 MB),
+  /// contains valid image magic header bytes, and for JPEG files, ends with the
+  /// End-Of-Image marker (0xFF, 0xD9) to catch truncated, incomplete, or corrupted writes (P6-EXIT-03).
+  static Future<bool> isCompleteImageFile(File file) async {
+    try {
+      if (!await file.exists()) return false;
+      final length = await file.length();
+      if (length < 16 || length > maxSanitizedPhotoBytes) return false;
+
+      final raf = await file.open(mode: FileMode.read);
+      try {
+        final header = await raf.read(12);
+        if (header.length < 4) return false;
+
+        // JPEG: FF D8 FF
+        if (header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF) {
+          // Check JPEG EOI marker in the final 2 bytes (0xFF, 0xD9)
+          await raf.setPosition(length - 2);
+          final footer = await raf.read(2);
+          if (footer.length == 2 && footer[0] == 0xFF && footer[1] == 0xD9) {
+            return true;
+          }
+          return false; // Truncated or incomplete JPEG
+        }
+
+        // PNG: 89 50 4E 47
+        if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) {
+          return true;
+        }
+
+        // WEBP: RIFF .... WEBP
+        if (header.length >= 12 &&
+            header[0] == 0x52 &&
+            header[1] == 0x49 &&
+            header[2] == 0x46 &&
+            header[3] == 0x46 &&
+            header[8] == 0x57 &&
+            header[9] == 0x45 &&
+            header[10] == 0x42 &&
+            header[11] == 0x50) {
+          return true;
+        }
+
+        return false;
+      } finally {
+        await raf.close();
+      }
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Validates magic header bytes (JPEG, PNG, WEBP) to ensure file is a genuine image.
   static bool isValidImageBytes(List<int> bytes) {
     if (bytes.length < 4) return false;

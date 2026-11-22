@@ -163,7 +163,7 @@
 ## 10. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** P6 Final Data-Safety Acceptance complete. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
+- **Status:** P6 Final Photo Integrity Closure complete. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet
@@ -180,3 +180,13 @@
   - `a1cd977` test(p6): ensure backup button visibility and pump cycles in settings screen test
   - `eee03b5` feat(p6): incremental ZIP streaming decompression, strict SQLite generation recovery, and hostile archive security
   - `e1c933a` chore(p6): merge latest main status documentation
+  - `9b16055` feat(p6): photo recovery integrity validation and ZIP central directory metadata bounds
+
+---
+
+## 11. P6 Final Photo Integrity Closure Matrix (P6-EXIT-03)
+
+| Item ID | Severity | Finding & Defect Description | Resolution & Architectural Implementation | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-EXIT-03** | **HIGH** | Recovery validation accepted out-of-sandbox photo paths (including `../progress_photos_rollback` and absolute paths) and arbitrary nonempty bytes (e.g. plain text or truncated images), irreversibly deleting rollback photos while active generation was broken. | **1. Canonical Relative Path Sandbox:** Enforced pattern `^progress_photos/[a-zA-Z0-9_\-]+\.(jpg|jpeg)$`. Rejects relative traversal (`../`), backslashes (`\`), absolute paths, Windows drive colons (`:`), and rollback references across export, archive validation, repository restoration, and active validation.<br>**2. Exclusive In-Sandbox Resolution:** Replaced loose resolution with `resolveActivePhotoFile`, resolving committed photos strictly inside `photosDir`. Removed all fallbacks to `appDocsDir`, absolute external files, or rollback directories.<br>**3. True Image Completeness Verification:** Implemented `PhotoService.isCompleteImageFile` verifying genuine magic headers (JPEG SOI `0xFF, 0xD8, 0xFF`, PNG, WEBP), bounded size (16 bytes to 15 MB), and JPEG End-Of-Image marker `0xFF, 0xD9`. Arbitrary plain text, truncated images, or corrupt byte streams fail closed, preserving both photo generations and journal on disk for retry.<br>**4. Repository Gating:** `WorkoutRepository.restoreDataSnapshot` and `saveProgressPhoto` reject non-canonical photo paths before persisting to SQLite. | Verified in `test/data/p6_photo_integrity_closure_test.dart` (Scenarios A–I pass), `test/data/p6_data_safety_acceptance_test.dart`, `test/data/p6_final_durability_test.dart`, `test/data/p6_review_hardening_test.dart`, and `test/data/p6_security_exit_test.dart`. Full 193/193 test suite passing. |
+

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:homesets/data/database/database_helper.dart';
@@ -464,7 +465,11 @@ void main() {
       // Create physical photo on disk
       await stagingManager.photosDir.create(recursive: true);
       final photoFile = File('${stagingManager.photosDir.path}/photo_e2e_1.jpg');
-      await photoFile.writeAsString('PHYSICAL_RAW_JPEG_IMAGE_BYTES_123456');
+      final validJpegBytes = Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]);
+      await photoFile.writeAsBytes(validJpegBytes);
 
       // 2. Export Backup
       final exportStaging = await stagingManager.prepareExportStaging();
@@ -543,7 +548,7 @@ void main() {
       // Verify physical restored photo file
       final restoredPhotoFile = File('${stagingManager.photosDir.path}/photo_e2e_1.jpg');
       expect(await restoredPhotoFile.exists(), isTrue);
-      expect(await restoredPhotoFile.readAsString(), equals('PHYSICAL_RAW_JPEG_IMAGE_BYTES_123456'));
+      expect(await restoredPhotoFile.readAsBytes(), equals(validJpegBytes));
     });
 
     test('Workstream B: Startup recovery automatically recovers interrupted restore before app reads', () async {

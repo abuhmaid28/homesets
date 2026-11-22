@@ -286,7 +286,10 @@ void main() {
       // New photos already in photosDir (DB commit completed)
       await stagingManager.photosDir.create(recursive: true);
       final committedPhoto = File('${stagingManager.photosDir.path}/committed.jpg');
-      await committedPhoto.writeAsString('COMMITTED_CONTENT');
+      await committedPhoto.writeAsBytes(Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
 
       // Write journal indicating DB_COMMITTED with confirmed token
       await stagingManager.journalFile.writeAsString(jsonEncode({
@@ -314,7 +317,10 @@ void main() {
 
       // Committed photo remains
       expect(await committedPhoto.exists(), isTrue);
-      expect(await committedPhoto.readAsString(), equals('COMMITTED_CONTENT'));
+      expect(await committedPhoto.readAsBytes(), equals([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
 
       // Old rollback dir and journal must be purged
       expect(await stagingManager.photosBackupDir.exists(), isFalse);

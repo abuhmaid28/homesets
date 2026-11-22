@@ -709,7 +709,11 @@ void main() {
 
       await stagingManager.photosDir.create(recursive: true);
       final photoFile = File('${stagingManager.photosDir.path}/photo_wp08.jpg');
-      await photoFile.writeAsString('JPEG_IMAGE_BYTES_WP08_PHYSICAL_FILE');
+      final validJpegBytes = Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]);
+      await photoFile.writeAsBytes(validJpegBytes);
 
       await repository.saveProgressPhoto(ProgressPhoto(
         id: 'photo_wp08_id',
@@ -797,7 +801,7 @@ void main() {
 
       final restoredPhoto = File('${stagingManager.photosDir.path}/photo_wp08.jpg');
       expect(await restoredPhoto.exists(), isTrue);
-      expect(await restoredPhoto.readAsString(), equals('JPEG_IMAGE_BYTES_WP08_PHYSICAL_FILE'));
+      expect(await restoredPhoto.readAsBytes(), equals(validJpegBytes));
     });
   });
 }

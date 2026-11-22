@@ -200,7 +200,10 @@ void main() {
       // Active photo exists and has valid content
       await stagingManager.photosDir.create(recursive: true);
       final activePhoto = File('${stagingManager.photosDir.path}/photo_sc4.jpg');
-      await activePhoto.writeAsString('VALID_NON_EMPTY_PHOTO_BYTES');
+      await activePhoto.writeAsBytes(Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
 
       await stagingManager.journalFile.writeAsString(jsonEncode({
         'restoreToken': restoreToken,
@@ -258,7 +261,10 @@ void main() {
 
       // Now fix the missing photo file
       final fixedPhoto = File('${restartedManager.photosDir.path}/photo_retry.jpg');
-      await fixedPhoto.writeAsString('RECOVERED_PHOTO_BYTES');
+      await fixedPhoto.writeAsBytes(Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
 
       // Third run: now photo is present, recovery succeeds and finalizes
       final thirdAttempt = await restartedManager.recoverPendingJournal(repository: repository);
@@ -642,9 +648,15 @@ void main() {
       // Create physical photos on disk
       await stagingManager.photosDir.create(recursive: true);
       final photoFile1 = File('${stagingManager.photosDir.path}/photo_front_01.jpg');
-      await photoFile1.writeAsBytes(Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0xFF, 0xD9]));
+      await photoFile1.writeAsBytes(Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
       final photoFile2 = File('${stagingManager.photosDir.path}/photo_side_01.jpg');
-      await photoFile2.writeAsBytes(Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 0x04, 0x05, 0x06, 0xFF, 0xD9]));
+      await photoFile2.writeAsBytes(Uint8List.fromList([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0xFF, 0xD9,
+      ]));
 
       // 2. Export Backup Archive
       final exportStaging = await stagingManager.prepareExportStaging();
@@ -758,8 +770,14 @@ void main() {
       final restoredPhoto2 = File('${stagingManager.photosDir.path}/photo_side_01.jpg');
       expect(await restoredPhoto1.exists(), isTrue);
       expect(await restoredPhoto2.exists(), isTrue);
-      expect(await restoredPhoto1.readAsBytes(), equals([0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0xFF, 0xD9]));
-      expect(await restoredPhoto2.readAsBytes(), equals([0xFF, 0xD8, 0xFF, 0xE0, 0x04, 0x05, 0x06, 0xFF, 0xD9]));
+      expect(await restoredPhoto1.readAsBytes(), equals([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03, 0x04,
+        0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0xFF, 0xD9,
+      ]));
+      expect(await restoredPhoto2.readAsBytes(), equals([
+        0xFF, 0xD8, 0xFF, 0xE0, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0xFF, 0xD9,
+      ]));
 
       // 8. Verify clean post-restore state
       expect(await stagingManager.photosBackupDir.exists(), isFalse);

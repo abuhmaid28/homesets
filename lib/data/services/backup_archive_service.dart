@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:homesets/data/services/backup_hash_provider.dart';
+import 'package:homesets/data/services/photo_service.dart';
 import 'package:homesets/data/services/zip_codec.dart';
 import 'package:homesets/domain/backup/backup_models.dart';
 
@@ -50,8 +51,6 @@ class BackupArchiveService {
 
   final BackupHashProvider hashProvider;
 
-  static final RegExp _validPhotoPathPattern = RegExp(r'^progress_photos/[a-zA-Z0-9_\-]+\.jpg$');
-
   const BackupArchiveService({
     this.hashProvider = const DefaultBackupHashProvider(),
   });
@@ -69,6 +68,17 @@ class BackupArchiveService {
     await tempDir.create(recursive: true);
 
     try {
+      // P6-EXIT-03: Validate that all snapshot photo paths conform strictly to canonical relative paths
+      for (final entry in snapshot.progressPhotos) {
+        final filePath = entry['file_path'] as String? ?? '';
+        final photoId = entry['id'] as String? ?? 'unknown';
+        if (!PhotoService.isValidCanonicalPath(filePath)) {
+          throw BackupValidationException(
+            'Cannot package archive with non-canonical or unsafe photo path for entry $photoId: "$filePath"',
+          );
+        }
+      }
+
       // 1. Serialize Data Snapshot to temporary JSON file
       final snapshotJson = jsonEncode(snapshot.toJson());
       final snapshotFile = File('${tempDir.path}/data.json');
@@ -86,9 +96,22 @@ class BackupArchiveService {
         if (!await photoFile.exists()) {
           throw BackupValidationException('Missing tracked photo file on disk: ${photoFile.path}');
         }
-        final photoLength = await photoFile.length();
         final filename = photoFile.uri.pathSegments.last;
+        if (!PhotoService.canonicalFilenamePattern.hasMatch(filename)) {
+          throw BackupValidationException('Non-canonical photo filename: $filename');
+        }
         final relPath = 'progress_photos/$filename';
+        if (!PhotoService.isValidCanonicalPath(relPath)) {
+          throw BackupValidationException('Non-canonical photo relative path: $relPath');
+        }
+        final isComplete = await PhotoService.isCompleteImageFile(photoFile);
+        if (!isComplete) {
+          throw BackupValidationException(
+            'Cannot archive invalid, corrupt, or truncated photo file: ${photoFile.path}',
+          );
+        }
+
+        final photoLength = await photoFile.length();
         final photoHash = await hashProvider.computeFileChecksum(photoFile);
 
         fileEntries.add(BackupFileEntry(
@@ -203,10 +226,20 @@ class BackupArchiveService {
         final cleanPath = relPath.startsWith('/') ? relPath.substring(1) : relPath;
         if (cleanPath == 'manifest.json' || cleanPath == 'data.json') continue;
 
-        if (!_validPhotoPathPattern.hasMatch(cleanPath)) {
+        if (!PhotoService.isValidCanonicalPath(cleanPath)) {
           await _purgeDirectory(extractDir);
           throw BackupSecurityException('Unauthorized or unexpected file in backup: $cleanPath');
         }
+
+        // P6-EXIT-03: Verify image completeness of extracted photo
+        final isComplete = await PhotoService.isCompleteImageFile(file);
+        if (!isComplete) {
+          await _purgeDirectory(extractDir);
+          return BackupValidationResult.failure(
+            'Extracted photo file is truncated, corrupt, or not a valid image: $cleanPath',
+          );
+        }
+
         extractedPhotos.add(file);
       }
 
@@ -312,8 +345,18 @@ class BackupArchiveService {
       for (final photoEntry in snapshot.progressPhotos) {
         final filePath = photoEntry['file_path'] as String? ?? '';
         final photoId = photoEntry['id'] as String? ?? 'unknown';
-        final expectedName = filePath.split('/').last.split('\\').last;
-        if (expectedName.isEmpty || !extractedPhotoNames.contains(expectedName)) {
+
+        // P6-EXIT-03: Enforce strict canonical relative path in snapshot
+        if (!PhotoService.isValidCanonicalPath(filePath)) {
+          await _purgeDirectory(extractDir);
+          return BackupValidationResult.failure(
+            'Non-canonical or unsafe photo path for entry $photoId: "$filePath". '
+            'Must strictly match progress_photos/<id>.(jpg|jpeg) without traversal or absolute paths.',
+          );
+        }
+
+        final expectedName = filePath.substring('progress_photos/'.length);
+        if (!extractedPhotoNames.contains(expectedName)) {
           await _purgeDirectory(extractDir);
           return BackupValidationResult.failure(
             'Referenced photo file for entry $photoId ($expectedName) is missing from archive',
