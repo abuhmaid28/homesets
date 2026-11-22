@@ -57,6 +57,7 @@ class BackupStagingManager {
     'ROLLBACK_FAILED',
     'TOKEN_VERIFY_FAILED',
     'PHOTOS_PRESERVED',
+    'ACTIVE_PHOTOS_INVALID',
   };
 
   /// Resolves an app-private progress photo file EXCLUSIVELY inside [photosDir].
@@ -312,16 +313,22 @@ class BackupStagingManager {
 
       // Step 3: Copy staged photos to the active photos directory
       await photosDir.create(recursive: true);
+      final stagedMetadata = <Map<String, dynamic>>[];
       for (final stagedPhoto in stagedPhotos) {
         final filename = stagedPhoto.uri.pathSegments.last;
         final destinationFile = File('${photosDir.path}/$filename');
         await stagedPhoto.copy(destinationFile.path);
+        stagedMetadata.add({
+          'filename': filename,
+          'bytes': await destinationFile.length(),
+        });
       }
       await journalFile.writeAsString(
         jsonEncode({
           'restoreToken': restoreToken,
           'phase': 'NEW_PHOTOS_STAGED',
           'hadOriginalPhotos': hadOriginalPhotos,
+          'stagedPhotos': stagedMetadata,
           'timestamp': DateTime.now().toUtc().toIso8601String(),
         }),
         flush: true,
@@ -402,19 +409,61 @@ class BackupStagingManager {
       }
 
       if (dbCommitted) {
-        // SQLite verified commit: finalize new photos only if active photos are complete
+        // SQLite verified commit: check if active photos are complete before finalizing (P6-GATE-01)
+        var photosComplete = false;
         try {
-          if (repository != null && await validateActivePhotos(repository)) {
-            if (hadOriginalPhotos && await photosBackupDir.exists()) {
-              await photosBackupDir.delete(recursive: true);
-            }
-            await cleanStaging();
-            if (await journalFile.exists()) {
-              await journalFile.delete();
-            }
+          photosComplete = repository != null && await validateActivePhotos(repository);
+        } catch (_) {
+          photosComplete = false;
+        }
+
+        if (!photosComplete) {
+          // ACTIVE PHOTOS ARE INCOMPLETE OR CORRUPTED!
+          // 1. DO NOT roll back SQLite (already committed).
+          // 2. DO NOT delete rollback photos or recovery journal!
+          // 3. Record ACTIVE_PHOTOS_INVALID in journal for startup recovery diagnostics.
+          try {
+            await journalFile.writeAsString(
+              jsonEncode({
+                'restoreToken': restoreToken,
+                'phase': 'ACTIVE_PHOTOS_INVALID',
+                'hadOriginalPhotos': hadOriginalPhotos,
+                'lastError': e.toString(),
+                'timestamp': DateTime.now().toUtc().toIso8601String(),
+              }),
+              flush: true,
+            );
+          } catch (_) {}
+          // 4. FAIL CLOSED: Throw BackupRestoreException so UI never reports false success.
+          throw BackupRestoreException(
+            'Restore committed SQLite database, but active photo files validation failed. '
+            'Both photo generations and recovery journal are preserved on disk.',
+            e,
+          );
+        }
+
+        // Active photos ARE complete: attempt final cleanup of rollback photos and staging
+        try {
+          if (hadOriginalPhotos && await photosBackupDir.exists()) {
+            await photosBackupDir.delete(recursive: true);
           }
-        } catch (_) {}
-        return;
+          await cleanStaging();
+          if (await journalFile.exists()) {
+            await journalFile.delete();
+          }
+        } catch (cleanupError) {
+          // Cleanup failed: journal or rollback files remain. Fail closed and notify caller!
+          throw BackupRestoreException(
+            'Restore committed to database and photos are verified, but post-restore finalization encountered errors: $cleanupError',
+            cleanupError,
+          );
+        }
+
+        // Rethrow the original exception e that caused entry into catch block
+        throw BackupRestoreException(
+          'Restore committed database and verified photos, but encountered an error: $e',
+          e,
+        );
       }
 
       if (phase == 'DB_COMMITTED' && !dbCommitted) {
