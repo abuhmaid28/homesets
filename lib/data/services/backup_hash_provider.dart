@@ -6,11 +6,15 @@ abstract class BackupHashProvider {
   Future<String> computeFileChecksum(File file);
 }
 
-/// Pure Dart deterministic 256-bit checksum implementation: "homesets-v1-digest" (P6-FINAL-07).
+/// Pure Dart deterministic 256-bit checksum implementation: "homesets-v1-digest" (P6-FINAL-07, P6-LAST-04).
 ///
+/// NON-CRYPTOGRAPHIC INTEGRITY DIGEST:
 /// Uses four interleaved 64-bit non-linear rolling hash lanes to produce
-/// a 256-bit (64-character hex) digest. Zero dependencies and works on all platforms.
-/// Memory-bounded streaming via [computeFileChecksum] avoids loading large files into heap.
+/// a 256-bit (64-character hex) digest for offline accidental corruption detection.
+/// This is a proprietary offline checksum, NOT FIPS 180-4 standard SHA-256,
+/// NOT a cryptographic message authentication code (MAC), and NOT proof against
+/// intentional adversarial forgery or tampering.
+/// Memory-bounded streaming via [computeFileChecksum] avoids loading whole photo files into heap.
 class DefaultBackupHashProvider implements BackupHashProvider {
   const DefaultBackupHashProvider();
 

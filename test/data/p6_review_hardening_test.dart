@@ -34,6 +34,8 @@ void main() {
       final hashEmpty = hashProvider.computeChecksum(utf8.encode(''));
       expect(hashEmpty.length, equals(64));
       expect(RegExp(r'^[0-9a-f]{64}$').hasMatch(hashEmpty), isTrue);
+      // Fixed known test vector for empty input (P6-LAST-04)
+      expect(hashEmpty, equals('8e9b30c57e3e1f91f14c4df09bb9a32e70b9288f36465e4250218c1508981abd'));
 
       final hash1 = hashProvider.computeChecksum(utf8.encode('hello world'));
       final hash2 = hashProvider.computeChecksum(utf8.encode('hello world'));

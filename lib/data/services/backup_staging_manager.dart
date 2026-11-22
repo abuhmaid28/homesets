@@ -60,26 +60,39 @@ class BackupStagingManager {
           final content = await journalFile.readAsString();
           data = jsonDecode(content) as Map<String, dynamic>;
         } catch (e) {
-          // Corrupted journal JSON
-          if (await photosBackupDir.exists() && !await photosDir.exists()) {
-            await _restoreBackupDir();
-          }
-          await cleanStaging();
-          if (await journalFile.exists()) {
-            await journalFile.delete();
-          }
-          return RestoreRecoveryResult.success(action: 'recovered_corrupted_journal');
+          // P6-LAST-01: Corrupted or torn journal JSON.
+          // DO NOT delete either photo generation (progress_photos/ or progress_photos_rollback/)!
+          // DO NOT delete the journal!
+          // Preserve forensic diagnostics and fail closed.
+          return RestoreRecoveryResult.failure(
+            'Corrupted or torn restore journal found ($e). Recovery aborted to prevent data loss. Both photo generations preserved.',
+          );
         }
 
         final restoreToken = data['restoreToken'] as String? ?? '';
         final phase = data['phase'] as String? ?? '';
         final hadOriginalPhotos = data['hadOriginalPhotos'] as bool? ?? true;
 
+        if (restoreToken.isEmpty && phase.isEmpty) {
+          // P6-LAST-01B: Malformed journal missing required fields
+          return RestoreRecoveryResult.failure(
+            'Malformed restore journal (missing token and phase). Recovery aborted to prevent data loss.',
+          );
+        }
+
         String? currentDbToken;
         if (repository != null) {
           try {
             currentDbToken = await repository.getCurrentRestoreToken();
-          } catch (_) {}
+          } catch (e) {
+            // P6-LAST-02: SQLite query failed (database locked, disk error, etc.)
+            // We CANNOT determine whether DB committed or not!
+            // MUST NOT assume not committed and MUST NOT roll back photos!
+            // Return failure to trigger retry, preserving both generations and journal.
+            return RestoreRecoveryResult.failure(
+              'Failed to read SQLite restore token ($e). Recovery aborted to prevent data loss.',
+            );
+          }
         }
 
         // DB is committed if the restoreToken matches in SQLite or phase was DB_COMMITTED
@@ -128,8 +141,11 @@ class BackupStagingManager {
           await _restoreBackupDir();
           return RestoreRecoveryResult.success(action: 'rolled_back');
         } else {
-          await photosBackupDir.delete(recursive: true);
-          return RestoreRecoveryResult.success(action: 'cleaned_orphan_backup');
+          // P6-LAST-01C: Found orphaned rollback photos without recovery journal while photos directory also exists!
+          // DO NOT delete photosBackupDir silently!
+          return RestoreRecoveryResult.failure(
+            'Found orphaned rollback photos without recovery journal while photos directory also exists. Both generations preserved.',
+          );
         }
       }
       return RestoreRecoveryResult.none();
@@ -243,11 +259,36 @@ class BackupStagingManager {
     } catch (e) {
       // Step 7: Handle failure and roll back safely
       var dbCommitted = false;
+      var tokenCheckFailed = false;
       if (repository != null) {
         try {
           final currentToken = await repository.getCurrentRestoreToken();
           dbCommitted = currentToken == restoreToken;
+        } catch (_) {
+          tokenCheckFailed = true;
+        }
+      }
+
+      if (tokenCheckFailed) {
+        // P6-LAST-02: SQLite token lookup failed during restore error handling.
+        // DO NOT roll back or delete photos when status is uncertain!
+        // Preserve both generations and journal for startup recovery retry.
+        try {
+          await journalFile.writeAsString(
+            jsonEncode({
+              'restoreToken': restoreToken,
+              'phase': 'TOKEN_VERIFY_FAILED',
+              'hadOriginalPhotos': hadOriginalPhotos,
+              'lastError': e.toString(),
+              'timestamp': DateTime.now().toUtc().toIso8601String(),
+            }),
+            flush: true,
+          );
         } catch (_) {}
+        throw BackupRestoreException(
+          'Failed to restore backup and SQLite token verification threw an error. Both photo generations preserved.',
+          e,
+        );
       }
 
       if (phase == 'DB_COMMITTED' || dbCommitted) {

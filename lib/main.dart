@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:path_provider/path_provider.dart';
@@ -79,17 +78,23 @@ class _HomesetsAppState extends State<HomesetsApp> {
   }
 
   Future<void> _checkInitialState() async {
-    // 1. Initialize BackupStagingManager FIRST (P6-FINAL-03)
+    // 1. Initialize BackupStagingManager FIRST (P6-FINAL-03, P6-LAST-03)
     if (widget.backupStagingManager != null) {
       _backupStagingManager = widget.backupStagingManager;
     } else {
       try {
         final docsDir = await getApplicationDocumentsDirectory();
         _backupStagingManager = BackupStagingManager(appDocsDir: docsDir);
-      } catch (_) {
-        // Fallback for headless tests without platform channel registration
-        final tempDocs = Directory('${Directory.systemTemp.path}/homesets_fallback_${DateTime.now().microsecondsSinceEpoch}');
-        _backupStagingManager = BackupStagingManager(appDocsDir: tempDocs);
+      } catch (e) {
+        // P6-LAST-03: Never silently fall back to systemTemp in production!
+        // Fail closed with a user-facing error screen and block all DB/photo writes.
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _recoveryError =
+              'Storage initialization failed: Unable to access app storage. Please verify storage permissions and restart.';
+        });
+        return;
       }
     }
 

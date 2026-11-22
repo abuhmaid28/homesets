@@ -117,22 +117,34 @@
 
 ---
 
-## 6. Verification Evidence & Test Execution Suite
+## 6. P6-LAST Hardening & Single Integrated Closeout Matrix (P6-LAST-01 to P6-LAST-05)
+
+| Finding ID | Severity | Finding & Defect Description | Resolution & Architectural Implementation | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-LAST-01** | **CRITICAL** | Corrupted or torn journal parsing in `recoverPendingJournal` silently deleted journal and returned success, risking photo generation loss when both existed or state was unverified. | Fail closed on torn/corrupted/malformed journal: preserves `.restore_journal.json` on disk, preserves both `progress_photos/` and `progress_photos_rollback/` without deletion, and returns `RestoreRecoveryResult.failure`. Orphaned rollback directory without journal when photos directory also exists fails closed. | `lib/data/services/backup_staging_manager.dart` and `test/data/p6_final_durability_test.dart` (P6-LAST-01A, 01B, 01C). |
+| **P6-LAST-02** | **CRITICAL** | SQLite token query error (`getCurrentRestoreToken()`) was swallowed, treating DB as uncommitted and deleting newly committed photos while SQLite had new data. | Fail closed on token query exception: returns `RestoreRecoveryResult.failure`, never assumes uncommitted, preserves both photo generations and journal intact. On subsequent retry when SQLite is accessible, matches token and finalizes new photos safely. Handled token verify failure in `executeTwoPhaseRestore` catch block. | `lib/data/services/backup_staging_manager.dart` and `test/data/p6_final_durability_test.dart` (P6-LAST-02A, 02B). |
+| **P6-LAST-03** | **HIGH** | Production `HomesetsApp._checkInitialState` silently fell back to `Directory.systemTemp` when `getApplicationDocumentsDirectory()` threw, decoupling storage from true SQLite/photo root. | Removed silent `systemTemp` fallback from `lib/main.dart`. If storage lookup fails, app halts with a user-facing error screen ("Storage initialization failed..."), blocking all normal DB writes and photo sweeper. Headless widget tests inject explicit verified staging managers. | `lib/main.dart`, `test/widget_test.dart`, and `test/features/workout_flow_test.dart`. |
+| **P6-LAST-04** | **MEDIUM/HIGH** | Hash provider empty-input vector claimed as all-zeros; custom digest called cryptographic; memory claims overclaimed; rollback suggested destructive force-push. | Fixed known test vectors in regression tests: empty input is `8e9b30c57e3e1f91f14c4df09bb9a32e70b9288f36465e4250218c1508981abd`. Accurately documented `homesets-v1-digest` as proprietary non-cryptographic checksum for accidental corruption detection (not SHA-256/MAC). Clarified ZIP memory model (streaming chunks for entries, heap for central directory headers and snapshot JSON). Rollback plan specified as standard reviewed revert PR, never destructive force-push. | `lib/data/services/backup_hash_provider.dart`, `test/data/p6_review_hardening_test.dart`, and campaign docs. |
+| **P6-LAST-05** | **OPEN GATE** | Reminders require `POST_NOTIFICATIONS` on Android 13+, not approved under GOV24. | Kept release `AndroidManifest.xml` at 0 permissions. Notification posting gated and safely bypassed when permissions disabled at system level; Settings UI displays disabled warning banner. Accurately documented notification status as BLOCKED under GOV25 owner decision gate. Physical Honor testing remains UNVERIFIED pending C9. | `MainActivity.kt`, `settings_screen.dart`, and `P6_DEPENDENCY_AND_PERMISSION_PROPOSAL.md`. |
+
+---
+
+## 7. Verification Evidence & Test Execution Suite
 
 | Verification Step | Command / Tool | Result | Details |
 | :--- | :--- | :--- | :--- |
 | **Dart Analyzer** | `flutter analyze --fatal-infos` | **PASS (0 issues)** | Zero errors, zero warnings, zero infos across all packages and test files. |
-| **Unit & Widget Tests** | `flutter test` | **PASS (142/142)** | All 142 tests green across data, domain, and feature suites (+14 new durability tests). |
+| **Unit & Widget Tests** | `flutter test` | **PASS (148/148)** | All 148 tests green across data, domain, and feature suites (+6 new durability/fault tests). |
 | **Python Quality Suite** | `python tools/quality/run_all_checks.py` | **PASS (4/4 suites)** | Fixtures, links, secrets, media scan, and code fence hygiene verified. |
-| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 36.3s. |
+| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 30.1s. |
 | **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Monitored on push to `campaign/p6-reliability`. |
 
 ---
 
-## 7. Commit History & PR Status
+## 8. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** Final durability & security hardening completed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
+- **Status:** Final durability, fault injection, and review hardening completed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet
@@ -144,3 +156,4 @@
   - `a0d427b` fix(p6): await two-phase restore rollback and add fallback file copy on rename failure
   - `78ce661` docs(p6): record rollback fix in checkpoint ledger
   - `82ac35c` feat(p6): P6-R01 to P6-R07 security hardening, hostile archive defenses, crash journal, and reminder receiver
+  - `b818dc9` feat(p6): final crash-safe restore protocol, streaming archive bounds, startup recovery, and reminder permission gating

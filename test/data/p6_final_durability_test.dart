@@ -599,4 +599,157 @@ void main() {
       expect(await stagingManager.journalFile.exists(), isFalse);
     });
   });
+
+  // =========================================================================
+  // WORKSTREAM G: P6-LAST DURABILITY, CORRUPT JOURNAL & SQLITE FAULT INJECTION
+  // =========================================================================
+  group('Workstream G: P6-LAST Fail-Closed Durability & Fault Injection', () {
+    test('P6-LAST-01A: Corrupted/torn journal preserves both photo generations and journal, returns failure', () async {
+      await stagingManager.photosDir.create(recursive: true);
+      final newPhoto = File('${stagingManager.photosDir.path}/new.jpg');
+      await newPhoto.writeAsString('NEW_COMMITTED_DATA');
+
+      await stagingManager.photosBackupDir.create(recursive: true);
+      final origPhoto = File('${stagingManager.photosBackupDir.path}/orig.jpg');
+      await origPhoto.writeAsString('OLD_DATA');
+
+      // Torn/corrupted JSON
+      await stagingManager.journalFile.writeAsString('{"restoreToken": "abc", "phase": "NEW_PHOTOS_');
+
+      final recovery = await stagingManager.recoverPendingJournal(repository: repository);
+      expect(recovery.isFailure, isTrue, reason: 'Torn journal must fail closed');
+      expect(recovery.error, contains('Corrupted or torn'));
+
+      // Invariant: Both photo generations must be preserved
+      expect(await newPhoto.exists(), isTrue, reason: 'New photos must not be deleted');
+      expect(await newPhoto.readAsString(), equals('NEW_COMMITTED_DATA'));
+      expect(await origPhoto.exists(), isTrue, reason: 'Old photos must not be deleted');
+      expect(await origPhoto.readAsString(), equals('OLD_DATA'));
+
+      // Journal must NOT be deleted
+      expect(await stagingManager.journalFile.exists(), isTrue, reason: 'Journal must be preserved for forensics/retry');
+    });
+
+    test('P6-LAST-01B: Malformed journal missing restoreToken and phase fails closed', () async {
+      await stagingManager.photosDir.create(recursive: true);
+      final newPhoto = File('${stagingManager.photosDir.path}/new.jpg');
+      await newPhoto.writeAsString('NEW_COMMITTED_DATA');
+
+      await stagingManager.photosBackupDir.create(recursive: true);
+      final origPhoto = File('${stagingManager.photosBackupDir.path}/orig.jpg');
+      await origPhoto.writeAsString('OLD_DATA');
+
+      // Valid JSON but missing required fields
+      await stagingManager.journalFile.writeAsString(jsonEncode({'unexpected_key': 123}));
+
+      final recovery = await stagingManager.recoverPendingJournal(repository: repository);
+      expect(recovery.isFailure, isTrue);
+      expect(await newPhoto.exists(), isTrue);
+      expect(await origPhoto.exists(), isTrue);
+      expect(await stagingManager.journalFile.exists(), isTrue);
+    });
+
+    test('P6-LAST-01C: Orphaned rollback directory when photosDir also exists without journal fails closed', () async {
+      await stagingManager.photosDir.create(recursive: true);
+      final photo1 = File('${stagingManager.photosDir.path}/photo1.jpg');
+      await photo1.writeAsString('PHOTO_GEN_1');
+
+      await stagingManager.photosBackupDir.create(recursive: true);
+      final photo2 = File('${stagingManager.photosBackupDir.path}/photo2.jpg');
+      await photo2.writeAsString('PHOTO_GEN_2');
+
+      // No journal exists
+      if (await stagingManager.journalFile.exists()) {
+        await stagingManager.journalFile.delete();
+      }
+
+      final recovery = await stagingManager.recoverPendingJournal(repository: repository);
+      expect(recovery.isFailure, isTrue, reason: 'Cannot determine true photo generation without journal');
+      expect(await photo1.exists(), isTrue);
+      expect(await photo2.exists(), isTrue);
+    });
+
+    test('P6-LAST-02A: SQLite token lookup error must fail closed and NOT roll back photos', () async {
+      final restoreToken = 'token_last_02';
+
+      await stagingManager.photosDir.create(recursive: true);
+      final newPhoto = File('${stagingManager.photosDir.path}/new.jpg');
+      await newPhoto.writeAsString('NEW_COMMITTED_DATA');
+
+      await stagingManager.photosBackupDir.create(recursive: true);
+      final oldPhoto = File('${stagingManager.photosBackupDir.path}/old.jpg');
+      await oldPhoto.writeAsString('OLD_DATA');
+
+      await stagingManager.journalFile.writeAsString(jsonEncode({
+        'restoreToken': restoreToken,
+        'phase': 'NEW_PHOTOS_STAGED',
+        'hadOriginalPhotos': true,
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+      }));
+
+      final faultRepo = FaultInjectingWorkoutRepository(throwOnTokenRead: true);
+
+      final recovery = await stagingManager.recoverPendingJournal(repository: faultRepo);
+      expect(recovery.isFailure, isTrue, reason: 'SQLite token lookup failure must NOT assume uncommitted');
+      expect(recovery.error, contains('Failed to read SQLite restore token'));
+
+      // Invariant: Both photo generations and journal must be untouched!
+      expect(await newPhoto.exists(), isTrue, reason: 'New photos must not be deleted on token lookup failure');
+      expect(await oldPhoto.exists(), isTrue, reason: 'Old photos must not be deleted or moved');
+      expect(await stagingManager.journalFile.exists(), isTrue, reason: 'Journal must remain on disk');
+    });
+
+    test('P6-LAST-02B: Retry after SQLite is accessible finalizes new photos when token matches', () async {
+      final restoreToken = 'token_last_02_retry';
+
+      await stagingManager.photosDir.create(recursive: true);
+      final newPhoto = File('${stagingManager.photosDir.path}/new.jpg');
+      await newPhoto.writeAsString('NEW_COMMITTED_DATA');
+
+      await stagingManager.photosBackupDir.create(recursive: true);
+      final oldPhoto = File('${stagingManager.photosBackupDir.path}/old.jpg');
+      await oldPhoto.writeAsString('OLD_DATA');
+
+      await stagingManager.journalFile.writeAsString(jsonEncode({
+        'restoreToken': restoreToken,
+        'phase': 'NEW_PHOTOS_STAGED',
+        'hadOriginalPhotos': true,
+        'timestamp': DateTime.now().toUtc().toIso8601String(),
+      }));
+
+      // 1. Initial attempt fails due to SQLite lock
+      final faultRepo = FaultInjectingWorkoutRepository(throwOnTokenRead: true);
+      final recovery1 = await stagingManager.recoverPendingJournal(repository: faultRepo);
+      expect(recovery1.isFailure, isTrue);
+
+      // 2. Retry with healthy repository where token matches committed state
+      final healthyRepo = FaultInjectingWorkoutRepository(mockToken: restoreToken);
+      final recovery2 = await stagingManager.recoverPendingJournal(repository: healthyRepo);
+      expect(recovery2.isSuccess, isTrue);
+      expect(recovery2.action, equals('finalized'));
+
+      // Invariant: New photos finalized, old photos purged, journal purged
+      expect(await newPhoto.exists(), isTrue);
+      expect(await oldPhoto.exists(), isFalse);
+      expect(await stagingManager.journalFile.exists(), isFalse);
+    });
+  });
+}
+
+class FaultInjectingWorkoutRepository extends WorkoutRepository {
+  final bool throwOnTokenRead;
+  final String? mockToken;
+
+  FaultInjectingWorkoutRepository({
+    this.throwOnTokenRead = false,
+    this.mockToken,
+  });
+
+  @override
+  Future<String?> getCurrentRestoreToken() async {
+    if (throwOnTokenRead) {
+      throw Exception('Simulated SQLite DB Locked / IO Error');
+    }
+    return mockToken;
+  }
 }
