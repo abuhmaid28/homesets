@@ -68,6 +68,23 @@ class DatabaseHelper {
         raw_active_session_json TEXT NOT NULL
       );
     ''');
+    // Ensure reminder_settings table exists for existing databases (WP16)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS reminder_settings (
+        id TEXT PRIMARY KEY,
+        is_enabled INTEGER NOT NULL DEFAULT 0,
+        hour INTEGER NOT NULL DEFAULT 15,
+        minute INTEGER NOT NULL DEFAULT 30,
+        updated_at TEXT NOT NULL
+      );
+    ''');
+    // Ensure app_metadata table exists for durable recovery tokens (P6 Workstream A)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    ''');
   }
 
   Future<void> _onCreate(Database db, int version) async {

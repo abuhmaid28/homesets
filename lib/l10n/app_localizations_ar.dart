@@ -389,4 +389,118 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get privateStorageNotice =>
       'حفظ محلي خاص: تُحفظ الصور داخل مساحة التطبيق المحلية غير المتصلة. الصور الأصلية في معرض الجهاز أو النسخ السحابية لا يتحكم بها التطبيق.';
+
+  @override
+  String get settingsTitle => 'الإعدادات';
+
+  @override
+  String get profileEquipmentSettings => 'الأدوات وسلامة المفاصل';
+
+  @override
+  String get profileEquipmentSubtitle =>
+      'تعديل عقلة الباب، أشرطة المقاومة، وإعدادات المفاصل';
+
+  @override
+  String get editProfile => 'تعديل الأدوات والجدول';
+
+  @override
+  String get remindersSectionTitle => 'التذكير اليومي المحلي';
+
+  @override
+  String get remindersToggle => 'تفعيل تذكير التمرين';
+
+  @override
+  String get reminderTimeLabel => 'وقت التذكير';
+
+  @override
+  String get changeTime => 'تغيير الوقت';
+
+  @override
+  String get reminderShameFreeDesc =>
+      'تذكير يومي لطيف في الوقت اللي يناسب شيفتك، بدون أي لوم أو ضغط.';
+
+  @override
+  String get notificationsDisabledWarning =>
+      'الإشعارات معطلة في إعدادات النظام. يرجى تفعيلها لاستلام التذكير اليومي.';
+
+  @override
+  String get backupSectionTitle => 'النسخ الاحتياطي والبيانات';
+
+  @override
+  String get backupPrivacyNotice =>
+      'تنبيه خصوصية: ملف النسخ الاحتياطي يحتوي على صور تقدمك وسجلات تمرينك الخاصة. احفظ الملف في مكان آمن ولا تشاركه مع أي شخص.';
+
+  @override
+  String get createBackup => 'إنشاء نسخة احتياطية محلية';
+
+  @override
+  String get creatingBackup => 'جاري تجهيز النسخة المشفرة...';
+
+  @override
+  String get backupSuccess => 'تم تصدير النسخة الاحتياطية بنجاح.';
+
+  @override
+  String backupFailed(String error) {
+    return 'فشل إنشاء أو تصدير النسخة: $error';
+  }
+
+  @override
+  String get restoreBackup => 'استعادة من نسخة احتياطية';
+
+  @override
+  String get restoringBackup => 'جاري استعادة البيانات والصور...';
+
+  @override
+  String get restoreSuccess => 'تمت استعادة البيانات والصور بنجاح.';
+
+  @override
+  String restoreFailed(String error) {
+    return 'فشلت الاستعادة: $error';
+  }
+
+  @override
+  String get restorePreviewTitle => 'معاينة النسخة الاحتياطية';
+
+  @override
+  String restoreCreatedAt(String date) {
+    return 'تاريخ الإنشاء: $date';
+  }
+
+  @override
+  String restoreAppVersion(String version) {
+    return 'إصدار التطبيق: $version';
+  }
+
+  @override
+  String get restoreRecordCountsTitle => 'محتويات النسخة:';
+
+  @override
+  String restoreWorkoutsCount(int count) {
+    return 'جلسات التمرين: $count';
+  }
+
+  @override
+  String restoreSetsCount(int count) {
+    return 'سجلات المجاميع: $count';
+  }
+
+  @override
+  String restoreWeightsCount(int count) {
+    return 'سجلات الوزن: $count';
+  }
+
+  @override
+  String restorePhotosCount(int count) {
+    return 'صور التقدم: $count';
+  }
+
+  @override
+  String get restoreDestructiveWarning =>
+      'تنبيه هام: الاستعادة ستستبدل جميع سجلاتك الحالية، الصور، والإعدادات بالبيانات الموجودة في ملف النسخة الاحتياطية. هذا الإجراء نهائي ولا يمكن التراجع عنه.';
+
+  @override
+  String get restoreConfirmButton => 'استبدال البيانات واستعادة';
+
+  @override
+  String get restoreCancelButton => 'إلغاء';
 }

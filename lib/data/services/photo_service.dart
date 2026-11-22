@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -28,6 +29,125 @@ abstract class PhotoService {
 
   /// Unregisters an in-flight import once committed to SQLite or rolled back (P5-FINAL-02).
   void completePendingImport(String relativePath);
+
+  static final RegExp canonicalRelativePathPattern =
+      RegExp(r'^progress_photos/[a-zA-Z0-9_\-]+\.(jpg|jpeg)$');
+  static final RegExp canonicalFilenamePattern =
+      RegExp(r'^[a-zA-Z0-9_\-]+\.(jpg|jpeg)$');
+
+  /// Verifies that [path] conforms to the canonical app-private photo relative path:
+  /// `progress_photos/<photoId>.(jpg|jpeg)` with no directory traversal, backslashes,
+  /// drive letters, URI schemes, or rollback directory references (P6-EXIT-03).
+  static bool isValidCanonicalPath(String path) {
+    if (path.contains('..') ||
+        path.contains('\\') ||
+        path.startsWith('/') ||
+        path.contains(':') ||
+        path.contains('progress_photos_rollback')) {
+      return false;
+    }
+    return canonicalRelativePathPattern.hasMatch(path);
+  }
+
+  /// Verifies that [file] exists on disk, is within size bounds (16 bytes to 15 MB),
+  /// contains valid image magic header bytes, and for JPEG files, ends with the
+  /// End-Of-Image marker (0xFF, 0xD9) to catch truncated, incomplete, or corrupted writes (P6-EXIT-03).
+  static Future<bool> isCompleteImageFile(File file) async {
+    try {
+      if (!await file.exists()) return false;
+      final length = await file.length();
+      if (length < 16 || length > maxSanitizedPhotoBytes) return false;
+
+      final raf = await file.open(mode: FileMode.read);
+      try {
+        final header = await raf.read(12);
+        if (header.length < 4) return false;
+
+        // JPEG: FF D8 FF
+        if (header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF) {
+          // Check JPEG EOI marker in the final 2 bytes (0xFF, 0xD9)
+          await raf.setPosition(length - 2);
+          final footer = await raf.read(2);
+          if (footer.length == 2 && footer[0] == 0xFF && footer[1] == 0xD9) {
+            return true;
+          }
+          return false; // Truncated or incomplete JPEG
+        }
+
+        // PNG: 89 50 4E 47
+        if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) {
+          return true;
+        }
+
+        // WEBP: RIFF .... WEBP
+        if (header.length >= 12 &&
+            header[0] == 0x52 &&
+            header[1] == 0x49 &&
+            header[2] == 0x46 &&
+            header[3] == 0x46 &&
+            header[8] == 0x57 &&
+            header[9] == 0x45 &&
+            header[10] == 0x42 &&
+            header[11] == 0x50) {
+          return true;
+        }
+
+        return false;
+      } finally {
+        await raf.close();
+      }
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Minimal 150-byte valid JFIF JPEG fixture, verified to decode cleanly via
+  /// [ui.instantiateImageCodec] (P6-GATE-02).
+  static final Uint8List genuine1x1JpegBytes = Uint8List.fromList([
+    0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48, 0x00, 0x48, 0x00, 0x00,
+    0xFF, 0xDB, 0x00, 0x43, 0x00, 0x03, 0x02, 0x02, 0x03, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x04, 0x03, 0x03, 0x04, 0x05,
+    0x08, 0x05, 0x05, 0x04, 0x04, 0x05, 0x0A, 0x07, 0x07, 0x06, 0x08, 0x0C, 0x0A, 0x0C, 0x0C, 0x0B, 0x0A, 0x0B, 0x0B, 0x0D,
+    0x0E, 0x12, 0x10, 0x0D, 0x0E, 0x11, 0x0E, 0x0B, 0x0B, 0x10, 0x16, 0x10, 0x11, 0x13, 0x14, 0x15, 0x15, 0x15, 0x0C, 0x0F,
+    0x17, 0x18, 0x16, 0x14, 0x18, 0x12, 0x14, 0x15, 0x14, 0xFF, 0xC0, 0x00, 0x0B, 0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01,
+    0x11, 0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01,
+    0x01, 0x00, 0x00, 0x3F, 0x00, 0xD2, 0xCF, 0x20, 0xFF, 0xD9,
+  ]);
+
+  /// Fully attempts to decode [file] using the platform's image decoder ([ui.instantiateImageCodec]).
+  ///
+  /// Returns `true` if the file represents a genuinely decodable bitmap image with positive dimensions (P6-GATE-02).
+  ///
+  /// ARCHITECTURAL NOTE ON INTEGRITY VALIDATION:
+  /// - [isCompleteImageFile]: Fast, O(1) non-allocating structural validation (magic bytes, size bounds,
+  ///   JPEG EOI marker) suitable for filesystem sweeps and restore pre-commit checks.
+  /// - [tryDecodeImage]: Full bitmap decompression parsing all image tables and pixel data, confirming
+  ///   engine-level renderability.
+  /// - Cryptographic assurance: Backup manifests use offline rolling integrity digests ("homesets-v1-digest")
+  ///   for bit-fidelity corruption checks; neither constitutes an asymmetric digital signature or MAC.
+  static Future<bool> tryDecodeImage(File file) async {
+    try {
+      if (!await file.exists()) return false;
+      final bytes = await file.readAsBytes();
+      return await tryDecodeImageBytes(bytes);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Attempts to decode raw image bytes using [ui.instantiateImageCodec].
+  static Future<bool> tryDecodeImageBytes(Uint8List bytes) async {
+    try {
+      if (bytes.length < 16 || bytes.length > maxSanitizedPhotoBytes) return false;
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final isValid = frame.image.width > 0 && frame.image.height > 0;
+      frame.image.dispose();
+      return isValid;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Validates magic header bytes (JPEG, PNG, WEBP) to ensure file is a genuine image.
   static bool isValidImageBytes(List<int> bytes) {

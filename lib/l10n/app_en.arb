@@ -149,5 +149,76 @@
   "deletePhotoDbFailed": "Photo file removed, but database cleanup failed. Tap to retry.",
   "retry": "Retry",
   "photoPendingCleanup": "Photo file removed from storage. Database record pending removal.",
-  "privateStorageNotice": "App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app."
+  "privateStorageNotice": "App-Private: Copied photos are kept in local offline app storage. Note: Originals in your device gallery or cloud backups are not managed by this app.",
+  "settingsTitle": "Settings",
+  "profileEquipmentSettings": "Equipment & Joint Profile",
+  "profileEquipmentSubtitle": "Adjust pull-up bar, resistance bands, and joint safety preferences",
+  "editProfile": "Edit Profile & Equipment",
+  "remindersSectionTitle": "Daily Local Reminder",
+  "remindersToggle": "Enable Workout Reminder",
+  "reminderTimeLabel": "Reminder Time",
+  "changeTime": "Change Time",
+  "reminderShameFreeDesc": "A gentle daily nudge for your workout when it fits your shift, completely guilt-free.",
+  "notificationsDisabledWarning": "Notifications are disabled in system settings. Enable notifications to receive daily reminders.",
+  "backupSectionTitle": "Backup & Local Data",
+  "backupPrivacyNotice": "Privacy Notice: The backup file includes your private progress photos, workout history, and personal logs. Store it safely and do not share it with untrusted parties.",
+  "createBackup": "Create Offline Backup",
+  "creatingBackup": "Packaging secure backup...",
+  "backupSuccess": "Backup exported successfully.",
+  "backupFailed": "Failed to create or export backup: {error}",
+  "@backupFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "restoreBackup": "Restore from Backup",
+  "restoringBackup": "Restoring backup data...",
+  "restoreSuccess": "Data and photos restored successfully.",
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "restorePreviewTitle": "Restore Backup Preview",
+  "restoreCreatedAt": "Created: {date}",
+  "@restoreCreatedAt": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "restoreAppVersion": "App Version: {version}",
+  "@restoreAppVersion": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "restoreRecordCountsTitle": "Archive Contents:",
+  "restoreWorkoutsCount": "Workout Sessions: {count}",
+  "@restoreWorkoutsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreSetsCount": "Set Logs: {count}",
+  "@restoreSetsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreWeightsCount": "Weight Logs: {count}",
+  "@restoreWeightsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restorePhotosCount": "Progress Photos: {count}",
+  "@restorePhotosCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "restoreDestructiveWarning": "WARNING: Restoring will completely replace all existing workout logs, settings, and progress photos with the contents of this backup file. This action cannot be undone.",
+  "restoreConfirmButton": "Replace Data & Restore",
+  "restoreCancelButton": "Cancel"
 }

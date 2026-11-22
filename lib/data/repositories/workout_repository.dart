@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
+import '../../domain/backup/backup_models.dart';
 import '../../domain/models/domain_models.dart';
+import '../../domain/models/reminder_settings.dart';
 import '../database/database_helper.dart';
+import '../services/backup_archive_service.dart';
+import '../services/photo_service.dart';
 
 class ActiveSessionSnapshot {
   final String sessionId;
@@ -671,8 +675,14 @@ class WorkoutRepository {
     );
   }
 
-  /// Persists metadata for an app-private progress photo (WP07, WP08).
+  /// Persists metadata for an app-private progress photo (WP07, WP08, P6-EXIT-03).
   Future<void> saveProgressPhoto(ProgressPhoto photo) async {
+    if (!PhotoService.isValidCanonicalPath(photo.filePath)) {
+      throw ArgumentError(
+        'Unsafe or non-canonical photo path: "${photo.filePath}". '
+        'Must strictly match progress_photos/<id>.(jpg|jpeg) without traversal or absolute paths.',
+      );
+    }
     final db = await _dbHelper.database;
     await db.insert(
       'progress_photos',
@@ -864,5 +874,174 @@ class WorkoutRepository {
     // Sort chronologically ascending
     dataPoints.sort((a, b) => a.date.compareTo(b.date));
     return dataPoints;
+  }
+
+  /// Exports full P0-P5 data snapshot from SQLite database (WP04).
+  Future<HomesetsDataSnapshot> createDataSnapshot() async {
+    final db = await _dbHelper.database;
+
+    final profileRows = await db.query('user_profile', limit: 1);
+    final inventoryRows = await db.query('equipment_inventory', limit: 1);
+    final workoutRows = await db.query('workout_sessions');
+    final setLogRows = await db.query('set_logs');
+    final activeRows = await db.query('active_session_state', limit: 1);
+    final salvageRows = await db.query('session_salvage_archive');
+    final weightRows = await db.query('weight_entries');
+    final photoRows = await db.query('progress_photos');
+    final mealRows = await db.query('daily_meal_checks');
+    final reminderRows = await db.query('reminder_settings', limit: 1);
+
+    return HomesetsDataSnapshot(
+      userProfile: profileRows.isNotEmpty ? profileRows.first : null,
+      equipmentInventory: inventoryRows.isNotEmpty ? inventoryRows.first : null,
+      workoutSessions: workoutRows,
+      setLogs: setLogRows,
+      activeSessionState: activeRows.isNotEmpty ? activeRows.first : null,
+      salvageArchives: salvageRows,
+      weightEntries: weightRows,
+      progressPhotos: photoRows,
+      dailyMealChecks: mealRows,
+      reminderSettings: reminderRows.isNotEmpty ? reminderRows.first : null,
+    );
+  }
+
+  /// Restores full P0-P5 data snapshot transactionally into SQLite database (WP13, P6-FINAL-02).
+  Future<void> restoreDataSnapshot(
+    HomesetsDataSnapshot snapshot, {
+    String? restoreToken,
+  }) async {
+    final db = await _dbHelper.database;
+
+    await db.transaction((txn) async {
+      // 1. Clear existing tables in safe order respecting foreign keys
+      await txn.delete('set_logs');
+      await txn.delete('workout_sessions');
+      await txn.delete('user_profile');
+      await txn.delete('equipment_inventory');
+      await txn.delete('active_session_state');
+      await txn.delete('session_salvage_archive');
+      await txn.delete('weight_entries');
+      await txn.delete('progress_photos');
+      await txn.delete('daily_meal_checks');
+      await txn.delete('reminder_settings');
+
+      // 2. Insert user profile
+      if (snapshot.userProfile != null) {
+        await txn.insert('user_profile', snapshot.userProfile!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 3. Insert equipment inventory
+      if (snapshot.equipmentInventory != null) {
+        await txn.insert('equipment_inventory', snapshot.equipmentInventory!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 4. Insert workout sessions
+      for (final row in snapshot.workoutSessions) {
+        await txn.insert('workout_sessions', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 5. Insert set logs
+      for (final row in snapshot.setLogs) {
+        await txn.insert('set_logs', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 6. Insert active session state
+      if (snapshot.activeSessionState != null) {
+        await txn.insert('active_session_state', snapshot.activeSessionState!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 7. Insert session salvage archives
+      for (final row in snapshot.salvageArchives) {
+        await txn.insert('session_salvage_archive', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 8. Insert weight entries
+      for (final row in snapshot.weightEntries) {
+        await txn.insert('weight_entries', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 9. Insert progress photos (P6-EXIT-03)
+      for (final row in snapshot.progressPhotos) {
+        final filePath = row['file_path'] as String? ?? '';
+        if (!PhotoService.isValidCanonicalPath(filePath)) {
+          throw BackupSecurityException(
+            'Refusing to restore non-canonical or unsafe photo path into SQLite: "$filePath"',
+          );
+        }
+        await txn.insert('progress_photos', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 10. Insert daily meal checks
+      for (final row in snapshot.dailyMealChecks) {
+        await txn.insert('daily_meal_checks', row,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 11. Insert reminder settings
+      if (snapshot.reminderSettings != null) {
+        await txn.insert('reminder_settings', snapshot.reminderSettings!,
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      // 12. Record restore token in app_metadata atomically with restore (P6-FINAL-02)
+      if (restoreToken != null) {
+        await txn.insert(
+          'app_metadata',
+          {'key': 'restore_token', 'value': restoreToken},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
+
+  /// Retrieves the currently committed restore generation token, if any (P6-FINAL-02).
+  Future<String?> getCurrentRestoreToken() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'app_metadata',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['restore_token'],
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  /// Clears the restore generation token after successful recovery finalization.
+  Future<void> clearRestoreToken() async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'app_metadata',
+      where: 'key = ?',
+      whereArgs: ['restore_token'],
+    );
+  }
+
+  /// Retrieves local daily reminder settings (WP16).
+  Future<ReminderSettings> getReminderSettings() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query('reminder_settings', limit: 1);
+    if (rows.isEmpty) {
+      return ReminderSettings(updatedAt: DateTime.now());
+    }
+    return ReminderSettings.fromMap(rows.first);
+  }
+
+  /// Persists local daily reminder settings (WP16).
+  Future<void> saveReminderSettings(ReminderSettings settings) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'reminder_settings',
+      settings.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 }

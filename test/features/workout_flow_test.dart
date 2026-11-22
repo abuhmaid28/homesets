@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:homesets/main.dart';
 import 'package:homesets/data/database/database_helper.dart';
 import 'package:homesets/data/repositories/workout_repository.dart';
+import 'package:homesets/data/services/backup_staging_manager.dart';
 import 'package:homesets/features/onboarding/onboarding_screen.dart';
 import 'package:homesets/features/today/today_screen.dart';
 import 'package:homesets/features/workout/workout_player_screen.dart';
@@ -11,6 +13,9 @@ import 'package:homesets/features/summary/summary_screen.dart';
 import 'package:homesets/features/shared/kinetic_button.dart';
 
 void main() {
+  late Directory tempDir;
+  late BackupStagingManager stagingManager;
+
   setUpAll(() {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -18,6 +23,8 @@ void main() {
   });
 
   setUp(() async {
+    tempDir = await Directory.systemTemp.createTemp('homesets_workout_flow_');
+    stagingManager = BackupStagingManager(appDocsDir: tempDir);
     final db = await DatabaseHelper.instance.database;
     await db.delete('user_profile');
     await db.delete('equipment_inventory');
@@ -28,6 +35,11 @@ void main() {
 
   tearDown(() async {
     await DatabaseHelper.instance.close();
+    try {
+      if (await tempDir.exists()) {
+        await tempDir.delete(recursive: true);
+      }
+    } catch (_) {}
   });
 
   testWidgets('Complete End-to-End User Flow with Pain Stop (English)', (tester) async {
@@ -44,6 +56,7 @@ void main() {
     await tester.pumpWidget(HomesetsApp(
       repository: repo,
       locale: const Locale('en'),
+      backupStagingManager: stagingManager,
     ));
     for (int i = 0; i < 6; i++) {
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
@@ -139,6 +152,7 @@ void main() {
     await tester.pumpWidget(HomesetsApp(
       repository: repo,
       locale: const Locale('ar'),
+      backupStagingManager: stagingManager,
     ));
     for (int i = 0; i < 6; i++) {
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
@@ -235,6 +249,7 @@ void main() {
     await tester.pumpWidget(HomesetsApp(
       repository: repo,
       locale: const Locale('en'),
+      backupStagingManager: stagingManager,
     ));
     for (int i = 0; i < 6; i++) {
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
@@ -331,6 +346,7 @@ void main() {
     await tester.pumpWidget(HomesetsApp(
       repository: repo,
       locale: const Locale('en'),
+      backupStagingManager: stagingManager,
     ));
     for (int i = 0; i < 6; i++) {
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
