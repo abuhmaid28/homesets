@@ -48,6 +48,16 @@ class BackupStagingManager {
     return stagingDir;
   }
 
+  static const Set<String> validJournalPhases = {
+    'PREPARING',
+    'ORIGINAL_PHOTOS_MOVED',
+    'NEW_PHOTOS_STAGED',
+    'DB_COMMITTED',
+    'ROLLBACK_FAILED',
+    'TOKEN_VERIFY_FAILED',
+    'PHOTOS_PRESERVED',
+  };
+
   /// Recovers any pending restoration from a crash or process kill based on the persistent journal.
   /// Cross-verifies the database restore token before deciding whether to roll back or finalize photos.
   Future<RestoreRecoveryResult> recoverPendingJournal({
@@ -69,38 +79,51 @@ class BackupStagingManager {
           );
         }
 
-        final restoreToken = data['restoreToken'] as String? ?? '';
-        final phase = data['phase'] as String? ?? '';
-        final hadOriginalPhotos = data['hadOriginalPhotos'] as bool? ?? true;
+        // Strict field type and value validation (P6-CLOSE-02)
+        final rawToken = data['restoreToken'];
+        final rawPhase = data['phase'];
+        final rawHadPhotos = data['hadOriginalPhotos'];
 
-        if (restoreToken.isEmpty && phase.isEmpty) {
-          // P6-LAST-01B: Malformed journal missing required fields
+        if (rawToken is! String ||
+            rawToken.trim().isEmpty ||
+            rawPhase is! String ||
+            !validJournalPhases.contains(rawPhase) ||
+            rawHadPhotos is! bool) {
           return RestoreRecoveryResult.failure(
-            'Malformed restore journal (missing token and phase). Recovery aborted to prevent data loss.',
+            'Malformed or invalid restore journal fields (restoreToken="$rawToken", phase="$rawPhase", hadOriginalPhotos=$rawHadPhotos). '
+            'Recovery aborted to prevent data loss. Both photo generations preserved.',
+          );
+        }
+
+        final restoreToken = rawToken.trim();
+        final phase = rawPhase;
+        final hadOriginalPhotos = rawHadPhotos;
+
+        if (repository == null) {
+          // Cannot verify SQLite restore token without repository! Fail closed.
+          return RestoreRecoveryResult.failure(
+            'WorkoutRepository is required to verify restore token for recovery. Both photo generations preserved.',
           );
         }
 
         String? currentDbToken;
-        if (repository != null) {
-          try {
-            currentDbToken = await repository.getCurrentRestoreToken();
-          } catch (e) {
-            // P6-LAST-02: SQLite query failed (database locked, disk error, etc.)
-            // We CANNOT determine whether DB committed or not!
-            // MUST NOT assume not committed and MUST NOT roll back photos!
-            // Return failure to trigger retry, preserving both generations and journal.
-            return RestoreRecoveryResult.failure(
-              'Failed to read SQLite restore token ($e). Recovery aborted to prevent data loss.',
-            );
-          }
+        try {
+          currentDbToken = await repository.getCurrentRestoreToken();
+        } catch (e) {
+          // P6-LAST-02: SQLite query failed (database locked, disk error, etc.)
+          // We CANNOT determine whether DB committed or not!
+          // MUST NOT assume not committed and MUST NOT roll back photos!
+          // Return failure to trigger retry, preserving both generations and journal.
+          return RestoreRecoveryResult.failure(
+            'Failed to read SQLite restore token ($e). Recovery aborted to prevent data loss.',
+          );
         }
 
-        // DB is committed if the restoreToken matches in SQLite or phase was DB_COMMITTED
-        final dbCommitted = (restoreToken.isNotEmpty && currentDbToken == restoreToken) ||
-            phase == 'DB_COMMITTED';
+        final dbMatches = currentDbToken != null && currentDbToken == restoreToken;
 
-        if (dbCommitted) {
-          // Crash occurred AFTER DB commit; finalize photos by purging rollback directory
+        if (dbMatches) {
+          // SQLite HAS committed this exact restore generation.
+          // Finalize new photos by purging rollback directory.
           if (await photosBackupDir.exists()) {
             await photosBackupDir.delete(recursive: true);
           }
@@ -109,33 +132,48 @@ class BackupStagingManager {
             await journalFile.delete();
           }
           return RestoreRecoveryResult.success(action: 'finalized');
-        } else {
-          // Crash occurred BEFORE or DURING DB commit; roll back photos to original state
-          if (await photosBackupDir.exists()) {
-            if (await photosDir.exists()) {
-              await photosDir.delete(recursive: true);
-            }
-            await _restoreBackupDir();
-            if (!await photosDir.exists()) {
-              return RestoreRecoveryResult.failure(
-                'Failed to restore original photos directory during startup recovery',
-              );
-            }
-          } else if (phase != 'PREPARING' && !hadOriginalPhotos) {
-            // Fresh install with no original photos: delete uncommitted staged photos
-            if (await photosDir.exists()) {
-              await photosDir.delete(recursive: true);
-            }
-          }
-          // Note: If photosBackupDir does not exist and phase == 'PREPARING',
-          // original photos were never moved from photosDir and are safe untouched.
-
-          await cleanStaging();
-          if (await journalFile.exists()) {
-            await journalFile.delete();
-          }
-          return RestoreRecoveryResult.success(action: 'rolled_back');
         }
+
+        // SQLite does NOT match restoreToken (currentDbToken != restoreToken)
+        if (phase == 'DB_COMMITTED') {
+          // CRITICAL DISCREPANCY (P6-CLOSE-02): Journal claims DB_COMMITTED, but SQLite does not match!
+          // Under NO circumstances delete old photos without SQLite corroboration.
+          return RestoreRecoveryResult.failure(
+            'Journal claims DB_COMMITTED but SQLite token does not match (expected "$restoreToken", got "$currentDbToken"). '
+            'Recovery aborted to prevent data loss. Both photo generations preserved.',
+          );
+        }
+
+        // Crash occurred before SQLite commit (PREPARING, ORIGINAL_PHOTOS_MOVED, NEW_PHOTOS_STAGED, PHOTOS_PRESERVED, ROLLBACK_FAILED, TOKEN_VERIFY_FAILED).
+        // Roll back photos safely to restore original state.
+        if (await photosBackupDir.exists()) {
+          if (await photosDir.exists()) {
+            await photosDir.delete(recursive: true);
+          }
+          await _restoreBackupDir();
+          if (!await photosDir.exists()) {
+            return RestoreRecoveryResult.failure(
+              'Failed to restore original photos directory during startup recovery',
+            );
+          }
+        } else if (!hadOriginalPhotos) {
+          // Fresh install with no original photos: delete uncommitted staged photos
+          if (await photosDir.exists()) {
+            await photosDir.delete(recursive: true);
+          }
+        } else if (phase == 'PREPARING') {
+          // Original photos were never moved from photosDir and are intact
+        } else {
+          return RestoreRecoveryResult.failure(
+            'Missing rollback directory for interrupted restore phase "$phase". Recovery aborted to prevent data loss.',
+          );
+        }
+
+        await cleanStaging();
+        if (await journalFile.exists()) {
+          await journalFile.delete();
+        }
+        return RestoreRecoveryResult.success(action: 'rolled_back');
       } else if (await photosBackupDir.exists()) {
         if (!await photosDir.exists()) {
           await _restoreBackupDir();
@@ -291,8 +329,8 @@ class BackupStagingManager {
         );
       }
 
-      if (phase == 'DB_COMMITTED' || dbCommitted) {
-        // DB COMMITTED! Do NOT roll back photos; finalize new photos
+      if (dbCommitted) {
+        // SQLite verified commit: finalize new photos
         try {
           if (hadOriginalPhotos && await photosBackupDir.exists()) {
             await photosBackupDir.delete(recursive: true);
@@ -303,6 +341,15 @@ class BackupStagingManager {
           }
         } catch (_) {}
         return;
+      }
+
+      if (phase == 'DB_COMMITTED' && !dbCommitted) {
+        // Discrepancy: phase reached DB_COMMITTED but SQLite token verification failed.
+        // Preserve both generations!
+        throw BackupRestoreException(
+          'Restore failed: Journal phase reached DB_COMMITTED but SQLite token does not match. Both photo generations preserved.',
+          e,
+        );
       }
 
       // DB DID NOT COMMIT: Roll back photos to original state

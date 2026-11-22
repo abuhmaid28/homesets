@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:homesets/data/repositories/workout_repository.dart';
 import 'package:homesets/data/services/backup_archive_service.dart';
 import 'package:homesets/data/services/backup_hash_provider.dart';
 import 'package:homesets/data/services/backup_staging_manager.dart';
@@ -244,15 +245,18 @@ void main() {
       await stagingManager.photosDir.create(recursive: true);
       final newPhoto = File('${stagingManager.photosDir.path}/new.jpg');
       await newPhoto.writeAsString('NEW_UNCOMMITTED_CONTENT');
-      // 3. Write journal indicating PHOTOS_PRESERVED with hadOriginalPhotos = true
+      // 3. Write journal indicating PHOTOS_PRESERVED with hadOriginalPhotos = true and valid token
       await stagingManager.journalFile.writeAsString(jsonEncode({
+        'restoreToken': 'token_p6r_precommit',
         'phase': 'PHOTOS_PRESERVED',
         'hadOriginalPhotos': true,
         'timestamp': DateTime.now().toUtc().toIso8601String(),
       }));
 
-      // Run cold recovery
-      final recovered = await stagingManager.recoverPendingJournal();
+      // Run cold recovery with repository where SQLite did not commit
+      final recovered = await stagingManager.recoverPendingJournal(
+        repository: _HardeningMockRepository(token: null),
+      );
       expect(recovered.isSuccess, isTrue);
 
       // Original photo must be restored
@@ -283,15 +287,18 @@ void main() {
       final committedPhoto = File('${stagingManager.photosDir.path}/committed.jpg');
       await committedPhoto.writeAsString('COMMITTED_CONTENT');
 
-      // Write journal indicating DB_COMMITTED
+      // Write journal indicating DB_COMMITTED with confirmed token
       await stagingManager.journalFile.writeAsString(jsonEncode({
+        'restoreToken': 'token_p6r_committed',
         'phase': 'DB_COMMITTED',
         'hadOriginalPhotos': true,
         'timestamp': DateTime.now().toUtc().toIso8601String(),
       }));
 
-      // Run cold recovery
-      final recovered = await stagingManager.recoverPendingJournal();
+      // Run cold recovery with repository where SQLite committed token_p6r_committed
+      final recovered = await stagingManager.recoverPendingJournal(
+        repository: _HardeningMockRepository(token: 'token_p6r_committed'),
+      );
       expect(recovered.isSuccess, isTrue);
 
       // Committed photo remains
@@ -336,4 +343,14 @@ void main() {
       expect(await stagingManager.journalFile.exists(), isFalse);
     });
   });
+}
+
+class _HardeningMockRepository extends WorkoutRepository {
+  final String? token;
+  _HardeningMockRepository({this.token});
+
+  @override
+  Future<String?> getCurrentRestoreToken() async {
+    return token;
+  }
 }

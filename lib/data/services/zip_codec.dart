@@ -333,6 +333,7 @@ class ZipCodec {
 
       // Stream each entry directly to target directory
       final extractedFiles = <File>[];
+      var actualCumulativeUncompressed = 0;
       for (final desc in entryDescriptors) {
         if (desc.localHeaderOffset + 30 > len) {
           throw const FormatException('Corrupt ZIP: Local header offset extends beyond archive');
@@ -365,48 +366,72 @@ class ZipCodec {
         var computedRunningCrc = 0xFFFFFFFF;
         var uncompressedBytesWritten = 0;
 
-        if (desc.method == 0) {
-          // STORE: Read in 64KB chunks directly into output sink
-          var remaining = desc.compressedSize;
-          while (remaining > 0) {
-            final toRead = remaining < 65536 ? remaining : 65536;
-            final chunk = await raf.read(toRead);
-            if (chunk.isEmpty) break;
-            outSink.add(chunk);
-            computedRunningCrc = Crc32.update(computedRunningCrc, chunk);
-            uncompressedBytesWritten += chunk.length;
-            remaining -= chunk.length;
-          }
-        } else if (desc.method == 8) {
-          // DEFLATE: Stream compressed chunks into ZLibDecoder and write to outSink
-          final zlibSink = ChunkedConversionSink<List<int>>.withCallback((chunks) {
-            for (final chunk in chunks) {
-              uncompressedBytesWritten += chunk.length;
-              if (uncompressedBytesWritten > desc.uncompressedSize) {
-                throw FormatException('Decompressed bytes exceed declared header size in ${desc.path}');
-              }
+        try {
+          if (desc.method == 0) {
+            // STORE: Read in 64KB chunks directly into output sink
+            var remaining = desc.compressedSize;
+            while (remaining > 0) {
+              final toRead = remaining < 65536 ? remaining : 65536;
+              final chunk = await raf.read(toRead);
+              if (chunk.isEmpty) break;
               outSink.add(chunk);
               computedRunningCrc = Crc32.update(computedRunningCrc, chunk);
+              uncompressedBytesWritten += chunk.length;
+              actualCumulativeUncompressed += chunk.length;
+              if (actualCumulativeUncompressed > maxUncompressedBytes) {
+                throw FormatException(
+                  'Archive cumulative uncompressed size exceeds limit ($maxUncompressedBytes bytes)',
+                );
+              }
+              remaining -= chunk.length;
             }
-          });
-          final decoderInput = ZLibDecoder(raw: true).startChunkedConversion(zlibSink);
+          } else if (desc.method == 8) {
+            // DEFLATE: Stream compressed chunks into ZLibDecoder and write directly to outSink incrementally (P6-CLOSE-01)
+            final incrementalSink = _IncrementalDecompressionSink(
+              outSink: outSink,
+              path: desc.path,
+              declaredUncompressedSize: desc.uncompressedSize,
+              maxEntryUncompressedBytes: maxEntryUncompressedBytes,
+              maxCumulativeBytes: maxUncompressedBytes,
+              maxExpansionRatio: maxExpansionRatio,
+              onBytesDecompressed: (delta) {
+                actualCumulativeUncompressed += delta;
+              },
+              getCumulativeBytes: () => actualCumulativeUncompressed,
+            );
+            final decoderInput = ZLibDecoder(raw: true).startChunkedConversion(incrementalSink);
 
-          var remaining = desc.compressedSize;
-          while (remaining > 0) {
-            final toRead = remaining < 65536 ? remaining : 65536;
-            final chunk = await raf.read(toRead);
-            if (chunk.isEmpty) break;
-            decoderInput.add(chunk);
-            remaining -= chunk.length;
+            var remaining = desc.compressedSize;
+            var bytesSinceLastFlush = 0;
+            while (remaining > 0) {
+              final toRead = remaining < 65536 ? remaining : 65536;
+              final chunk = await raf.read(toRead);
+              if (chunk.isEmpty) break;
+              incrementalSink.compressedBytesFed += chunk.length;
+              decoderInput.add(chunk);
+              remaining -= chunk.length;
+
+              // Honor output backpressure by flushing every 2MB
+              if (incrementalSink.bytesWritten - bytesSinceLastFlush >= 2 * 1024 * 1024) {
+                await outSink.flush();
+                bytesSinceLastFlush = incrementalSink.bytesWritten;
+              }
+            }
+            decoderInput.close();
+            uncompressedBytesWritten = incrementalSink.bytesWritten;
+            computedRunningCrc = incrementalSink.runningCrc;
+          } else {
+            throw FormatException('Unsupported ZIP compression method: ${desc.method}');
           }
-          decoderInput.close();
-        } else {
-          await outSink.close();
-          throw FormatException('Unsupported ZIP compression method: ${desc.method}');
-        }
 
-        await outSink.flush();
-        await outSink.close();
+          await outSink.flush();
+          await outSink.close();
+        } catch (e) {
+          try {
+            await outSink.close();
+          } catch (_) {}
+          rethrow;
+        }
 
         if (uncompressedBytesWritten != desc.uncompressedSize) {
           throw FormatException(
@@ -659,16 +684,11 @@ class ZipCodec {
         decompressed = rawBytes;
       } else if (method == 8) {
         final out = BytesBuilder(copy: false);
-        var written = 0;
-        final sink = ChunkedConversionSink<List<int>>.withCallback((chunks) {
-          for (final chunk in chunks) {
-            written += chunk.length;
-            if (written > uncompressedSize) {
-              throw FormatException('Decompressed bytes exceed declared header size in $path');
-            }
-            out.add(chunk);
-          }
-        });
+        final sink = _IncrementalMemoryDecompressionSink(
+          out: out,
+          path: path,
+          declaredUncompressedSize: uncompressedSize,
+        );
         final inputSink = ZLibDecoder(raw: true).startChunkedConversion(sink);
         inputSink.add(rawBytes);
         inputSink.close();
@@ -698,5 +718,116 @@ class ZipCodec {
     }
 
     return entries;
+  }
+}
+
+/// An incremental chunked decompression sink that streams decompressed bytes directly to disk.
+/// Enforces uncompressed bounds, cumulative bounds, and streaming expansion ratios as bytes arrive.
+class _IncrementalDecompressionSink implements ChunkedConversionSink<List<int>> {
+  final IOSink outSink;
+  final String path;
+  final int declaredUncompressedSize;
+  final int maxEntryUncompressedBytes;
+  final int maxCumulativeBytes;
+  final int maxExpansionRatio;
+  final void Function(int delta) onBytesDecompressed;
+  final int Function() getCumulativeBytes;
+
+  int bytesWritten = 0;
+  int runningCrc = 0xFFFFFFFF;
+  int compressedBytesFed = 0;
+  bool isClosed = false;
+
+  _IncrementalDecompressionSink({
+    required this.outSink,
+    required this.path,
+    required this.declaredUncompressedSize,
+    required this.maxEntryUncompressedBytes,
+    required this.maxCumulativeBytes,
+    required this.maxExpansionRatio,
+    required this.onBytesDecompressed,
+    required this.getCumulativeBytes,
+  });
+
+  @override
+  void add(List<int> chunk) {
+    if (isClosed) {
+      throw StateError('Cannot add chunk to closed decompression sink for $path');
+    }
+    if (chunk.isEmpty) return;
+
+    bytesWritten += chunk.length;
+
+    // Check entry uncompressed bounds immediately as bytes arrive
+    if (bytesWritten > declaredUncompressedSize) {
+      throw FormatException(
+        'Decompressed bytes exceed declared header size in $path ($bytesWritten > $declaredUncompressedSize)',
+      );
+    }
+    if (bytesWritten > maxEntryUncompressedBytes) {
+      throw FormatException(
+        'Entry $path decompressed size ($bytesWritten) exceeds entry limit ($maxEntryUncompressedBytes)',
+      );
+    }
+
+    // Check cumulative archive bounds immediately
+    onBytesDecompressed(chunk.length);
+    if (getCumulativeBytes() > maxCumulativeBytes) {
+      throw FormatException(
+        'Archive cumulative uncompressed size exceeds limit ($maxCumulativeBytes bytes)',
+      );
+    }
+
+    // Check streaming expansion ratio for zip-bomb protection
+    if (bytesWritten > 1024 * 1024) {
+      final effectiveCompressed = compressedBytesFed > 0 ? compressedBytesFed : 1;
+      final currentRatio = bytesWritten ~/ effectiveCompressed;
+      if (currentRatio > maxExpansionRatio) {
+        throw FormatException(
+          'Suspicious compression ratio (zip bomb) in $path: $bytesWritten uncompressed from $effectiveCompressed compressed ($currentRatio:1 > $maxExpansionRatio:1)',
+        );
+      }
+    }
+
+    // Direct write to disk stream - zero chunk accumulation in heap
+    outSink.add(chunk);
+    runningCrc = Crc32.update(runningCrc, chunk);
+  }
+
+  @override
+  void close() {
+    isClosed = true;
+  }
+}
+
+/// An incremental chunked decompression sink for in-memory byte decoding with bounded heap checks.
+class _IncrementalMemoryDecompressionSink implements ChunkedConversionSink<List<int>> {
+  final BytesBuilder out;
+  final String path;
+  final int declaredUncompressedSize;
+  int written = 0;
+  bool isClosed = false;
+
+  _IncrementalMemoryDecompressionSink({
+    required this.out,
+    required this.path,
+    required this.declaredUncompressedSize,
+  });
+
+  @override
+  void add(List<int> chunk) {
+    if (isClosed) throw StateError('Decompression sink is closed for $path');
+    if (chunk.isEmpty) return;
+
+    written += chunk.length;
+    if (written > declaredUncompressedSize) {
+      throw FormatException('Decompressed bytes exceed declared header size in $path');
+    }
+    out.add(chunk);
+  }
+
+  @override
+  void close() {
+    isClosed = true;
   }
 }

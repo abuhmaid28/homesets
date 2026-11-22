@@ -238,6 +238,12 @@ void main() {
       final photo = File('${stagingManager.photosDir.path}/p1.jpg');
       await photo.writeAsString('COMMITTED_DATA');
 
+      final db = await DatabaseHelper.instance.database;
+      await db.insert(
+        'app_metadata',
+        {'key': 'restore_token', 'value': 'token_done'},
+      );
+
       await stagingManager.journalFile.writeAsString(jsonEncode({
         'restoreToken': 'token_done',
         'phase': 'DB_COMMITTED',

@@ -134,17 +134,27 @@
 | Verification Step | Command / Tool | Result | Details |
 | :--- | :--- | :--- | :--- |
 | **Dart Analyzer** | `flutter analyze --fatal-infos` | **PASS (0 issues)** | Zero errors, zero warnings, zero infos across all packages and test files. |
-| **Unit & Widget Tests** | `flutter test` | **PASS (148/148)** | All 148 tests green across data, domain, and feature suites (+6 new durability/fault tests). |
+| **Unit & Widget Tests** | `flutter test` | **PASS (171/171)** | All 171 tests green across data, domain, and feature suites (+23 new security/streaming exit tests). |
 | **Python Quality Suite** | `python tools/quality/run_all_checks.py` | **PASS (4/4 suites)** | Fixtures, links, secrets, media scan, and code fence hygiene verified. |
-| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 30.1s. |
-| **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Monitored on push to `campaign/p6-reliability`. |
+| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 28.1s. |
+| **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Verified on push to `campaign/p6-reliability`. |
 
 ---
 
-## 8. Commit History & PR Status
+## 8. P6 Security & Integration Exit Matrix (P6-CLOSE-01 to P6-CLOSE-03)
+
+| Item ID | Severity | Finding & Defect Description | Resolution & Architectural Implementation | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-CLOSE-01** | **CRITICAL** | ZIP DEFLATE streaming extraction accumulated all uncompressed chunks in heap via `ChunkedConversionSink.withCallback`, retaining entire files in memory until closure. | Replaced accumulating callback with custom `_IncrementalDecompressionSink` writing chunks directly to disk stream as bytes arrive without intermediate chunk buffering. Evaluates declared entry size, max entry size, cumulative archive size, and streaming expansion ratio (zip bomb) immediately on each chunk. Honors backpressure via periodic 2MB flushes. | `lib/data/services/zip_codec.dart` and `test/data/p6_security_exit_test.dart` (WP02 & WP04 suites pass). |
+| **P6-CLOSE-02** | **CRITICAL** | Journal `DB_COMMITTED` text alone authorized deleting original rollback photos without SQLite token verification, causing photo loss on token mismatch, missing token, or corrupt fields. | Enforced strict recovery protocol in `recoverPendingJournal`: validates nonempty `restoreToken`, approved `phase`, and boolean `hadOriginalPhotos`. Cross-verifies token with SQLite via `repository.getCurrentRestoreToken()`. If token matches, finalizes. If token does NOT match, fails closed on `DB_COMMITTED` and preserves both photo generations and journal on disk without deletion. If crash occurred pre-commit, safely rolls back original photos. | `lib/data/services/backup_staging_manager.dart` and `test/data/p6_security_exit_test.dart` (P6-CLOSE-02A to 02G pass). |
+| **P6-CLOSE-03** | **OPEN GATE** | Reminders require Android 13+ `POST_NOTIFICATIONS` permission, unapproved under GOV24. | Release `AndroidManifest.xml` keeps 0 permissions. Notification posting safely bypassed when blocked at OS level; UI surfaces disabled banner. Accurately documented as BLOCKED under GOV25 owner decision gate. Honor physical testing remains UNVERIFIED pending C9. | `android/app/src/main/AndroidManifest.xml`, `settings_screen.dart`, and `P6_DEPENDENCY_AND_PERMISSION_PROPOSAL.md`. |
+
+---
+
+## 9. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** Final durability, fault injection, and review hardening completed. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
+- **Status:** P6 Security & Integration Exit complete. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet
@@ -157,3 +167,5 @@
   - `78ce661` docs(p6): record rollback fix in checkpoint ledger
   - `82ac35c` feat(p6): P6-R01 to P6-R07 security hardening, hostile archive defenses, crash journal, and reminder receiver
   - `b818dc9` feat(p6): final crash-safe restore protocol, streaming archive bounds, startup recovery, and reminder permission gating
+  - `4c29728` feat(p6): fail-closed journal recovery, token query error safety, and truthful hash vectors
+  - `a1cd977` test(p6): ensure backup button visibility and pump cycles in settings screen test
