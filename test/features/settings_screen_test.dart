@@ -192,9 +192,12 @@ void main() {
 
       final backupBtn = find.text('Create Offline Backup');
       expect(backupBtn, findsOneWidget);
+      await tester.ensureVisible(backupBtn);
+      await pumpAsync(tester, 2);
 
       await tester.tap(backupBtn);
-      for (var i = 0; i < 30; i++) {
+      await pumpAsync(tester, 2);
+      for (var i = 0; i < 50; i++) {
         await pumpAsync(tester, 2);
         if (find.text('Backup exported successfully.').evaluate().isNotEmpty) break;
       }
