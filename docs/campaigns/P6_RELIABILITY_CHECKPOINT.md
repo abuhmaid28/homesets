@@ -134,9 +134,9 @@
 | Verification Step | Command / Tool | Result | Details |
 | :--- | :--- | :--- | :--- |
 | **Dart Analyzer** | `flutter analyze --fatal-infos` | **PASS (0 issues)** | Zero errors, zero warnings, zero infos across all packages and test files. |
-| **Unit & Widget Tests** | `flutter test` | **PASS (171/171)** | All 171 tests green across data, domain, and feature suites (+23 new security/streaming exit tests). |
+| **Unit & Widget Tests** | `flutter test` | **PASS (183/183)** | All 183 tests green across data, domain, and feature suites (+12 new data-safety acceptance tests). |
 | **Python Quality Suite** | `python tools/quality/run_all_checks.py` | **PASS (4/4 suites)** | Fixtures, links, secrets, media scan, and code fence hygiene verified. |
-| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 28.1s. |
+| **Android APK Build** | `flutter build apk --debug` | **PASS** | `build/app/outputs/flutter-apk/app-debug.apk` built cleanly in 37.0s. |
 | **GitHub Actions CI** | Exact-Head Workflow | **MONITORED** | Verified on push to `campaign/p6-reliability`. |
 
 ---
@@ -151,10 +151,19 @@
 
 ---
 
-## 9. Commit History & PR Status
+## 9. P6 Final Data-Safety Acceptance Matrix (P6-EXIT-01 & P6-EXIT-02)
+
+| Item ID | Severity | Finding & Defect Description | Resolution & Architectural Implementation | Verification Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **P6-EXIT-01** | **HIGH** | SQLite generation match could destroy only remaining photos when active photo generation was missing, partial, or corrupted. | Enforced photo recovery integrity in `BackupStagingManager.validateActivePhotos`: before deleting rollback photos, cross-checks all committed SQLite photo records against `photosDir`, confirming files exist and have non-zero length. If `photosDir` is missing or any file is missing/corrupted (0-byte), fails closed, preserving both photo generations and recovery journal intact. Validated in `recoverPendingJournal` and `executeTwoPhaseRestore`. | `lib/data/services/backup_staging_manager.dart` and `test/data/p6_data_safety_acceptance_test.dart` (Scenarios 1–6 pass). |
+| **P6-EXIT-02** | **HIGH** | Unbounded central-directory heap allocation from untrusted ZIP input: `ZipCodec.extractArchiveFileStream` read full EOCD-declared central directory into heap before structural validation. | Imposed strict 2MB central-directory metadata budget before allocation (`maxCentralDirectoryBytes = 2 * 1024 * 1024`); rejected archives with `cdSize > 2MB` or `cdSize < totalEntries * 46` pre-allocation. Replaced monolithic `raf.read(cdSize)` with incremental record-by-record parsing directly from `RandomAccessFile`. Enforced strict bounds on entry name (<=1024), extra field (<=2048), comment (<=2048), cursor bounds, and trailing garbage. | `lib/data/services/zip_codec.dart` and `test/data/p6_data_safety_acceptance_test.dart` (Oversized, undersized, offset-beyond, long-name, boundary-overflow, and trailing-garbage suites pass). |
+
+---
+
+## 10. Commit History & PR Status
 
 - **Draft PR:** [#18](https://github.com/abuhmaid28/homesets/pull/18) (Targeting `main`)
-- **Status:** P6 Security & Integration Exit complete. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
+- **Status:** P6 Final Data-Safety Acceptance complete. Kept **UNMERGED** in Draft awaiting independent review under GOV08.
 - **Commit Ledger:**
   - `6efb48c` docs(p6): WP01 preflight verification and 20-WP campaign acceptance ledger
   - `36adee3` docs(p6): WP02 backup threat model and WP03 dependency/permission decision packet
@@ -169,3 +178,5 @@
   - `b818dc9` feat(p6): final crash-safe restore protocol, streaming archive bounds, startup recovery, and reminder permission gating
   - `4c29728` feat(p6): fail-closed journal recovery, token query error safety, and truthful hash vectors
   - `a1cd977` test(p6): ensure backup button visibility and pump cycles in settings screen test
+  - `eee03b5` feat(p6): incremental ZIP streaming decompression, strict SQLite generation recovery, and hostile archive security
+  - `e1c933a` chore(p6): merge latest main status documentation

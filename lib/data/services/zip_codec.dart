@@ -96,6 +96,10 @@ class ZipCodec {
   static const int defaultMaxUncompressedBytes = 500 * 1024 * 1024; // 500 MB
   static const int defaultMaxEntryUncompressedBytes = 250 * 1024 * 1024; // 250 MB
   static const int defaultMaxExpansionRatio = 100;
+  static const int defaultMaxCentralDirectoryBytes = 2 * 1024 * 1024; // 2 MB metadata budget (P6-EXIT-02)
+  static const int defaultMaxEntryNameBytes = 1024; // 1 KB max entry path
+  static const int defaultMaxExtraFieldBytes = 2048; // 2 KB max extra field
+  static const int defaultMaxCommentBytes = 2048; // 2 KB max comment
 
   /// Streams archive creation directly from disk to output file with bounded O(1) buffer allocations (P6-FINAL-05).
   static Future<void> createArchiveFileStream({
@@ -213,7 +217,7 @@ class ZipCodec {
     }
   }
 
-  /// Streams archive extraction directly to disk with bounded O(1) buffer allocations (P6-FINAL-05).
+  /// Streams archive extraction directly to disk with bounded O(1) buffer allocations (P6-FINAL-05, P6-EXIT-02).
   static Future<List<File>> extractArchiveFileStream({
     required File archiveFile,
     required Directory targetDir,
@@ -222,6 +226,10 @@ class ZipCodec {
     int maxUncompressedBytes = defaultMaxUncompressedBytes,
     int maxEntryUncompressedBytes = defaultMaxEntryUncompressedBytes,
     int maxExpansionRatio = defaultMaxExpansionRatio,
+    int maxCentralDirectoryBytes = defaultMaxCentralDirectoryBytes,
+    int maxEntryNameBytes = defaultMaxEntryNameBytes,
+    int maxExtraFieldBytes = defaultMaxExtraFieldBytes,
+    int maxCommentBytes = defaultMaxCommentBytes,
   }) async {
     final len = await archiveFile.length();
     if (len > maxArchiveBytes) {
@@ -259,49 +267,84 @@ class ZipCodec {
       final cdSize = byteData.getUint32(eocdRelativeOffset + 12, Endian.little);
       final cdOffset = byteData.getUint32(eocdRelativeOffset + 16, Endian.little);
 
+      // P6-EXIT-02: Enforce central directory metadata budget before any allocations
+      if (cdSize > maxCentralDirectoryBytes) {
+        throw FormatException(
+          'Central directory size ($cdSize bytes) exceeds metadata budget of $maxCentralDirectoryBytes bytes',
+        );
+      }
+
+      if (cdSize < totalEntries * 46) {
+        throw FormatException(
+          'Central directory size ($cdSize bytes) is smaller than minimum required for $totalEntries entries (${totalEntries * 46} bytes)',
+        );
+      }
+
       if (cdOffset + cdSize > len) {
         throw const FormatException('Corrupt ZIP: Central directory extends beyond archive boundary');
       }
 
-      // Read Central Directory entries
+      // Read Central Directory entries incrementally from file with zero whole-CD memory allocation (P6-EXIT-02)
       await raf.setPosition(cdOffset);
-      final cdBytes = await raf.read(cdSize);
-      if (cdBytes.length != cdSize) {
-        throw const FormatException('Corrupt ZIP: Could not read central directory');
-      }
-      final cdData = ByteData.sublistView(cdBytes);
-
       final entryDescriptors = <_ZipEntryDescriptor>[];
       final seenPaths = <String>{};
       var cumulativeUncompressed = 0;
-      var cdCursor = 0;
+      var bytesReadFromCd = 0;
 
       for (var i = 0; i < totalEntries; i++) {
-        if (cdCursor + 46 > cdSize) {
+        if (bytesReadFromCd + 46 > cdSize) {
           throw const FormatException('Corrupt ZIP: Truncated central directory header');
         }
 
-        final sig = cdData.getUint32(cdCursor, Endian.little);
+        final headerBytes = await raf.read(46);
+        if (headerBytes.length != 46) {
+          throw const FormatException('Corrupt ZIP: Truncated central directory header');
+        }
+        final cdData = ByteData.sublistView(headerBytes);
+
+        final sig = cdData.getUint32(0, Endian.little);
         if (sig != _centralDirSig) {
-          throw FormatException('Invalid central directory signature at offset $cdCursor: 0x${sig.toRadixString(16)}');
+          throw FormatException('Invalid central directory signature at offset $bytesReadFromCd: 0x${sig.toRadixString(16)}');
         }
 
-        final method = cdData.getUint16(cdCursor + 10, Endian.little);
-        final crc = cdData.getUint32(cdCursor + 16, Endian.little);
-        final compressedSize = cdData.getUint32(cdCursor + 20, Endian.little);
-        final uncompressedSize = cdData.getUint32(cdCursor + 24, Endian.little);
-        final nameLen = cdData.getUint16(cdCursor + 28, Endian.little);
-        final extraLen = cdData.getUint16(cdCursor + 30, Endian.little);
-        final commentLen = cdData.getUint16(cdCursor + 32, Endian.little);
-        final localHeaderOffset = cdData.getUint32(cdCursor + 42, Endian.little);
+        final method = cdData.getUint16(10, Endian.little);
+        final crc = cdData.getUint32(16, Endian.little);
+        final compressedSize = cdData.getUint32(20, Endian.little);
+        final uncompressedSize = cdData.getUint32(24, Endian.little);
+        final nameLen = cdData.getUint16(28, Endian.little);
+        final extraLen = cdData.getUint16(30, Endian.little);
+        final commentLen = cdData.getUint16(32, Endian.little);
+        final localHeaderOffset = cdData.getUint32(42, Endian.little);
 
-        final nameStart = cdCursor + 46;
-        if (nameStart + nameLen > cdSize) {
+        if (nameLen > maxEntryNameBytes) {
+          throw FormatException('Entry name length ($nameLen bytes) exceeds limit of $maxEntryNameBytes bytes');
+        }
+        if (extraLen > maxExtraFieldBytes) {
+          throw FormatException('Entry extra field length ($extraLen bytes) exceeds limit of $maxExtraFieldBytes bytes');
+        }
+        if (commentLen > maxCommentBytes) {
+          throw FormatException('Entry comment length ($commentLen bytes) exceeds limit of $maxCommentBytes bytes');
+        }
+
+        final recordTotalLen = 46 + nameLen + extraLen + commentLen;
+        if (bytesReadFromCd + recordTotalLen > cdSize) {
           throw const FormatException('Corrupt ZIP: Entry path extends beyond central directory');
         }
 
-        final path = utf8.decode(cdBytes.sublist(nameStart, nameStart + nameLen));
-        cdCursor += 46 + nameLen + extraLen + commentLen;
+        final nameBytes = await raf.read(nameLen);
+        if (nameBytes.length != nameLen) {
+          throw const FormatException('Corrupt ZIP: Truncated entry name in central directory');
+        }
+        final path = utf8.decode(nameBytes);
+
+        // Safely skip extra field and comment using stream cursor
+        final skipLen = extraLen + commentLen;
+        if (skipLen > 0) {
+          final curPos = await raf.position();
+          await raf.setPosition(curPos + skipLen);
+        }
+
+        bytesReadFromCd += recordTotalLen;
 
         // Threat validations before extracting
         if (path.contains('..') || path.startsWith('/') || path.startsWith('\\') || path.contains(':')) {
@@ -329,6 +372,12 @@ class ZipCodec {
           uncompressedSize: uncompressedSize,
           localHeaderOffset: localHeaderOffset,
         ));
+      }
+
+      if (bytesReadFromCd != cdSize) {
+        throw FormatException(
+          'Corrupt ZIP: Central directory contains unexpected trailing bytes (expected $cdSize bytes, parsed $bytesReadFromCd bytes)',
+        );
       }
 
       // Stream each entry directly to target directory
@@ -576,6 +625,10 @@ class ZipCodec {
     int maxUncompressedBytes = defaultMaxUncompressedBytes,
     int maxEntryUncompressedBytes = defaultMaxEntryUncompressedBytes,
     int maxExpansionRatio = defaultMaxExpansionRatio,
+    int maxCentralDirectoryBytes = defaultMaxCentralDirectoryBytes,
+    int maxEntryNameBytes = defaultMaxEntryNameBytes,
+    int maxExtraFieldBytes = defaultMaxExtraFieldBytes,
+    int maxCommentBytes = defaultMaxCommentBytes,
   }) {
     final len = zipBytes.length;
     if (len > maxArchiveBytes) {
@@ -607,6 +660,18 @@ class ZipCodec {
     final cdSize = byteData.getUint32(eocdOffset + 12, Endian.little);
     final cdOffset = byteData.getUint32(eocdOffset + 16, Endian.little);
 
+    if (cdSize > maxCentralDirectoryBytes) {
+      throw FormatException(
+        'Central directory size ($cdSize bytes) exceeds metadata budget of $maxCentralDirectoryBytes bytes',
+      );
+    }
+
+    if (cdSize < totalEntries * 46) {
+      throw FormatException(
+        'Central directory size ($cdSize bytes) is smaller than minimum required for $totalEntries entries (${totalEntries * 46} bytes)',
+      );
+    }
+
     if (cdOffset + cdSize > len) {
       throw const FormatException('Corrupt ZIP: Central directory extends beyond archive boundary');
     }
@@ -617,7 +682,7 @@ class ZipCodec {
     var offset = cdOffset;
 
     for (var i = 0; i < totalEntries; i++) {
-      if (offset + 46 > len) {
+      if (offset + 46 > cdOffset + cdSize) {
         throw const FormatException('Corrupt ZIP: Truncated central directory header');
       }
 
@@ -635,13 +700,24 @@ class ZipCodec {
       final commentLen = byteData.getUint16(offset + 32, Endian.little);
       final localHeaderOffset = byteData.getUint32(offset + 42, Endian.little);
 
-      final nameStart = offset + 46;
-      if (nameStart + nameLen > len) {
-        throw const FormatException('Corrupt ZIP: Entry path extends beyond archive');
+      if (nameLen > maxEntryNameBytes) {
+        throw FormatException('Entry name length ($nameLen bytes) exceeds limit of $maxEntryNameBytes bytes');
+      }
+      if (extraLen > maxExtraFieldBytes) {
+        throw FormatException('Entry extra field length ($extraLen bytes) exceeds limit of $maxExtraFieldBytes bytes');
+      }
+      if (commentLen > maxCommentBytes) {
+        throw FormatException('Entry comment length ($commentLen bytes) exceeds limit of $maxCommentBytes bytes');
       }
 
+      final recordTotalLen = 46 + nameLen + extraLen + commentLen;
+      if (offset + recordTotalLen > cdOffset + cdSize) {
+        throw const FormatException('Corrupt ZIP: Entry path extends beyond central directory');
+      }
+
+      final nameStart = offset + 46;
       final path = utf8.decode(zipBytes.sublist(nameStart, nameStart + nameLen));
-      offset += 46 + nameLen + extraLen + commentLen;
+      offset += recordTotalLen;
 
       if (path.contains('..') || path.startsWith('/') || path.startsWith('\\') || path.contains(':')) {
         throw FormatException('Path traversal attempt in entry: $path');

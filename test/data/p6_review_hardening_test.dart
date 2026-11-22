@@ -8,6 +8,7 @@ import 'package:homesets/data/services/backup_hash_provider.dart';
 import 'package:homesets/data/services/backup_staging_manager.dart';
 import 'package:homesets/data/services/zip_codec.dart';
 import 'package:homesets/domain/backup/backup_models.dart';
+import 'package:homesets/domain/models/domain_models.dart';
 
 void main() {
   late Directory tempDir;
@@ -297,7 +298,17 @@ void main() {
 
       // Run cold recovery with repository where SQLite committed token_p6r_committed
       final recovered = await stagingManager.recoverPendingJournal(
-        repository: _HardeningMockRepository(token: 'token_p6r_committed'),
+        repository: _HardeningMockRepository(
+          token: 'token_p6r_committed',
+          photos: [
+            ProgressPhoto(
+              id: 'committed_1',
+              filePath: 'progress_photos/committed.jpg',
+              angle: PhotoAngle.front,
+              takenAt: DateTime.now().toUtc(),
+            ),
+          ],
+        ),
       );
       expect(recovered.isSuccess, isTrue);
 
@@ -347,10 +358,16 @@ void main() {
 
 class _HardeningMockRepository extends WorkoutRepository {
   final String? token;
-  _HardeningMockRepository({this.token});
+  final List<ProgressPhoto> photos;
+  _HardeningMockRepository({this.token, this.photos = const []});
 
   @override
   Future<String?> getCurrentRestoreToken() async {
     return token;
+  }
+
+  @override
+  Future<List<ProgressPhoto>> getProgressPhotos({PhotoAngle? angle}) async {
+    return photos;
   }
 }

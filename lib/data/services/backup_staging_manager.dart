@@ -58,6 +58,45 @@ class BackupStagingManager {
     'PHOTOS_PRESERVED',
   };
 
+  /// Resolves a photo path from SQLite against the app documents / photos directory.
+  File _resolvePhotoFile(String filePath) {
+    if (filePath.startsWith('progress_photos/') || filePath.startsWith(r'progress_photos\')) {
+      final f = File('${appDocsDir.path}/$filePath');
+      if (f.existsSync()) return f;
+    }
+    final filename = filePath.split(RegExp(r'[/\\]')).last;
+    final inPhotos = File('${photosDir.path}/$filename');
+    if (inPhotos.existsSync()) return inPhotos;
+
+    final direct = File(filePath);
+    if (direct.isAbsolute && direct.existsSync()) return direct;
+
+    return inPhotos;
+  }
+
+  /// Validates that all committed photo records in SQLite are present on disk in [photosDir]
+  /// and are non-empty files (P6-EXIT-01).
+  Future<bool> validateActivePhotos(WorkoutRepository repository) async {
+    final photoRecords = await repository.getProgressPhotos();
+    if (photoRecords.isEmpty) {
+      return true;
+    }
+    if (!await photosDir.exists()) {
+      return false;
+    }
+    for (final photo in photoRecords) {
+      final file = _resolvePhotoFile(photo.filePath);
+      if (!await file.exists()) {
+        return false;
+      }
+      final length = await file.length();
+      if (length <= 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Recovers any pending restoration from a crash or process kill based on the persistent journal.
   /// Cross-verifies the database restore token before deciding whether to roll back or finalize photos.
   Future<RestoreRecoveryResult> recoverPendingJournal({
@@ -123,6 +162,15 @@ class BackupStagingManager {
 
         if (dbMatches) {
           // SQLite HAS committed this exact restore generation.
+          // P6-EXIT-01: Must validate that active photos are complete before deleting rollback photos!
+          final photosComplete = await validateActivePhotos(repository);
+          if (!photosComplete) {
+            return RestoreRecoveryResult.failure(
+              'Committed restore token matches, but active photo generation is missing, incomplete, or corrupted. '
+              'Recovery aborted to prevent data loss. Both photo generations and recovery journal preserved.',
+            );
+          }
+
           // Finalize new photos by purging rollback directory.
           if (await photosBackupDir.exists()) {
             await photosBackupDir.delete(recursive: true);
@@ -286,7 +334,16 @@ class BackupStagingManager {
       );
       phase = 'DB_COMMITTED';
 
-      // Step 6: Success - purge rollback backup directory and journal
+      // Step 6: Success - validate active photos before purging rollback backup directory and journal (P6-EXIT-01)
+      if (repository != null) {
+        final photosComplete = await validateActivePhotos(repository);
+        if (!photosComplete) {
+          throw const BackupRestoreException(
+            'Restore completed SQLite commit, but active photo files validation failed. '
+            'Preserving rollback photos and journal for recovery.',
+          );
+        }
+      }
       if (hadOriginalPhotos && await photosBackupDir.exists()) {
         await photosBackupDir.delete(recursive: true);
       }
@@ -330,14 +387,16 @@ class BackupStagingManager {
       }
 
       if (dbCommitted) {
-        // SQLite verified commit: finalize new photos
+        // SQLite verified commit: finalize new photos only if active photos are complete
         try {
-          if (hadOriginalPhotos && await photosBackupDir.exists()) {
-            await photosBackupDir.delete(recursive: true);
-          }
-          await cleanStaging();
-          if (await journalFile.exists()) {
-            await journalFile.delete();
+          if (repository != null && await validateActivePhotos(repository)) {
+            if (hadOriginalPhotos && await photosBackupDir.exists()) {
+              await photosBackupDir.delete(recursive: true);
+            }
+            await cleanStaging();
+            if (await journalFile.exists()) {
+              await journalFile.delete();
+            }
           }
         } catch (_) {}
         return;
