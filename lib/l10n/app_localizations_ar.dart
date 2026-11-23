@@ -535,4 +535,16 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get reminderScheduleFailed =>
       'فشل جدولة التذكير. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderCancelFailed =>
+      'فشل إلغاء التنبيه المجدول. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderSaveFailed =>
+      'فشل حفظ إعدادات التذكير. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderReconcileFailed =>
+      'تم إلغاء إذن الإشعارات، ولكن تعذر إلغاء التنبيه المجدول. برجاء مراجعة إعدادات النظام.';
 }

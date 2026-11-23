@@ -123,7 +123,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
-    // 5. Daily reminder startup reconciliation and restore (WP08)
+    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01)
     try {
       final reminderSettings = await widget.repository.getReminderSettings();
       if (reminderSettings.isEnabled) {
@@ -136,7 +136,12 @@ class _HomesetsAppState extends State<HomesetsApp> {
             body: 'Ready for your workout?',
           );
         } else {
-          // Reconcile if permission was revoked while app was closed
+          // Reconcile if permission was revoked while app was closed:
+          // Explicitly cancel the existing scheduled alarm so it does not persist in
+          // AlarmManager and fire if the user later regrants permission without an app opt-in (P6-NOTIFY-01).
+          try {
+            await _reminderPlatformService.cancelDailyReminder();
+          } catch (_) {}
           final reconciled = reminderSettings.copyWith(
             isEnabled: false,
             updatedAt: DateTime.now(),

@@ -229,5 +229,8 @@
   "reminderNotificationTitle": "HOMESETS Workout",
   "reminderNotificationBody": "Ready for your daily workout? Take it at your own pace.",
   "reminderRebootNotice": "Note: Android may clear scheduled alarms if the phone restarts. Open HOMESETS to automatically restore your reminder.",
-  "reminderScheduleFailed": "Failed to schedule reminder. Please try again."
+  "reminderScheduleFailed": "Failed to schedule reminder. Please try again.",
+  "reminderCancelFailed": "Failed to cancel scheduled reminder. Please try again.",
+  "reminderSaveFailed": "Failed to save reminder settings. Please try again.",
+  "reminderReconcileFailed": "Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings."
 }

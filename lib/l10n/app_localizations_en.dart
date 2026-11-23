@@ -534,4 +534,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reminderScheduleFailed =>
       'Failed to schedule reminder. Please try again.';
+
+  @override
+  String get reminderCancelFailed =>
+      'Failed to cancel scheduled reminder. Please try again.';
+
+  @override
+  String get reminderSaveFailed =>
+      'Failed to save reminder settings. Please try again.';
+
+  @override
+  String get reminderReconcileFailed =>
+      'Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.';
 }

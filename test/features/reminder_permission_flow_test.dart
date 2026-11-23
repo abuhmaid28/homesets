@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homesets/core/theme/homesets_theme.dart';
@@ -18,9 +19,21 @@ import 'package:homesets/l10n/app_localizations.dart';
 import 'package:homesets/main.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+class FailingSettingsWorkoutRepository extends WorkoutRepository {
+  bool failSaveReminderSettings = false;
+
+  @override
+  Future<void> saveReminderSettings(ReminderSettings settings) async {
+    if (failSaveReminderSettings) {
+      throw Exception('Simulated SQLite disk/write failure during saveReminderSettings');
+    }
+    return super.saveReminderSettings(settings);
+  }
+}
+
 void main() {
   late Directory tempDir;
-  late WorkoutRepository repository;
+  late FailingSettingsWorkoutRepository repository;
   late MockBackupPlatformService mockBackupPlatform;
   late MockReminderPlatformService mockReminderPlatform;
   late MockPhotoService mockPhotoService;
@@ -35,7 +48,7 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('homesets_reminder_test_');
-    repository = WorkoutRepository();
+    repository = FailingSettingsWorkoutRepository();
     mockBackupPlatform = MockBackupPlatformService();
     mockReminderPlatform = MockReminderPlatformService();
     mockPhotoService = MockPhotoService();
@@ -90,6 +103,8 @@ void main() {
 
   Widget createSettingsScreenWidget({
     Locale locale = const Locale('en'),
+    WorkoutRepository? customRepository,
+    ReminderPlatformService? customReminderPlatform,
   }) {
     return MaterialApp(
       locale: locale,
@@ -105,11 +120,11 @@ void main() {
         Locale('ar', ''),
       ],
       home: SettingsScreen(
-        repository: repository,
+        repository: customRepository ?? repository,
         backupPlatformService: mockBackupPlatform,
         backupArchiveService: archiveService,
         backupStagingManager: stagingManager,
-        reminderPlatformService: mockReminderPlatform,
+        reminderPlatformService: customReminderPlatform ?? mockReminderPlatform,
         onEditProfile: () {},
         onBack: () {},
         onDataRestored: () {},
@@ -338,9 +353,14 @@ void main() {
       expect(saved?.isEnabled, isTrue);
     });
 
-    testWidgets('10. App startup reconciles isEnabled to false if permission was revoked while closed', (tester) async {
+    testWidgets('10. P6-NOTIFY-01: App startup cancels previously scheduled alarm when permission revoked, preventing stale alarm on regrant', (tester) async {
       setupPhoneViewport(tester);
-      mockReminderPlatform.notificationsEnabled = false; // Revoked while closed
+
+      // Initial state: alarm was previously active
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 17;
+      mockReminderPlatform.scheduledMinute = 45;
+      mockReminderPlatform.notificationsEnabled = false; // Permission was revoked in OS settings while app closed
 
       await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
         isEnabled: true,
@@ -357,13 +377,22 @@ void main() {
       ));
       await pumpAsync(tester, 10);
 
+      // P6-NOTIFY-01: Verify startup explicitly cancelled the alarm in AlarmManager!
       expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
 
       final saved = await tester.runAsync(() => repository.getReminderSettings());
       expect(saved?.isEnabled, isFalse);
+
+      // Subsequent scenario: user regrants notifications in Android OS settings
+      // WITHOUT opening HOMESETS or turning the reminder ON.
+      mockReminderPlatform.notificationsEnabled = true;
+
+      // Alarm must remain CANCELLED. No unexpected reminder remains scheduled.
+      expect(mockReminderPlatform.isScheduled, isFalse);
     });
 
-    testWidgets('11. App resume reconciles revoked notification permission and updates UI', (tester) async {
+    testWidgets('11. App resume reconciles revoked notification permission, cancels alarm, and updates UI', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
 
@@ -412,6 +441,213 @@ void main() {
 
       expect(find.text('التذكير اليومي المحلي'), findsOneWidget);
       expect(find.textContaining('تذكير يومي لطيف في الوقت اللي يناسب شيفتك'), findsOneWidget);
+    });
+
+    testWidgets('13. P6-NOTIFY-02: Toggle OFF when native cancellation returns false keeps toggle ON and does not save false', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.cancelDailyReminderResult = false; // Native cancellation fails
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // Attempt toggle OFF
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Error snackbar shown
+      expect(find.textContaining('Failed to cancel scheduled reminder'), findsOneWidget);
+
+      // Toggle remains ON (no misleading disabled state!)
+      switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // SQLite retains isEnabled: true
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+    });
+
+    testWidgets('14. P6-NOTIFY-02: Toggle OFF when native cancellation throws PlatformException keeps toggle ON and does not save false', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.cancelDailyReminderException = PlatformException(
+        code: 'CANCEL_FAILED',
+        message: 'AlarmManager service unavailable',
+      );
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // Attempt toggle OFF
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Error snackbar shown
+      expect(find.textContaining('Failed to cancel scheduled reminder'), findsOneWidget);
+
+      // Toggle remains ON
+      switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // SQLite retains isEnabled: true
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+    });
+
+    testWidgets('15. P6-NOTIFY-02: App resume reconciliation when cancellation fails alerts user without falsely marking disabled in SQLite', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.cancelDailyReminderResult = false; // Native cancellation fails
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      // Simulate permission revoked in OS settings
+      mockReminderPlatform.notificationsEnabled = false;
+
+      // Resume app
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await pumpAsync(tester);
+
+      // Alert snackbar shown explaining cancellation could not be completed
+      expect(find.textContaining('could not be cancelled'), findsOneWidget);
+
+      // SQLite has NOT been falsely marked disabled
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+    });
+
+    testWidgets('16. P6-NOTIFY-03: Toggle ON compensates by cancelling scheduled alarm if SQLite save fails', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      repository.failSaveReminderSettings = true; // Simulate DB write failure
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Save failed snackbar shown
+      expect(find.textContaining('Failed to save reminder settings'), findsOneWidget);
+
+      // Compensating action cancelled the scheduled alarm!
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
+
+      // Switch remains OFF
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isFalse);
+    });
+
+    testWidgets('17. P6-NOTIFY-03: Toggle OFF compensates by restoring schedule if SQLite save fails', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 15;
+      mockReminderPlatform.scheduledMinute = 30;
+
+      // Persist enabled
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      // Now inject failure on next save
+      repository.failSaveReminderSettings = true;
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Save failed snackbar shown
+      expect(find.textContaining('Failed to save reminder settings'), findsOneWidget);
+
+      // Compensating action restored the schedule to maintain consistency with SQLite!
+      expect(mockReminderPlatform.isScheduled, isTrue);
+      expect(mockReminderPlatform.scheduledHour, equals(15));
+      expect(mockReminderPlatform.scheduledMinute, equals(30));
+
+      // Switch remains ON
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+    });
+
+    testWidgets('18. P6-NOTIFY-03: Time change compensates by restoring original schedule if SQLite save fails', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 15;
+      mockReminderPlatform.scheduledMinute = 30;
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      // Inject save failure
+      repository.failSaveReminderSettings = true;
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      expect(find.text('Change Time'), findsOneWidget);
+      await tester.tap(find.text('Change Time'));
+      await pumpAsync(tester);
+
+      // Tap OK in TimePicker
+      final okBtn = find.text('OK');
+      expect(okBtn, findsOneWidget);
+      await tester.tap(okBtn);
+      await pumpAsync(tester);
+
+      // Save failed snackbar shown
+      expect(find.textContaining('Failed to save reminder settings'), findsOneWidget);
+
+      // Compensating action restored original scheduled alarm (15:30)
+      expect(mockReminderPlatform.isScheduled, isTrue);
+      expect(mockReminderPlatform.scheduledHour, equals(15));
+      expect(mockReminderPlatform.scheduledMinute, equals(30));
     });
   });
 }

@@ -74,18 +74,41 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     try {
       final notificationsEnabled = await widget.reminderPlatformService.areNotificationsEnabled();
       if (!notificationsEnabled && _reminderSettings.isEnabled) {
-        // Notification permission was revoked in system settings while app was backgrounded
-        final updated = _reminderSettings.copyWith(
-          isEnabled: false,
-          updatedAt: DateTime.now(),
-        );
-        await widget.repository.saveReminderSettings(updated);
-        await widget.reminderPlatformService.cancelDailyReminder();
-        if (mounted) {
-          setState(() {
-            _reminderSettings = updated;
-            _notificationsEnabled = false;
-          });
+        // Notification permission was revoked in system settings while app was backgrounded.
+        // Explicitly cancel the active native alarm first so no stale alarm remains (P6-NOTIFY-01, P6-NOTIFY-02).
+        bool cancelSuccess = false;
+        try {
+          cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
+        } catch (_) {
+          cancelSuccess = false;
+        }
+
+        if (cancelSuccess) {
+          final updated = _reminderSettings.copyWith(
+            isEnabled: false,
+            updatedAt: DateTime.now(),
+          );
+          await widget.repository.saveReminderSettings(updated);
+          if (mounted) {
+            setState(() {
+              _reminderSettings = updated;
+              _notificationsEnabled = false;
+            });
+          }
+        } else {
+          // Native cancellation failed; do NOT falsely mark disabled in SQLite/UI (P6-NOTIFY-02)
+          if (mounted) {
+            final l10n = AppLocalizations.of(context)!;
+            setState(() {
+              _notificationsEnabled = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.reminderReconcileFailed),
+                backgroundColor: HomesetsColors.orange,
+              ),
+            );
+          }
         }
       } else if (mounted && _notificationsEnabled != notificationsEnabled) {
         setState(() {
@@ -170,13 +193,19 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         }
       }
 
-      final success = await widget.reminderPlatformService.scheduleDailyReminder(
-        hour: _reminderSettings.hour,
-        minute: _reminderSettings.minute,
-        title: l10n.reminderNotificationTitle,
-        body: l10n.reminderNotificationBody,
-      );
-      if (!success) {
+      bool scheduleSuccess = false;
+      try {
+        scheduleSuccess = await widget.reminderPlatformService.scheduleDailyReminder(
+          hour: _reminderSettings.hour,
+          minute: _reminderSettings.minute,
+          title: l10n.reminderNotificationTitle,
+          body: l10n.reminderNotificationBody,
+        );
+      } catch (_) {
+        scheduleSuccess = false;
+      }
+
+      if (!scheduleSuccess) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -192,7 +221,26 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         isEnabled: true,
         updatedAt: DateTime.now(),
       );
-      await widget.repository.saveReminderSettings(updated);
+
+      try {
+        await widget.repository.saveReminderSettings(updated);
+      } catch (e) {
+        // DB save failed after successful scheduling (P6-NOTIFY-03).
+        // Compensating action: Cancel scheduled alarm to prevent orphan schedule.
+        try {
+          await widget.reminderPlatformService.cancelDailyReminder();
+        } catch (_) {}
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderSaveFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -201,12 +249,56 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         });
       }
     } else {
-      await widget.reminderPlatformService.cancelDailyReminder();
+      bool cancelSuccess = false;
+      try {
+        cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
+      } catch (_) {
+        cancelSuccess = false;
+      }
+
+      if (!cancelSuccess) {
+        // Native cancellation failed (P6-NOTIFY-02).
+        // Do NOT update state or save to SQLite; keep toggle ON and inform user.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderCancelFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       final updated = _reminderSettings.copyWith(
         isEnabled: false,
         updatedAt: DateTime.now(),
       );
-      await widget.repository.saveReminderSettings(updated);
+
+      try {
+        await widget.repository.saveReminderSettings(updated);
+      } catch (e) {
+        // DB save failed after cancellation (P6-NOTIFY-03).
+        // Compensating action: Reschedule the alarm to restore consistency with DB state.
+        try {
+          await widget.reminderPlatformService.scheduleDailyReminder(
+            hour: _reminderSettings.hour,
+            minute: _reminderSettings.minute,
+            title: l10n.reminderNotificationTitle,
+            body: l10n.reminderNotificationBody,
+          );
+        } catch (_) {}
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderSaveFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() => _reminderSettings = updated);
@@ -236,27 +328,35 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     );
 
     if (picked != null && mounted) {
+      final previousHour = _reminderSettings.hour;
+      final previousMinute = _reminderSettings.minute;
+
       if (_reminderSettings.isEnabled) {
         final hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
+        if (!mounted) return;
         if (!hasPerm) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.notificationsDisabledWarning),
-                backgroundColor: HomesetsColors.orange,
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.notificationsDisabledWarning),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
           return;
         }
 
-        final success = await widget.reminderPlatformService.scheduleDailyReminder(
-          hour: picked.hour,
-          minute: picked.minute,
-          title: l10n.reminderNotificationTitle,
-          body: l10n.reminderNotificationBody,
-        );
-        if (!success) {
+        bool scheduleSuccess = false;
+        try {
+          scheduleSuccess = await widget.reminderPlatformService.scheduleDailyReminder(
+            hour: picked.hour,
+            minute: picked.minute,
+            title: l10n.reminderNotificationTitle,
+            body: l10n.reminderNotificationBody,
+          );
+        } catch (_) {
+          scheduleSuccess = false;
+        }
+
+        if (!scheduleSuccess) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -274,7 +374,32 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         minute: picked.minute,
         updatedAt: DateTime.now(),
       );
-      await widget.repository.saveReminderSettings(updated);
+
+      try {
+        await widget.repository.saveReminderSettings(updated);
+      } catch (e) {
+        // Compensating action: If reminder was enabled, reschedule back to original time (P6-NOTIFY-03)
+        if (_reminderSettings.isEnabled) {
+          try {
+            await widget.reminderPlatformService.scheduleDailyReminder(
+              hour: previousHour,
+              minute: previousMinute,
+              title: l10n.reminderNotificationTitle,
+              body: l10n.reminderNotificationBody,
+            );
+          } catch (_) {}
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderSaveFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() => _reminderSettings = updated);

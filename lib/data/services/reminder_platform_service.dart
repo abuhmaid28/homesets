@@ -88,6 +88,12 @@ class MockReminderPlatformService implements ReminderPlatformService {
   String permissionStatus = 'granted';
   int requestPermissionCallCount = 0;
   bool scheduleDailyReminderResult = true;
+  Exception? scheduleDailyReminderException;
+  int scheduleDailyReminderCallCount = 0;
+
+  bool cancelDailyReminderResult = true;
+  Exception? cancelDailyReminderException;
+  int cancelDailyReminderCallCount = 0;
 
   bool isScheduled = false;
   int? scheduledHour;
@@ -127,6 +133,10 @@ class MockReminderPlatformService implements ReminderPlatformService {
     required String title,
     required String body,
   }) async {
+    scheduleDailyReminderCallCount++;
+    if (scheduleDailyReminderException != null) {
+      throw scheduleDailyReminderException!;
+    }
     if (!scheduleDailyReminderResult) {
       return false;
     }
@@ -140,6 +150,13 @@ class MockReminderPlatformService implements ReminderPlatformService {
 
   @override
   Future<bool> cancelDailyReminder() async {
+    cancelDailyReminderCallCount++;
+    if (cancelDailyReminderException != null) {
+      throw cancelDailyReminderException!;
+    }
+    if (!cancelDailyReminderResult) {
+      return false;
+    }
     isScheduled = false;
     scheduledHour = null;
     scheduledMinute = null;

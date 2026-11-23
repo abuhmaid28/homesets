@@ -1063,6 +1063,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to schedule reminder. Please try again.'**
   String get reminderScheduleFailed;
+
+  /// No description provided for @reminderCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel scheduled reminder. Please try again.'**
+  String get reminderCancelFailed;
+
+  /// No description provided for @reminderSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save reminder settings. Please try again.'**
+  String get reminderSaveFailed;
+
+  /// No description provided for @reminderReconcileFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.'**
+  String get reminderReconcileFailed;
 }
 
 class _AppLocalizationsDelegate
