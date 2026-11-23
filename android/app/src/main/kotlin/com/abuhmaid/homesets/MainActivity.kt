@@ -224,12 +224,12 @@ class MainActivity : FlutterActivity() {
                     val body = call.argument<String>("body") ?: "Ready for your workout?"
 
                     setupNotificationChannel()
-                    scheduleAlarm(hour, minute, title, body)
-                    result.success(true)
+                    val scheduled = scheduleAlarm(hour, minute, title, body)
+                    result.success(scheduled)
                 }
                 "cancelDailyReminder" -> {
-                    cancelAlarm()
-                    result.success(true)
+                    val cancelled = cancelAlarm()
+                    result.success(cancelled)
                 }
                 else -> result.notImplemented()
             }
@@ -493,53 +493,64 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    private fun scheduleAlarm(hour: Int, minute: Int, title: String, body: String) {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
-            action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
-            putExtra("title", title)
-            putExtra("body", body)
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            REMINDER_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-
-        val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (before(Calendar.getInstance())) {
-                add(Calendar.DAY_OF_YEAR, 1)
+    private fun scheduleAlarm(hour: Int, minute: Int, title: String, body: String): Boolean {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return false
+        return try {
+            val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
+                action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
+                putExtra("title", title)
+                putExtra("body", body)
             }
-        }
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                REMINDER_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            )
 
-        // Use inexact repeating daily alarm to conserve battery and avoid requiring exact alarm permissions
-        alarmManager.setInexactRepeating(
-            AlarmManager.RTC_WAKEUP,
-            calendar.timeInMillis,
-            AlarmManager.INTERVAL_DAY,
-            pendingIntent
-        )
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                if (before(Calendar.getInstance())) {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+            }
+
+            // Use inexact repeating daily alarm to conserve battery and avoid requiring exact alarm permissions
+            alarmManager.setInexactRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                AlarmManager.INTERVAL_DAY,
+                pendingIntent
+            )
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    private fun cancelAlarm() {
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
-            action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            this,
-            REMINDER_REQUEST_CODE,
-            intent,
-            PendingIntent.FLAG_NO_CREATE or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-        )
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
+    private fun cancelAlarm(): Boolean {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return false
+        return try {
+            val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
+                action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                this,
+                REMINDER_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+            }
+            // If pendingIntent was null, alarm was already absent: verified idempotent success
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

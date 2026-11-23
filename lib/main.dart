@@ -138,15 +138,25 @@ class _HomesetsAppState extends State<HomesetsApp> {
         } else {
           // Reconcile if permission was revoked while app was closed:
           // Explicitly cancel the existing scheduled alarm so it does not persist in
-          // AlarmManager and fire if the user later regrants permission without an app opt-in (P6-NOTIFY-01).
+          // AlarmManager and fire if the user later regrants permission without an app opt-in (P6-NOTIFY-01, P6-NOTIFY-04).
+          bool cancelSuccess = false;
           try {
-            await _reminderPlatformService.cancelDailyReminder();
-          } catch (_) {}
-          final reconciled = reminderSettings.copyWith(
-            isEnabled: false,
-            updatedAt: DateTime.now(),
-          );
-          await widget.repository.saveReminderSettings(reconciled);
+            cancelSuccess = await _reminderPlatformService.cancelDailyReminder();
+          } catch (_) {
+            cancelSuccess = false;
+          }
+
+          if (cancelSuccess) {
+            final reconciled = reminderSettings.copyWith(
+              isEnabled: false,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(reconciled);
+          } else {
+            // P6-NOTIFY-04: Cancellation was not confirmed.
+            // Do NOT overwrite SQLite with isEnabled: false!
+            // Retain isEnabled: true so the application does not falsely claim the alarm is disabled.
+          }
         }
       }
     } catch (_) {}

@@ -546,4 +546,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reminderReconcileFailed =>
       'Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.';
+
+  @override
+  String get reminderCompensationFailed =>
+      'Critical Error: Database update and reminder compensation failed. Please review system reminder settings.';
+
+  @override
+  String get reminderStartupReconcileFailed =>
+      'Warning: Notification permission was revoked, but the scheduled reminder could not be cancelled on startup.';
 }

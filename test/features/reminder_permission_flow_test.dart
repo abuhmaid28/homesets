@@ -649,5 +649,194 @@ void main() {
       expect(mockReminderPlatform.scheduledHour, equals(15));
       expect(mockReminderPlatform.scheduledMinute, equals(30));
     });
+
+    testWidgets('19. P6-NOTIFY-04: Startup cancellation returning false retains SQLite isEnabled=true and does not invent successful cancellation', (tester) async {
+      setupPhoneViewport(tester);
+
+      // Initial state: alarm was active, permission revoked in OS
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 17;
+      mockReminderPlatform.scheduledMinute = 45;
+      mockReminderPlatform.notificationsEnabled = false;
+      mockReminderPlatform.cancelDailyReminderResult = false; // Native cancellation fails
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 17,
+        minute: 45,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      // Cancellation was attempted
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
+
+      // Alarm could not be confirmed cancelled: SQLite must NOT be falsely set to isEnabled: false!
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+      expect(mockReminderPlatform.isScheduled, isTrue);
+    });
+
+    testWidgets('20. P6-NOTIFY-04: Startup cancellation throwing retains SQLite isEnabled=true', (tester) async {
+      setupPhoneViewport(tester);
+
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 17;
+      mockReminderPlatform.scheduledMinute = 45;
+      mockReminderPlatform.notificationsEnabled = false;
+      mockReminderPlatform.cancelDailyReminderException = PlatformException(
+        code: 'IPC_ERROR',
+        message: 'Binder transaction failed',
+      );
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 17,
+        minute: 45,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
+
+      // SQLite retains isEnabled: true
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+    });
+
+    testWidgets('21. P6-NOTIFY-05: Platform service truthful failure reporting when AlarmManager unavailable', (tester) async {
+      const MethodChannel channel = MethodChannel('com.abuhmaid.homesets/reminders');
+      final log = <MethodCall>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        log.add(call);
+        if (call.method == 'scheduleDailyReminder') {
+          return false; // Native AlarmManager returned false
+        }
+        if (call.method == 'cancelDailyReminder') {
+          return false; // Native AlarmManager returned false
+        }
+        return null;
+      });
+
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      });
+
+      const service = AndroidReminderPlatformService();
+      final scheduleResult = await service.scheduleDailyReminder(
+        hour: 15,
+        minute: 30,
+        title: 'HOMESETS',
+        body: 'Ready?',
+      );
+      expect(scheduleResult, isFalse);
+
+      final cancelResult = await service.cancelDailyReminder();
+      expect(cancelResult, isFalse);
+    });
+
+    testWidgets('22. P6-NOTIFY-06: Toggle ON displays critical compensation failed snackbar when both DB save and compensating cancellation fail', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      repository.failSaveReminderSettings = true; // DB save fails
+      mockReminderPlatform.cancelDailyReminderResult = false; // Compensating cancel ALSO fails
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Critical compensation failed snackbar shown
+      expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
+    });
+
+    testWidgets('23. P6-NOTIFY-06: Toggle OFF displays critical compensation failed snackbar when both DB save and compensating reschedule fail', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 15;
+      mockReminderPlatform.scheduledMinute = 30;
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      repository.failSaveReminderSettings = true; // DB save fails
+      mockReminderPlatform.scheduleDailyReminderResult = false; // Compensating reschedule fails!
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Critical compensation failed snackbar shown
+      expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
+    });
+
+    testWidgets('24. P6-NOTIFY-06: Time change displays critical compensation failed snackbar when both DB save and compensating reschedule fail', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.scheduledHour = 15;
+      mockReminderPlatform.scheduledMinute = 30;
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 15,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      repository.failSaveReminderSettings = true; // DB save fails
+      int scheduleCount = 0;
+      mockReminderPlatform.onScheduleDailyReminder = (hour, minute) {
+        scheduleCount++;
+        if (scheduleCount == 1) {
+          // First schedule call (new time) succeeds
+          return true;
+        } else {
+          // Second schedule call (compensating restore of original time) fails
+          return false;
+        }
+      };
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      expect(find.text('Change Time'), findsOneWidget);
+      await tester.tap(find.text('Change Time'));
+      await pumpAsync(tester);
+
+      // Tap OK in TimePicker
+      final okBtn = find.text('OK');
+      expect(okBtn, findsOneWidget);
+      await tester.tap(okBtn);
+      await pumpAsync(tester);
+
+      // Critical compensation failed snackbar shown
+      expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
+    });
   });
 }

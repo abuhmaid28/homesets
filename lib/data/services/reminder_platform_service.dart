@@ -90,6 +90,7 @@ class MockReminderPlatformService implements ReminderPlatformService {
   bool scheduleDailyReminderResult = true;
   Exception? scheduleDailyReminderException;
   int scheduleDailyReminderCallCount = 0;
+  bool Function(int hour, int minute)? onScheduleDailyReminder;
 
   bool cancelDailyReminderResult = true;
   Exception? cancelDailyReminderException;
@@ -137,7 +138,12 @@ class MockReminderPlatformService implements ReminderPlatformService {
     if (scheduleDailyReminderException != null) {
       throw scheduleDailyReminderException!;
     }
-    if (!scheduleDailyReminderResult) {
+    if (onScheduleDailyReminder != null) {
+      final res = onScheduleDailyReminder!(hour, minute);
+      if (!res) {
+        return false;
+      }
+    } else if (!scheduleDailyReminderResult) {
       return false;
     }
     isScheduled = true;

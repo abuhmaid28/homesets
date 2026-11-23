@@ -1081,6 +1081,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.'**
   String get reminderReconcileFailed;
+
+  /// No description provided for @reminderCompensationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical Error: Database update and reminder compensation failed. Please review system reminder settings.'**
+  String get reminderCompensationFailed;
+
+  /// No description provided for @reminderStartupReconcileFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning: Notification permission was revoked, but the scheduled reminder could not be cancelled on startup.'**
+  String get reminderStartupReconcileFailed;
 }
 
 class _AppLocalizationsDelegate
