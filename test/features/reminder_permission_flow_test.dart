@@ -331,6 +331,7 @@ void main() {
     testWidgets('9. App startup safely reschedules alarm if enabled and notifications permitted', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.consentEnabled = true; // Native consent in SharedPreferences survives reboot
 
       // Seed enabled reminder (as if device had rebooted)
       await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
@@ -585,10 +586,11 @@ void main() {
       expect(switchWidget.value, isFalse);
     });
 
-    testWidgets('17. P6-NOTIFY-03: Toggle OFF compensates by restoring schedule if SQLite save fails', (tester) async {
+    testWidgets('17. P6-NOTIFY-13: Toggle OFF SQLite save failure never silently re-enables alarm or restores native consent', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
       mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
       mockReminderPlatform.scheduledHour = 15;
       mockReminderPlatform.scheduledMinute = 30;
 
@@ -613,14 +615,14 @@ void main() {
       // Save failed snackbar shown
       expect(find.textContaining('Failed to save reminder settings'), findsOneWidget);
 
-      // Compensating action restored the schedule to maintain consistency with SQLite!
-      expect(mockReminderPlatform.isScheduled, isTrue);
-      expect(mockReminderPlatform.scheduledHour, equals(15));
-      expect(mockReminderPlatform.scheduledMinute, equals(30));
+      // Invariant (P6-NOTIFY-13): Alarm remains cancelled and consent remains revoked!
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
 
-      // Switch remains ON
+      // Switch is OFF
       final Switch switchWidget = tester.widget(switchFinder);
-      expect(switchWidget.value, isTrue);
+      expect(switchWidget.value, isFalse);
     });
 
     testWidgets('18. P6-NOTIFY-03: Time change compensates by restoring original schedule if SQLite save fails', (tester) async {
@@ -792,10 +794,11 @@ void main() {
       expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
     });
 
-    testWidgets('23. P6-NOTIFY-06: Toggle OFF displays critical compensation failed snackbar when both DB save and compensating reschedule fail', (tester) async {
+    testWidgets('23. P6-NOTIFY-13: Toggle OFF when both consent revocation and cancellation fail retains ON state truthfully', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
       mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
       mockReminderPlatform.scheduledHour = 15;
       mockReminderPlatform.scheduledMinute = 30;
 
@@ -806,8 +809,9 @@ void main() {
         updatedAt: DateTime.now(),
       )));
 
-      repository.failSaveReminderSettings = true; // DB save fails
-      mockReminderPlatform.scheduleDailyReminderResult = false; // Compensating reschedule fails!
+      // Neither consent can be revoked nor alarm cancelled (total platform failure)
+      mockReminderPlatform.setReminderConsentResult = false;
+      mockReminderPlatform.cancelDailyReminderResult = false;
 
       await tester.pumpWidget(createSettingsScreenWidget());
       await pumpAsync(tester);
@@ -816,8 +820,16 @@ void main() {
       await tester.tap(switchFinder);
       await pumpAsync(tester);
 
-      // Critical compensation failed snackbar shown
-      expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
+      // Warning snackbar shown
+      expect(find.textContaining('Failed to cancel scheduled reminder'), findsOneWidget);
+
+      // Switch remains ON because reminders are still live
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // SQLite remains enabled
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
     });
 
     testWidgets('24. P6-NOTIFY-06: Time change displays critical compensation failed snackbar when both DB save and compensating reschedule fail', (tester) async {
@@ -1109,7 +1121,7 @@ void main() {
       expect(saved?.isEnabled, isTrue);
     });
 
-    testWidgets('32. P6-NOTIFY-12: Toggle OFF SQLite save failure restores native consent when compensating reschedule succeeds', (tester) async {
+    testWidgets('32. P6-NOTIFY-13: Toggle OFF SQLite save failure never silently re-enables alarm or restores native consent', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
       mockReminderPlatform.isScheduled = true;
@@ -1133,23 +1145,23 @@ void main() {
       await tester.tap(switchFinder);
       await pumpAsync(tester);
 
-      // Compensation occurred: alarm rescheduled AND consent restored
-      expect(mockReminderPlatform.isScheduled, isTrue);
-      expect(mockReminderPlatform.consentEnabled, isTrue);
-      expect(mockReminderPlatform.simulateAlarmDelivery(), isTrue);
+      // Invariant (P6-NOTIFY-13): Alarm remains cancelled and native consent remains revoked!
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
 
-      // Switch remains ON
+      // Switch is OFF in UI
       final Switch switchWidget = tester.widget(switchFinder);
-      expect(switchWidget.value, isTrue);
+      expect(switchWidget.value, isFalse);
 
-      // Warning snackbar shown
+      // Warning snackbar shown explaining save failure
       expect(find.textContaining('Failed to save reminder settings'), findsOneWidget);
     });
 
     testWidgets('33. P6-NOTIFY-12: Cold startup reconciliation does not grant consent when scheduleDailyReminder fails', (tester) async {
       setupPhoneViewport(tester);
       mockReminderPlatform.notificationsEnabled = true;
-      mockReminderPlatform.consentEnabled = false;
+      mockReminderPlatform.consentEnabled = true; // Reminders were enabled with consent before crash/restart
       mockReminderPlatform.scheduleDailyReminderResult = false; // Native scheduling fails on cold start
 
       await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
@@ -1178,6 +1190,196 @@ void main() {
 
       // Delivery invariant: cannot dispatch
       expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+    });
+
+    testWidgets('34. P6-NOTIFY-13 Fault-Injection: OFF + cancellation failure + restart cleans up orphan without auto-renewing consent', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 8,
+        minute: 0,
+        updatedAt: DateTime.now(),
+      )));
+
+      // Native cancellation fails during Toggle OFF (Repro A)
+      mockReminderPlatform.cancelDailyReminderResult = false;
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // 1. Native consent was revoked fail-closed
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+
+      // 2. Switch truthfully remains ON because native cancellation was unconfirmed
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      // 3. Warning snackbar shown and pending reconciliation persisted
+      expect(find.textContaining('Failed to cancel scheduled reminder'), findsOneWidget);
+      final savedAfterToggle = await tester.runAsync(() => repository.getReminderSettings());
+      expect(savedAfterToggle?.isEnabled, isTrue);
+      expect(savedAfterToggle?.isPendingReconciliation, isTrue);
+
+      // 4. Cold app restart: cancel succeeds now on restart
+      mockReminderPlatform.cancelDailyReminderResult = true;
+      final cancelCallsBeforeRestart = mockReminderPlatform.cancelDailyReminderCallCount;
+
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      // Startup fresh cancellation occurred
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThan(cancelCallsBeforeRestart));
+
+      // INVARIANT: Native consent NEVER auto-renewed, alarm NOT scheduled
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+      final savedAfterRestart = await tester.runAsync(() => repository.getReminderSettings());
+      expect(savedAfterRestart?.isEnabled, isFalse);
+      expect(savedAfterRestart?.isPendingReconciliation, isFalse);
+    });
+
+    testWidgets('35. P6-NOTIFY-13 Fault-Injection: OFF + SQLite failure + restart guards against auto-grant and preserves explicit opt-out', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
+
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: true,
+        hour: 18,
+        minute: 30,
+        updatedAt: DateTime.now(),
+      )));
+
+      // All SQLite saves fail during Toggle OFF (Repro B)
+      repository.failSaveReminderSettings = true;
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Native consent was revoked and alarm was cancelled!
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+
+      // Switch is OFF
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isFalse);
+
+      // In SQLite, the write failed, so on-disk SQLite still has isEnabled: true
+      repository.failSaveReminderSettings = false; // DB available again
+      final onDiskBeforeRestart = await tester.runAsync(() => repository.getReminderSettings());
+      expect(onDiskBeforeRestart?.isEnabled, isTrue);
+
+      // Now cold start / restart
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      // INVARIANT: Cold start inspects native consent (false), NEVER auto-grants consent or reschedules!
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+
+      // Startup reconciled on-disk SQLite to isEnabled: false to match the explicit opt-out
+      final onDiskAfterRestart = await tester.runAsync(() => repository.getReminderSettings());
+      expect(onDiskAfterRestart?.isEnabled, isFalse);
+    });
+
+    testWidgets('36. P6-NOTIFY-13 Fault-Injection: OS permission regrant without fresh in-app opt-in never activates reminders', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = false;
+      mockReminderPlatform.isScheduled = false;
+      mockReminderPlatform.consentEnabled = false;
+
+      // Seed disabled settings
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: false,
+        hour: 10,
+        minute: 0,
+        isPendingReconciliation: false,
+        updatedAt: DateTime.now(),
+      )));
+
+      // User regrants notification permission in Android OS Settings while app is closed
+      mockReminderPlatform.notificationsEnabled = true;
+
+      // Cold start
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      // INVARIANT: Reminders remain OFF, consent remains false, delivery suppressed
+      expect(mockReminderPlatform.isScheduled, isFalse);
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isFalse);
+    });
+
+    testWidgets('37. P6-NOTIFY-13 Fault-Injection: Fresh explicit ON after recovery schedules alarm and grants consent with valid user action', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.isScheduled = false;
+      mockReminderPlatform.consentEnabled = false;
+
+      // App recovered from previous failure into clean OFF state
+      await tester.runAsync(() => repository.saveReminderSettings(ReminderSettings(
+        isEnabled: false,
+        hour: 7,
+        minute: 30,
+        isPendingReconciliation: false,
+        updatedAt: DateTime.now(),
+      )));
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isFalse);
+
+      // User explicitly taps Switch to turn reminders ON
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // INVARIANT: Explicit user action successfully schedules alarm, persists to SQLite, and grants native consent
+      expect(mockReminderPlatform.isScheduled, isTrue);
+      expect(mockReminderPlatform.consentEnabled, isTrue);
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isTrue);
+
+      switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isTrue);
+
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isTrue);
+      expect(saved?.isPendingReconciliation, isFalse);
     });
   });
 }

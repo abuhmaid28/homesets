@@ -123,12 +123,22 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
-    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-12)
+    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-12, P6-NOTIFY-13)
     try {
       final reminderSettings = await widget.repository.getReminderSettings();
       if (reminderSettings.isEnabled || reminderSettings.isPendingReconciliation) {
         final notificationsEnabled = await _reminderPlatformService.areNotificationsEnabled();
-        if (notificationsEnabled && !reminderSettings.isPendingReconciliation) {
+        final nativeConsent = await _reminderPlatformService.getReminderConsent();
+
+        // P6-NOTIFY-13: Only restore schedule and grant consent if:
+        // 1. Reminders are explicitly enabled in SQLite.
+        // 2. There is NO pending reconciliation / unverified opt-out.
+        // 3. System notifications are enabled in OS.
+        // 4. Native consent is currently TRUE (not revoked by explicit opt-out).
+        if (notificationsEnabled &&
+            reminderSettings.isEnabled &&
+            !reminderSettings.isPendingReconciliation &&
+            nativeConsent) {
           bool scheduled = false;
           try {
             scheduled = await _reminderPlatformService.scheduleDailyReminder(
@@ -175,8 +185,9 @@ class _HomesetsAppState extends State<HomesetsApp> {
             await widget.repository.saveReminderSettings(blocked);
           }
         } else {
-          // Reconcile if permission was revoked while app was closed or cancellation previously failed:
-          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers (P6-NOTIFY-08, P6-NOTIFY-11)
+          // Reconcile if permission was revoked while app was closed, cancellation previously failed,
+          // or user explicitly opted out while SQLite save failed (P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-13):
+          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers
           bool consentRevoked = false;
           try {
             consentRevoked = await _reminderPlatformService.setReminderConsent(false);
@@ -210,6 +221,16 @@ class _HomesetsAppState extends State<HomesetsApp> {
             await widget.repository.saveReminderSettings(blocked);
           }
         }
+      } else {
+        // Reminders are OFF in SQLite and no reconciliation is pending.
+        // Invariant (P6-NOTIFY-13): ensure native consent is revoked fail-closed if it was somehow true.
+        try {
+          final nativeConsent = await _reminderPlatformService.getReminderConsent();
+          if (nativeConsent) {
+            await _reminderPlatformService.setReminderConsent(false);
+            await _reminderPlatformService.cancelDailyReminder();
+          }
+        } catch (_) {}
       }
     } catch (_) {}
 

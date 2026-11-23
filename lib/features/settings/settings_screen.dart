@@ -154,7 +154,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
   Future<void> _retryCancellation() async {
     final l10n = AppLocalizations.of(context)!;
-    await widget.reminderPlatformService.setReminderConsent(false);
+    bool consentRevoked = false;
+    try {
+      consentRevoked = await widget.reminderPlatformService.setReminderConsent(false);
+    } catch (_) {
+      consentRevoked = false;
+    }
+
     bool cancelSuccess = false;
     try {
       cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
@@ -162,13 +168,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       cancelSuccess = false;
     }
 
-    if (cancelSuccess) {
+    if (cancelSuccess && consentRevoked) {
       final cleared = _reminderSettings.copyWith(
         isEnabled: false,
         isPendingReconciliation: false,
         updatedAt: DateTime.now(),
       );
-      await widget.repository.saveReminderSettings(cleared);
+      try {
+        await widget.repository.saveReminderSettings(cleared);
+      } catch (_) {}
       if (mounted) {
         setState(() => _reminderSettings = cleared);
       }
@@ -375,7 +383,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         });
       }
     } else {
-      // Toggle OFF: Immediately revoke native consent fail-closed (P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11)
+      // Toggle OFF: User explicitly opts out (P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-13).
+      // 1. Immediately revoke native delivery consent fail-closed
       bool consentRevoked = false;
       try {
         consentRevoked = await widget.reminderPlatformService.setReminderConsent(false);
@@ -383,6 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         consentRevoked = false;
       }
 
+      // 2. Cancel native alarm
       bool cancelSuccess = false;
       try {
         cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
@@ -391,9 +401,17 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       }
 
       if (!cancelSuccess || !consentRevoked) {
-        // Native cancellation or consent revocation failed (P6-NOTIFY-02, P6-NOTIFY-11).
-        // Do NOT update state or save to SQLite; keep toggle ON and inform user.
+        // Native cancellation or consent revocation failed (P6-NOTIFY-02, P6-NOTIFY-11, P6-NOTIFY-13).
+        // Keep toggle ON (truthfully reflects uncancelled native alarm), but persist durable pending reconciliation in SQLite!
+        final blocked = _reminderSettings.copyWith(
+          isPendingReconciliation: true,
+          updatedAt: DateTime.now(),
+        );
+        try {
+          await widget.repository.saveReminderSettings(blocked);
+        } catch (_) {}
         if (mounted) {
+          setState(() => _reminderSettings = blocked);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(l10n.reminderCancelFailed),
@@ -404,6 +422,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         return;
       }
 
+      // Both native cancellation and consent revocation succeeded cleanly.
+      // Explicit OFF intent MUST be preserved durably (P6-NOTIFY-13).
+      // We NEVER reschedule or restore consent after an opt-out request!
       final updated = _reminderSettings.copyWith(
         isEnabled: false,
         isPendingReconciliation: false,
@@ -413,52 +434,23 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       try {
         await widget.repository.saveReminderSettings(updated);
       } catch (e) {
-        // DB save failed after cancellation (P6-NOTIFY-03, P6-NOTIFY-06, P6-NOTIFY-12).
-        // Compensating action: Reschedule the alarm to restore consistency with DB state
-        // AND restore native consent (P6-NOTIFY-12)!
-        bool scheduled = false;
+        // SQLite save failed after opt-out.
+        // CRITICAL INVARIANT (P6-NOTIFY-13): Never silently re-enable native consent or reschedule!
+        // In-memory state and native consent remain OFF. Attempt to save blocked state if possible.
         try {
-          scheduled = await widget.reminderPlatformService.scheduleDailyReminder(
-            hour: _reminderSettings.hour,
-            minute: _reminderSettings.minute,
-            title: l10n.reminderNotificationTitle,
-            body: l10n.reminderNotificationBody,
+          final blocked = _reminderSettings.copyWith(
+            isEnabled: false,
+            isPendingReconciliation: true,
+            updatedAt: DateTime.now(),
           );
-        } catch (_) {
-          scheduled = false;
-        }
-
-        bool consentRestored = false;
-        if (scheduled) {
-          try {
-            consentRestored = await widget.reminderPlatformService.setReminderConsent(true);
-          } catch (_) {
-            consentRestored = false;
-          }
-        }
-
-        final compensated = scheduled && consentRestored;
-
-        if (!compensated) {
-          try {
-            final blocked = _reminderSettings.copyWith(
-              isEnabled: false,
-              isPendingReconciliation: true,
-              updatedAt: DateTime.now(),
-            );
-            await widget.repository.saveReminderSettings(blocked);
-            if (mounted) setState(() => _reminderSettings = blocked);
-          } catch (_) {}
-        }
+          await widget.repository.saveReminderSettings(blocked);
+        } catch (_) {}
 
         if (mounted) {
+          setState(() => _reminderSettings = updated.copyWith(isPendingReconciliation: true));
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                compensated
-                    ? l10n.reminderSaveFailed
-                    : l10n.reminderCompensationFailed,
-              ),
+              content: Text(l10n.reminderSaveFailed),
               backgroundColor: HomesetsColors.orange,
             ),
           );
