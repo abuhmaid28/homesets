@@ -503,4 +503,36 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get restoreCancelButton => 'إلغاء';
+
+  @override
+  String get reminderPermissionDialogTitle => 'تفعيل التذكير اليومي';
+
+  @override
+  String get reminderPermissionDialogBody =>
+      'هوم سيتس هيبعتلك تذكير يومي لطيف في الوقت اللي تختاره. كل التنبيهات شغالة أوفلاين بالكامل على جهازك، بدون تتبع ولا إعلانات ولا إزعاج.';
+
+  @override
+  String get reminderPermissionDialogConfirm => 'السماح وتفعيل التذكير';
+
+  @override
+  String get reminderPermissionDialogCancel => 'ليس الآن';
+
+  @override
+  String get reminderPermissionDenied =>
+      'لم يتم منح إذن الإشعارات. يظل التذكير اليومي معطلاً.';
+
+  @override
+  String get reminderNotificationTitle => 'تمرين هوم سيتس';
+
+  @override
+  String get reminderNotificationBody =>
+      'جاهز لتمرينك اليومي؟ تمرن براحتك وفي وقتك المناسب.';
+
+  @override
+  String get reminderRebootNotice =>
+      'ملحوظة: أندرويد ممكن يلغي التنبيهات المجدولة عند إعادة تشغيل الهاتف. افتح هوم سيتس لتجديد التذكير تلقائياً.';
+
+  @override
+  String get reminderScheduleFailed =>
+      'فشل جدولة التذكير. برجاء المحاولة مرة أخرى.';
 }

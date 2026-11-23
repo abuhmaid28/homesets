@@ -220,5 +220,14 @@
   },
   "restoreDestructiveWarning": "تنبيه هام: الاستعادة ستستبدل جميع سجلاتك الحالية، الصور، والإعدادات بالبيانات الموجودة في ملف النسخة الاحتياطية. هذا الإجراء نهائي ولا يمكن التراجع عنه.",
   "restoreConfirmButton": "استبدال البيانات واستعادة",
-  "restoreCancelButton": "إلغاء"
+  "restoreCancelButton": "إلغاء",
+  "reminderPermissionDialogTitle": "تفعيل التذكير اليومي",
+  "reminderPermissionDialogBody": "هوم سيتس هيبعتلك تذكير يومي لطيف في الوقت اللي تختاره. كل التنبيهات شغالة أوفلاين بالكامل على جهازك، بدون تتبع ولا إعلانات ولا إزعاج.",
+  "reminderPermissionDialogConfirm": "السماح وتفعيل التذكير",
+  "reminderPermissionDialogCancel": "ليس الآن",
+  "reminderPermissionDenied": "لم يتم منح إذن الإشعارات. يظل التذكير اليومي معطلاً.",
+  "reminderNotificationTitle": "تمرين هوم سيتس",
+  "reminderNotificationBody": "جاهز لتمرينك اليومي؟ تمرن براحتك وفي وقتك المناسب.",
+  "reminderRebootNotice": "ملحوظة: أندرويد ممكن يلغي التنبيهات المجدولة عند إعادة تشغيل الهاتف. افتح هوم سيتس لتجديد التذكير تلقائياً.",
+  "reminderScheduleFailed": "فشل جدولة التذكير. برجاء المحاولة مرة أخرى."
 }

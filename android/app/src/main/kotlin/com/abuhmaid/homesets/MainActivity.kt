@@ -1,5 +1,6 @@
 package com.abuhmaid.homesets
 
+import android.Manifest
 import android.app.Activity
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -7,12 +8,15 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -29,6 +33,7 @@ class MainActivity : FlutterActivity() {
 
     private var pendingMediaResult: MethodChannel.Result? = null
     private var pendingBackupResult: MethodChannel.Result? = null
+    private var pendingPermissionResult: MethodChannel.Result? = null
 
     private var exportStagedFilePath: String? = null
     private var importTargetStagingPath: String? = null
@@ -36,6 +41,7 @@ class MainActivity : FlutterActivity() {
     private val REQUEST_CODE_PICK_IMAGE = 1001
     private val REQUEST_CODE_CREATE_BACKUP = 1002
     private val REQUEST_CODE_OPEN_BACKUP = 1003
+    private val REQUEST_CODE_POST_NOTIFICATIONS = 2003
 
     private val executor = Executors.newSingleThreadExecutor()
 
@@ -143,16 +149,72 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "areNotificationsEnabled" -> {
                     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                    val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        nm?.areNotificationsEnabled() ?: false
+                    val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                        hasPermission && (nm?.areNotificationsEnabled() == true)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        nm?.areNotificationsEnabled() ?: true
                     } else {
                         true
                     }
                     result.success(enabled)
                 }
+                "requestNotificationPermission" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                        if (hasPermission && (nm?.areNotificationsEnabled() == true)) {
+                            result.success(true)
+                            return@setMethodCallHandler
+                        }
+                        if (pendingPermissionResult != null) {
+                            result.error("ALREADY_PENDING", "A permission request is already in progress", null)
+                            return@setMethodCallHandler
+                        }
+                        pendingPermissionResult = result
+                        ActivityCompat.requestPermissions(
+                            this,
+                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            REQUEST_CODE_POST_NOTIFICATIONS
+                        )
+                    } else {
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                        val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            nm?.areNotificationsEnabled() ?: true
+                        } else {
+                            true
+                        }
+                        result.success(enabled)
+                    }
+                }
+                "getNotificationPermissionStatus" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                        if (hasPermission && (nm?.areNotificationsEnabled() == true)) {
+                            result.success("granted")
+                        } else {
+                            val shouldShow = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)
+                            result.success(if (shouldShow) "denied" else "notDetermined")
+                        }
+                    } else {
+                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                        val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            nm?.areNotificationsEnabled() ?: true
+                        } else {
+                            true
+                        }
+                        result.success(if (enabled) "granted" else "denied")
+                    }
+                }
                 "scheduleDailyReminder" -> {
                     val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && nm?.areNotificationsEnabled() == false) {
+                    val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                    } else {
+                        true
+                    }
+                    if (!hasPerm || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && nm?.areNotificationsEnabled() == false)) {
                         result.success(false)
                         return@setMethodCallHandler
                     }
@@ -222,6 +284,23 @@ class MainActivity : FlutterActivity() {
             } else {
                 result.success(null)
             }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CODE_POST_NOTIFICATIONS) {
+            val result = pendingPermissionResult ?: return
+            pendingPermissionResult = null
+
+            val isGranted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            val enabled = isGranted && (nm?.areNotificationsEnabled() != false)
+            result.success(enabled)
         }
     }
 

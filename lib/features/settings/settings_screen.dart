@@ -42,7 +42,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isBackingUp = false;
   bool _isRestoring = false;
@@ -53,7 +53,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAndReconcilePermissions();
+    }
+  }
+
+  Future<void> _checkAndReconcilePermissions() async {
+    try {
+      final notificationsEnabled = await widget.reminderPlatformService.areNotificationsEnabled();
+      if (!notificationsEnabled && _reminderSettings.isEnabled) {
+        // Notification permission was revoked in system settings while app was backgrounded
+        final updated = _reminderSettings.copyWith(
+          isEnabled: false,
+          updatedAt: DateTime.now(),
+        );
+        await widget.repository.saveReminderSettings(updated);
+        await widget.reminderPlatformService.cancelDailyReminder();
+        if (mounted) {
+          setState(() {
+            _reminderSettings = updated;
+            _notificationsEnabled = false;
+          });
+        }
+      } else if (mounted && _notificationsEnabled != notificationsEnabled) {
+        setState(() {
+          _notificationsEnabled = notificationsEnabled;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadSettings() async {
@@ -75,48 +114,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleReminders(bool value) async {
     final l10n = AppLocalizations.of(context)!;
     if (value) {
-      final hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
+      bool hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
+      if (!mounted) return;
       if (!hasPerm) {
-        if (mounted) {
+        // Show in-app pre-permission explanation dialog before invoking native prompt
+        final bool? proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: HomesetsColors.surfaceElevated,
+            title: Text(l10n.reminderPermissionDialogTitle, style: HomesetsTypography.heading3),
+            content: Text(
+              l10n.reminderPermissionDialogBody,
+              style: HomesetsTypography.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(
+                  l10n.reminderPermissionDialogCancel,
+                  style: HomesetsTypography.buttonText.copyWith(color: HomesetsColors.textSecondary),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: HomesetsColors.lime,
+                  foregroundColor: HomesetsColors.textOnLime,
+                ),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(
+                  l10n.reminderPermissionDialogConfirm,
+                  style: HomesetsTypography.buttonText.copyWith(color: HomesetsColors.textOnLime),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (proceed != true) {
+          // User chose "Not Now"
+          return;
+        }
+
+        // Request native runtime permission
+        hasPerm = await widget.reminderPlatformService.requestNotificationPermission();
+        if (!mounted) return;
+        if (!hasPerm) {
+          setState(() => _notificationsEnabled = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.notificationsDisabledWarning),
+              content: Text(l10n.reminderPermissionDenied),
               backgroundColor: HomesetsColors.orange,
             ),
           );
+          return;
         }
-        return;
       }
 
       final success = await widget.reminderPlatformService.scheduleDailyReminder(
         hour: _reminderSettings.hour,
         minute: _reminderSettings.minute,
-        title: 'HOMESETS',
-        body: 'Time for your workout!',
+        title: l10n.reminderNotificationTitle,
+        body: l10n.reminderNotificationBody,
       );
       if (!success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.notificationsDisabledWarning),
+              content: Text(l10n.reminderScheduleFailed),
               backgroundColor: HomesetsColors.orange,
             ),
           );
         }
         return;
       }
+
+      final updated = _reminderSettings.copyWith(
+        isEnabled: true,
+        updatedAt: DateTime.now(),
+      );
+      await widget.repository.saveReminderSettings(updated);
+
+      if (mounted) {
+        setState(() {
+          _reminderSettings = updated;
+          _notificationsEnabled = true;
+        });
+      }
     } else {
       await widget.reminderPlatformService.cancelDailyReminder();
-    }
+      final updated = _reminderSettings.copyWith(
+        isEnabled: false,
+        updatedAt: DateTime.now(),
+      );
+      await widget.repository.saveReminderSettings(updated);
 
-    final updated = _reminderSettings.copyWith(
-      isEnabled: value,
-      updatedAt: DateTime.now(),
-    );
-    await widget.repository.saveReminderSettings(updated);
-
-    if (mounted) {
-      setState(() => _reminderSettings = updated);
+      if (mounted) {
+        setState(() => _reminderSettings = updated);
+      }
     }
   }
 
@@ -142,20 +236,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (picked != null && mounted) {
-      final updated = _reminderSettings.copyWith(
-        hour: picked.hour,
-        minute: picked.minute,
-        updatedAt: DateTime.now(),
-      );
-
-      if (updated.isEnabled) {
-        final success = await widget.reminderPlatformService.scheduleDailyReminder(
-          hour: updated.hour,
-          minute: updated.minute,
-          title: 'HOMESETS',
-          body: 'Time for your workout!',
-        );
-        if (!success) {
+      if (_reminderSettings.isEnabled) {
+        final hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
+        if (!hasPerm) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -166,8 +249,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
           return;
         }
+
+        final success = await widget.reminderPlatformService.scheduleDailyReminder(
+          hour: picked.hour,
+          minute: picked.minute,
+          title: l10n.reminderNotificationTitle,
+          body: l10n.reminderNotificationBody,
+        );
+        if (!success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.reminderScheduleFailed),
+                backgroundColor: HomesetsColors.orange,
+              ),
+            );
+          }
+          return;
+        }
       }
 
+      final updated = _reminderSettings.copyWith(
+        hour: picked.hour,
+        minute: picked.minute,
+        updatedAt: DateTime.now(),
+      );
       await widget.repository.saveReminderSettings(updated);
 
       if (mounted) {
@@ -480,6 +586,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           onPressed: _pickReminderTime,
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: HomesetsColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: HomesetsColors.borderSubtle),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.info_outline, color: HomesetsColors.textMuted, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              l10n.reminderRebootNotice,
+                              style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.textMuted),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],

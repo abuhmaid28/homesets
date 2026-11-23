@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 /// Platform interface for scheduling local daily reminders (WP17).
 abstract class ReminderPlatformService {
   Future<bool> areNotificationsEnabled();
+  Future<bool> requestNotificationPermission();
+  Future<String> getNotificationPermissionStatus();
   Future<bool> scheduleDailyReminder({
     required int hour,
     required int minute,
@@ -25,6 +27,26 @@ class AndroidReminderPlatformService implements ReminderPlatformService {
       return result ?? false;
     } on PlatformException {
       return false;
+    }
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('requestNotificationPermission');
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  @override
+  Future<String> getNotificationPermissionStatus() async {
+    try {
+      final result = await _channel.invokeMethod<String>('getNotificationPermissionStatus');
+      return result ?? 'notDetermined';
+    } on PlatformException {
+      return 'notDetermined';
     }
   }
 
@@ -62,6 +84,11 @@ class AndroidReminderPlatformService implements ReminderPlatformService {
 /// In-memory mock reminder platform service for tests and non-Android environments.
 class MockReminderPlatformService implements ReminderPlatformService {
   bool notificationsEnabled;
+  bool requestPermissionResult = true;
+  String permissionStatus = 'granted';
+  int requestPermissionCallCount = 0;
+  bool scheduleDailyReminderResult = true;
+
   bool isScheduled = false;
   int? scheduledHour;
   int? scheduledMinute;
@@ -76,12 +103,33 @@ class MockReminderPlatformService implements ReminderPlatformService {
   }
 
   @override
+  Future<bool> requestNotificationPermission() async {
+    requestPermissionCallCount++;
+    if (requestPermissionResult) {
+      notificationsEnabled = true;
+      permissionStatus = 'granted';
+    } else {
+      notificationsEnabled = false;
+      permissionStatus = 'denied';
+    }
+    return requestPermissionResult;
+  }
+
+  @override
+  Future<String> getNotificationPermissionStatus() async {
+    return permissionStatus;
+  }
+
+  @override
   Future<bool> scheduleDailyReminder({
     required int hour,
     required int minute,
     required String title,
     required String body,
   }) async {
+    if (!scheduleDailyReminderResult) {
+      return false;
+    }
     isScheduled = true;
     scheduledHour = hour;
     scheduledMinute = minute;

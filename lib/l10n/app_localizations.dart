@@ -1009,6 +1009,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get restoreCancelButton;
+
+  /// No description provided for @reminderPermissionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Daily Reminders'**
+  String get reminderPermissionDialogTitle;
+
+  /// No description provided for @reminderPermissionDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS will send a single gentle reminder at your chosen time. All reminders run 100% offline on your device, with no tracking, ads, or spam.'**
+  String get reminderPermissionDialogBody;
+
+  /// No description provided for @reminderPermissionDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow & Set Reminder'**
+  String get reminderPermissionDialogConfirm;
+
+  /// No description provided for @reminderPermissionDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get reminderPermissionDialogCancel;
+
+  /// No description provided for @reminderPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was not granted. Daily reminders remain disabled.'**
+  String get reminderPermissionDenied;
+
+  /// No description provided for @reminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS Workout'**
+  String get reminderNotificationTitle;
+
+  /// No description provided for @reminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for your daily workout? Take it at your own pace.'**
+  String get reminderNotificationBody;
+
+  /// No description provided for @reminderRebootNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Android may clear scheduled alarms if the phone restarts. Open HOMESETS to automatically restore your reminder.'**
+  String get reminderRebootNotice;
+
+  /// No description provided for @reminderScheduleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to schedule reminder. Please try again.'**
+  String get reminderScheduleFailed;
 }
 
 class _AppLocalizationsDelegate

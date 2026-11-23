@@ -502,4 +502,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get restoreCancelButton => 'Cancel';
+
+  @override
+  String get reminderPermissionDialogTitle => 'Enable Daily Reminders';
+
+  @override
+  String get reminderPermissionDialogBody =>
+      'HOMESETS will send a single gentle reminder at your chosen time. All reminders run 100% offline on your device, with no tracking, ads, or spam.';
+
+  @override
+  String get reminderPermissionDialogConfirm => 'Allow & Set Reminder';
+
+  @override
+  String get reminderPermissionDialogCancel => 'Not Now';
+
+  @override
+  String get reminderPermissionDenied =>
+      'Notification permission was not granted. Daily reminders remain disabled.';
+
+  @override
+  String get reminderNotificationTitle => 'HOMESETS Workout';
+
+  @override
+  String get reminderNotificationBody =>
+      'Ready for your daily workout? Take it at your own pace.';
+
+  @override
+  String get reminderRebootNotice =>
+      'Note: Android may clear scheduled alarms if the phone restarts. Open HOMESETS to automatically restore your reminder.';
+
+  @override
+  String get reminderScheduleFailed =>
+      'Failed to schedule reminder. Please try again.';
 }

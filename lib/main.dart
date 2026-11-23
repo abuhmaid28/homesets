@@ -123,6 +123,29 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
+    // 5. Daily reminder startup reconciliation and restore (WP08)
+    try {
+      final reminderSettings = await widget.repository.getReminderSettings();
+      if (reminderSettings.isEnabled) {
+        final notificationsEnabled = await _reminderPlatformService.areNotificationsEnabled();
+        if (notificationsEnabled) {
+          await _reminderPlatformService.scheduleDailyReminder(
+            hour: reminderSettings.hour,
+            minute: reminderSettings.minute,
+            title: 'HOMESETS',
+            body: 'Ready for your workout?',
+          );
+        } else {
+          // Reconcile if permission was revoked while app was closed
+          final reconciled = reminderSettings.copyWith(
+            isEnabled: false,
+            updatedAt: DateTime.now(),
+          );
+          await widget.repository.saveReminderSettings(reconciled);
+        }
+      }
+    } catch (_) {}
+
     if (!mounted) return;
     setState(() {
       _hasProfile = profile != null;
