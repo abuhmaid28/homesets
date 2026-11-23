@@ -553,5 +553,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reminderStartupReconcileFailed =>
-      'Warning: Notification permission was revoked, but the scheduled reminder could not be cancelled on startup.';
+      'Notice: Notification permission revoked, but reminder cancellation could not be verified.';
+
+  @override
+  String get reminderChannelDisabledWarning =>
+      'The notification channel for reminders is disabled in device settings. Please re-enable it in Settings to receive reminders.';
+
+  @override
+  String get retryLabel => 'Retry';
 }

@@ -1091,8 +1091,20 @@ abstract class AppLocalizations {
   /// No description provided for @reminderStartupReconcileFailed.
   ///
   /// In en, this message translates to:
-  /// **'Warning: Notification permission was revoked, but the scheduled reminder could not be cancelled on startup.'**
+  /// **'Notice: Notification permission revoked, but reminder cancellation could not be verified.'**
   String get reminderStartupReconcileFailed;
+
+  /// No description provided for @reminderChannelDisabledWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The notification channel for reminders is disabled in device settings. Please re-enable it in Settings to receive reminders.'**
+  String get reminderChannelDisabledWarning;
+
+  /// No description provided for @retryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryLabel;
 }
 
 class _AppLocalizationsDelegate

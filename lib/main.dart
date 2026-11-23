@@ -123,22 +123,25 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
-    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01)
+    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08)
     try {
       final reminderSettings = await widget.repository.getReminderSettings();
-      if (reminderSettings.isEnabled) {
+      if (reminderSettings.isEnabled || reminderSettings.isPendingReconciliation) {
         final notificationsEnabled = await _reminderPlatformService.areNotificationsEnabled();
-        if (notificationsEnabled) {
+        if (notificationsEnabled && !reminderSettings.isPendingReconciliation) {
           await _reminderPlatformService.scheduleDailyReminder(
             hour: reminderSettings.hour,
             minute: reminderSettings.minute,
             title: 'HOMESETS',
             body: 'Ready for your workout?',
           );
+          await _reminderPlatformService.setReminderConsent(true);
         } else {
-          // Reconcile if permission was revoked while app was closed:
-          // Explicitly cancel the existing scheduled alarm so it does not persist in
-          // AlarmManager and fire if the user later regrants permission without an app opt-in (P6-NOTIFY-01, P6-NOTIFY-04).
+          // Reconcile if permission was revoked while app was closed or cancellation previously failed:
+          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers (P6-NOTIFY-08)
+          await _reminderPlatformService.setReminderConsent(false);
+
+          // 2. Explicitly cancel the existing scheduled alarm so it does not persist in AlarmManager
           bool cancelSuccess = false;
           try {
             cancelSuccess = await _reminderPlatformService.cancelDailyReminder();
@@ -149,13 +152,19 @@ class _HomesetsAppState extends State<HomesetsApp> {
           if (cancelSuccess) {
             final reconciled = reminderSettings.copyWith(
               isEnabled: false,
+              isPendingReconciliation: false,
               updatedAt: DateTime.now(),
             );
             await widget.repository.saveReminderSettings(reconciled);
           } else {
-            // P6-NOTIFY-04: Cancellation was not confirmed.
-            // Do NOT overwrite SQLite with isEnabled: false!
-            // Retain isEnabled: true so the application does not falsely claim the alarm is disabled.
+            // P6-NOTIFY-08: Cancellation was not confirmed.
+            // Persist durable blocked reconciliation state with fail-closed isEnabled: false!
+            final blocked = reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
           }
         }
       }

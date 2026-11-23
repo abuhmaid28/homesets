@@ -12,6 +12,8 @@ abstract class ReminderPlatformService {
     required String body,
   });
   Future<bool> cancelDailyReminder();
+  Future<bool> setReminderConsent(bool enabled);
+  Future<bool> getReminderConsent();
 }
 
 /// Native Android implementation using NotificationManager and AlarmManager.
@@ -79,6 +81,28 @@ class AndroidReminderPlatformService implements ReminderPlatformService {
       return false;
     }
   }
+
+  @override
+  Future<bool> setReminderConsent(bool enabled) async {
+    try {
+      final result = await _channel.invokeMethod<bool>('setReminderConsent', {
+        'enabled': enabled,
+      });
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> getReminderConsent() async {
+    try {
+      final result = await _channel.invokeMethod<bool>('getReminderConsent');
+      return result ?? false;
+    } on PlatformException {
+      return false;
+    }
+  }
 }
 
 /// In-memory mock reminder platform service for tests and non-Android environments.
@@ -102,11 +126,19 @@ class MockReminderPlatformService implements ReminderPlatformService {
   String? scheduledTitle;
   String? scheduledBody;
 
-  MockReminderPlatformService({this.notificationsEnabled = true});
+  bool consentEnabled = false;
+  int setReminderConsentCallCount = 0;
+  bool channelEnabled = true;
+
+  MockReminderPlatformService({
+    this.notificationsEnabled = true,
+    this.channelEnabled = true,
+    this.consentEnabled = false,
+  });
 
   @override
   Future<bool> areNotificationsEnabled() async {
-    return notificationsEnabled;
+    return notificationsEnabled && channelEnabled;
   }
 
   @override
@@ -124,6 +156,9 @@ class MockReminderPlatformService implements ReminderPlatformService {
 
   @override
   Future<String> getNotificationPermissionStatus() async {
+    if (!channelEnabled) {
+      return 'channelDisabled';
+    }
     return permissionStatus;
   }
 
@@ -137,6 +172,9 @@ class MockReminderPlatformService implements ReminderPlatformService {
     scheduleDailyReminderCallCount++;
     if (scheduleDailyReminderException != null) {
       throw scheduleDailyReminderException!;
+    }
+    if (!channelEnabled || !notificationsEnabled) {
+      return false;
     }
     if (onScheduleDailyReminder != null) {
       final res = onScheduleDailyReminder!(hour, minute);
@@ -169,5 +207,31 @@ class MockReminderPlatformService implements ReminderPlatformService {
     scheduledTitle = null;
     scheduledBody = null;
     return true;
+  }
+
+  @override
+  Future<bool> setReminderConsent(bool enabled) async {
+    setReminderConsentCallCount++;
+    consentEnabled = enabled;
+    return true;
+  }
+
+  @override
+  Future<bool> getReminderConsent() async {
+    return consentEnabled;
+  }
+
+  /// Simulates native broadcast receiver execution (WP12, P6-NOTIFY-07, P6-NOTIFY-08).
+  /// Enforces fail-closed delivery invariant: returns true ONLY if OS notifications are enabled,
+  /// notification channel is active, and explicit in-app consent is verified.
+  bool simulateAlarmDelivery() {
+    if (!notificationsEnabled || !channelEnabled || !consentEnabled) {
+      // Receiver suppresses delivery fail-closed
+      if (!consentEnabled) {
+        isScheduled = false; // Self-healing cancel
+      }
+      return false;
+    }
+    return isScheduled;
   }
 }

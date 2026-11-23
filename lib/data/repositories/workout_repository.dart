@@ -1028,20 +1028,72 @@ class WorkoutRepository {
   /// Retrieves local daily reminder settings (WP16).
   Future<ReminderSettings> getReminderSettings() async {
     final db = await _dbHelper.database;
+    final blocked = await isReminderBlocked();
     final rows = await db.query('reminder_settings', limit: 1);
     if (rows.isEmpty) {
-      return ReminderSettings(updatedAt: DateTime.now());
+      return ReminderSettings(
+        updatedAt: DateTime.now(),
+        isPendingReconciliation: blocked,
+      );
     }
-    return ReminderSettings.fromMap(rows.first);
+    return ReminderSettings.fromMap(
+      rows.first,
+      isPendingReconciliation: blocked,
+    );
   }
 
   /// Persists local daily reminder settings (WP16).
   Future<void> saveReminderSettings(ReminderSettings settings) async {
     final db = await _dbHelper.database;
-    await db.insert(
-      'reminder_settings',
-      settings.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+    await db.transaction((txn) async {
+      await txn.insert(
+        'reminder_settings',
+        settings.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      if (settings.isPendingReconciliation) {
+        await txn.insert(
+          'app_metadata',
+          {'key': 'reminder_reconcile_blocked', 'value': 'true'},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      } else {
+        await txn.delete(
+          'app_metadata',
+          where: 'key = ?',
+          whereArgs: ['reminder_reconcile_blocked'],
+        );
+      }
+    });
+  }
+
+  /// Checks if reminder cancellation/reconciliation is blocked (P6-NOTIFY-08).
+  Future<bool> isReminderBlocked() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'app_metadata',
+      where: 'key = ?',
+      whereArgs: ['reminder_reconcile_blocked'],
+      limit: 1,
     );
+    return rows.isNotEmpty && rows.first['value'] == 'true';
+  }
+
+  /// Sets or clears the reminder reconciliation blocked state (P6-NOTIFY-08).
+  Future<void> setReminderBlockedState(bool isBlocked) async {
+    final db = await _dbHelper.database;
+    if (isBlocked) {
+      await db.insert(
+        'app_metadata',
+        {'key': 'reminder_reconcile_blocked', 'value': 'true'},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    } else {
+      await db.delete(
+        'app_metadata',
+        where: 'key = ?',
+        whereArgs: ['reminder_reconcile_blocked'],
+      );
+    }
   }
 }

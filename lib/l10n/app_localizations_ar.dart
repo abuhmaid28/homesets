@@ -554,5 +554,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reminderStartupReconcileFailed =>
-      'تحذير: تم إلغاء إذن الإشعارات، ولكن تعذر إلغاء التنبيه المجدول عند بدء التشغيل.';
+      'ملاحظة: تم إلغاء إذن الإشعارات، ولكن تعذر التحقق من إلغاء التنبيه المجدول.';
+
+  @override
+  String get reminderChannelDisabledWarning =>
+      'قناة إشعارات التنبيهات معطلة في إعدادات الجهاز. يرجى تفعيلها من الإعدادات لتلقي التنبيهات.';
+
+  @override
+  String get retryLabel => 'إعادة المحاولة';
 }

@@ -650,11 +650,12 @@ void main() {
       expect(mockReminderPlatform.scheduledMinute, equals(30));
     });
 
-    testWidgets('19. P6-NOTIFY-04: Startup cancellation returning false retains SQLite isEnabled=true and does not invent successful cancellation', (tester) async {
+    testWidgets('19. P6-NOTIFY-04 & P6-NOTIFY-08: Startup cancellation returning false revokes native consent and records durable blocked reconciliation state', (tester) async {
       setupPhoneViewport(tester);
 
-      // Initial state: alarm was active, permission revoked in OS
+      // Initial state: alarm was active, consent was true, permission revoked in OS
       mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
       mockReminderPlatform.scheduledHour = 17;
       mockReminderPlatform.scheduledMinute = 45;
       mockReminderPlatform.notificationsEnabled = false;
@@ -678,16 +679,24 @@ void main() {
       // Cancellation was attempted
       expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
 
-      // Alarm could not be confirmed cancelled: SQLite must NOT be falsely set to isEnabled: false!
+      // Native consent revoked fail-closed
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+
+      // SQLite records durable blocked state with isEnabled: false (fail-closed consent)
       final saved = await tester.runAsync(() => repository.getReminderSettings());
-      expect(saved?.isEnabled, isTrue);
-      expect(mockReminderPlatform.isScheduled, isTrue);
+      expect(saved?.isEnabled, isFalse);
+      expect(saved?.isPendingReconciliation, isTrue);
+
+      // Subsequent OS permission regrant without in-app opt-in CANNOT dispatch notification!
+      mockReminderPlatform.notificationsEnabled = true;
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
     });
 
-    testWidgets('20. P6-NOTIFY-04: Startup cancellation throwing retains SQLite isEnabled=true', (tester) async {
+    testWidgets('20. P6-NOTIFY-04 & P6-NOTIFY-08: Startup cancellation throwing revokes native consent and records durable blocked state', (tester) async {
       setupPhoneViewport(tester);
 
       mockReminderPlatform.isScheduled = true;
+      mockReminderPlatform.consentEnabled = true;
       mockReminderPlatform.scheduledHour = 17;
       mockReminderPlatform.scheduledMinute = 45;
       mockReminderPlatform.notificationsEnabled = false;
@@ -713,9 +722,13 @@ void main() {
 
       expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
 
-      // SQLite retains isEnabled: true
+      // Native consent revoked fail-closed
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+
+      // SQLite records durable blocked state
       final saved = await tester.runAsync(() => repository.getReminderSettings());
-      expect(saved?.isEnabled, isTrue);
+      expect(saved?.isEnabled, isFalse);
+      expect(saved?.isPendingReconciliation, isTrue);
     });
 
     testWidgets('21. P6-NOTIFY-05: Platform service truthful failure reporting when AlarmManager unavailable', (tester) async {
@@ -837,6 +850,128 @@ void main() {
 
       // Critical compensation failed snackbar shown
       expect(find.textContaining('Critical Error: Database update and reminder compensation failed'), findsOneWidget);
+    });
+
+    testWidgets('25. P6-NOTIFY-07: Orphan alarm after failed ON save and failed cancel cannot dispatch and offers recovery on restart', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      repository.failSaveReminderSettings = true; // DB save fails
+      mockReminderPlatform.cancelDailyReminderResult = false; // Compensating cancel also fails
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // 1. Consent must remain FALSE in platform service fail-closed
+      expect(mockReminderPlatform.consentEnabled, isFalse);
+
+      // 2. Even if AlarmManager fires, native receiver suppresses delivery fail-closed!
+      expect(mockReminderPlatform.simulateAlarmDelivery(), isFalse);
+
+      // 3. Process restart / cold start
+      repository.failSaveReminderSettings = false; // DB available again
+      mockReminderPlatform.cancelDailyReminderResult = true; // Native cancel now succeeds on retry
+
+      await tester.pumpWidget(HomesetsApp(
+        repository: repository,
+        photoService: mockPhotoService,
+        backupStagingManager: stagingManager,
+        reminderPlatformService: mockReminderPlatform,
+      ));
+      await pumpAsync(tester, 10);
+
+      // Startup attempted cleanup of orphan/blocked state
+      expect(mockReminderPlatform.cancelDailyReminderCallCount, greaterThanOrEqualTo(1));
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isEnabled, isFalse);
+    });
+
+    testWidgets('26. P6-NOTIFY-08: Revocation and cancel failure renders durable retry guidance in Settings and resolves on retry', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = false;
+      mockReminderPlatform.cancelDailyReminderResult = true;
+
+      // Seed durable blocked reconciliation state
+      await tester.runAsync(() async {
+        await repository.saveReminderSettings(ReminderSettings(
+          isEnabled: false,
+          hour: 15,
+          minute: 30,
+          updatedAt: DateTime.now(),
+          isPendingReconciliation: true,
+        ));
+      });
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      // Warning card with retry button is visible
+      expect(find.textContaining('Notice: Notification permission revoked'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+
+      // Tap Retry button
+      await tester.tap(find.text('Retry'));
+      await pumpAsync(tester);
+
+      // Cancellation succeeded, blocked state cleared
+      final saved = await tester.runAsync(() => repository.getReminderSettings());
+      expect(saved?.isPendingReconciliation, isFalse);
+      expect(find.textContaining('Notice: Notification permission revoked'), findsNothing);
+    });
+
+    testWidgets('27. P6-NOTIFY-09: Disabled notification channel blocks reminder scheduling and displays truthful warning', (tester) async {
+      setupPhoneViewport(tester);
+      mockReminderPlatform.notificationsEnabled = true;
+      mockReminderPlatform.channelEnabled = false; // Channel disabled by user in OS settings
+
+      await tester.pumpWidget(createSettingsScreenWidget());
+      await pumpAsync(tester);
+
+      final switchFinder = find.byType(Switch);
+      await tester.tap(switchFinder);
+      await pumpAsync(tester);
+
+      // Displays channel-level disabled warning and does not schedule alarm
+      expect(find.textContaining('notification channel for reminders is disabled'), findsOneWidget);
+      expect(mockReminderPlatform.isScheduled, isFalse);
+
+      final Switch switchWidget = tester.widget(switchFinder);
+      expect(switchWidget.value, isFalse);
+    });
+
+    testWidgets('28. MethodChannel contract: setReminderConsent and getReminderConsent round-trip', (tester) async {
+      const MethodChannel channel = MethodChannel('com.abuhmaid.homesets/reminders');
+      final log = <MethodCall>[];
+      bool nativeConsent = false;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (call) async {
+        log.add(call);
+        if (call.method == 'setReminderConsent') {
+          nativeConsent = (call.arguments as Map)['enabled'] as bool;
+          return true;
+        }
+        if (call.method == 'getReminderConsent') {
+          return nativeConsent;
+        }
+        return null;
+      });
+
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+      });
+
+      const service = AndroidReminderPlatformService();
+      final initialConsent = await service.getReminderConsent();
+      expect(initialConsent, isFalse);
+
+      final setResult = await service.setReminderConsent(true);
+      expect(setResult, isTrue);
+
+      final updatedConsent = await service.getReminderConsent();
+      expect(updatedConsent, isTrue);
     });
   });
 }

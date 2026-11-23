@@ -53,6 +53,8 @@ class MainActivity : FlutterActivity() {
         const val REMINDER_CHANNEL_ID = "homesets_daily_reminders"
         const val REMINDER_NOTIFICATION_ID = 2001
         const val REMINDER_REQUEST_CODE = 2002
+        const val PREFS_NAME = "homesets_reminder_prefs"
+        const val KEY_REMINDER_CONSENT = "reminder_consent_enabled"
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -148,25 +150,14 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, REMINDERS_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "areNotificationsEnabled" -> {
-                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                    val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                        hasPermission && (nm?.areNotificationsEnabled() == true)
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        nm?.areNotificationsEnabled() ?: true
-                    } else {
-                        true
-                    }
-                    result.success(enabled)
+                    result.success(areRemindersEffectivelyEnabled())
                 }
                 "requestNotificationPermission" -> {
+                    if (areRemindersEffectivelyEnabled()) {
+                        result.success(true)
+                        return@setMethodCallHandler
+                    }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                        if (hasPermission && (nm?.areNotificationsEnabled() == true)) {
-                            result.success(true)
-                            return@setMethodCallHandler
-                        }
                         if (pendingPermissionResult != null) {
                             result.error("ALREADY_PENDING", "A permission request is already in progress", null)
                             return@setMethodCallHandler
@@ -178,43 +169,32 @@ class MainActivity : FlutterActivity() {
                             REQUEST_CODE_POST_NOTIFICATIONS
                         )
                     } else {
-                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                        val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            nm?.areNotificationsEnabled() ?: true
-                        } else {
-                            true
-                        }
-                        result.success(enabled)
+                        result.success(areRemindersEffectivelyEnabled())
                     }
                 }
                 "getNotificationPermissionStatus" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         val hasPermission = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                        if (hasPermission && (nm?.areNotificationsEnabled() == true)) {
-                            result.success("granted")
+                        if (hasPermission) {
+                            if (!isNotificationChannelEnabled()) {
+                                result.success("channelDisabled")
+                            } else {
+                                result.success("granted")
+                            }
                         } else {
                             val shouldShow = ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)
                             result.success(if (shouldShow) "denied" else "notDetermined")
                         }
                     } else {
-                        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                        val enabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            nm?.areNotificationsEnabled() ?: true
+                        if (!isNotificationChannelEnabled()) {
+                            result.success("channelDisabled")
                         } else {
-                            true
+                            result.success("granted")
                         }
-                        result.success(if (enabled) "granted" else "denied")
                     }
                 }
                 "scheduleDailyReminder" -> {
-                    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-                    val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                    } else {
-                        true
-                    }
-                    if (!hasPerm || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && nm?.areNotificationsEnabled() == false)) {
+                    if (!areRemindersEffectivelyEnabled()) {
                         result.success(false)
                         return@setMethodCallHandler
                     }
@@ -230,6 +210,16 @@ class MainActivity : FlutterActivity() {
                 "cancelDailyReminder" -> {
                     val cancelled = cancelAlarm()
                     result.success(cancelled)
+                }
+                "setReminderConsent" -> {
+                    val enabled = call.argument<Boolean>("enabled") ?: false
+                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    prefs.edit().putBoolean(KEY_REMINDER_CONSENT, enabled).commit()
+                    result.success(true)
+                }
+                "getReminderConsent" -> {
+                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    result.success(prefs.getBoolean(KEY_REMINDER_CONSENT, false))
                 }
                 else -> result.notImplemented()
             }
@@ -493,6 +483,30 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun isNotificationChannelEnabled(): Boolean {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !nm.areNotificationsEnabled()) {
+            return false
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            setupNotificationChannel()
+            val channel = nm.getNotificationChannel(REMINDER_CHANNEL_ID)
+            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun areRemindersEffectivelyEnabled(): Boolean {
+        val hasPerm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        return hasPerm && isNotificationChannelEnabled()
+    }
+
     private fun scheduleAlarm(hour: Int, minute: Int, title: String, body: String): Boolean {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return false
         return try {
@@ -532,6 +546,10 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun cancelAlarm(): Boolean {
+        // Enforce fail-closed consent revocation even if AlarmManager cancel fails (P6-NOTIFY-07, P6-NOTIFY-08)
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_REMINDER_CONSENT, false).commit()
+
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return false
         return try {
             val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {

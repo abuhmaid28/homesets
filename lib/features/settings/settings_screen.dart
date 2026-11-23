@@ -73,9 +73,11 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   Future<void> _checkAndReconcilePermissions() async {
     try {
       final notificationsEnabled = await widget.reminderPlatformService.areNotificationsEnabled();
-      if (!notificationsEnabled && _reminderSettings.isEnabled) {
+      if (!notificationsEnabled && (_reminderSettings.isEnabled || _reminderSettings.isPendingReconciliation)) {
         // Notification permission was revoked in system settings while app was backgrounded.
-        // Explicitly cancel the active native alarm first so no stale alarm remains (P6-NOTIFY-01, P6-NOTIFY-02).
+        // Explicitly revoke native delivery consent fail-closed immediately (P6-NOTIFY-07, P6-NOTIFY-08).
+        await widget.reminderPlatformService.setReminderConsent(false);
+
         bool cancelSuccess = false;
         try {
           cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
@@ -86,6 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         if (cancelSuccess) {
           final updated = _reminderSettings.copyWith(
             isEnabled: false,
+            isPendingReconciliation: false,
             updatedAt: DateTime.now(),
           );
           await widget.repository.saveReminderSettings(updated);
@@ -96,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             });
           }
         } else {
-          // Native cancellation failed; do NOT falsely mark disabled in SQLite/UI (P6-NOTIFY-02)
+          // Native cancellation failed; do NOT falsely mark disabled in SQLite/UI (P6-NOTIFY-02, P6-NOTIFY-08)
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
             setState(() {
@@ -134,9 +137,52 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     }
   }
 
+  Future<void> _retryCancellation() async {
+    final l10n = AppLocalizations.of(context)!;
+    await widget.reminderPlatformService.setReminderConsent(false);
+    bool cancelSuccess = false;
+    try {
+      cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
+    } catch (_) {
+      cancelSuccess = false;
+    }
+
+    if (cancelSuccess) {
+      final cleared = _reminderSettings.copyWith(
+        isEnabled: false,
+        isPendingReconciliation: false,
+        updatedAt: DateTime.now(),
+      );
+      await widget.repository.saveReminderSettings(cleared);
+      if (mounted) {
+        setState(() => _reminderSettings = cleared);
+      }
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.reminderCancelFailed),
+          backgroundColor: HomesetsColors.orange,
+        ),
+      );
+    }
+  }
+
   Future<void> _toggleReminders(bool value) async {
     final l10n = AppLocalizations.of(context)!;
     if (value) {
+      final permStatus = await widget.reminderPlatformService.getNotificationPermissionStatus();
+      if (permStatus == 'channelDisabled') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderChannelDisabledWarning),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       bool hasPerm = await widget.reminderPlatformService.areNotificationsEnabled();
       if (!mounted) return;
       if (!hasPerm) {
@@ -183,9 +229,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         if (!mounted) return;
         if (!hasPerm) {
           setState(() => _notificationsEnabled = false);
+          final updatedStatus = await widget.reminderPlatformService.getNotificationPermissionStatus();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.reminderPermissionDenied),
+              content: Text(
+                updatedStatus == 'channelDisabled'
+                    ? l10n.reminderChannelDisabledWarning
+                    : l10n.reminderPermissionDenied,
+              ),
               backgroundColor: HomesetsColors.orange,
             ),
           );
@@ -207,9 +259,15 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
       if (!scheduleSuccess) {
         if (mounted) {
+          final updatedStatus = await widget.reminderPlatformService.getNotificationPermissionStatus();
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(l10n.reminderScheduleFailed),
+              content: Text(
+                updatedStatus == 'channelDisabled'
+                    ? l10n.reminderChannelDisabledWarning
+                    : l10n.reminderScheduleFailed,
+              ),
               backgroundColor: HomesetsColors.orange,
             ),
           );
@@ -219,19 +277,32 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
       final updated = _reminderSettings.copyWith(
         isEnabled: true,
+        isPendingReconciliation: false,
         updatedAt: DateTime.now(),
       );
 
       try {
         await widget.repository.saveReminderSettings(updated);
       } catch (e) {
-        // DB save failed after successful scheduling (P6-NOTIFY-03, P6-NOTIFY-06).
+        // DB save failed after successful scheduling (P6-NOTIFY-03, P6-NOTIFY-06, P6-NOTIFY-07).
         // Compensating action: Cancel scheduled alarm to prevent orphan schedule.
         bool compensated = false;
         try {
           compensated = await widget.reminderPlatformService.cancelDailyReminder();
         } catch (_) {
           compensated = false;
+        }
+
+        if (!compensated) {
+          try {
+            final blocked = _reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+            if (mounted) setState(() => _reminderSettings = blocked);
+          } catch (_) {}
         }
 
         if (mounted) {
@@ -249,6 +320,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         return;
       }
 
+      // SQLite commit succeeded: grant native consent fail-closed (P6-NOTIFY-07)
+      await widget.reminderPlatformService.setReminderConsent(true);
+
       if (mounted) {
         setState(() {
           _reminderSettings = updated;
@@ -256,6 +330,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         });
       }
     } else {
+      // Toggle OFF: Immediately revoke native consent fail-closed (P6-NOTIFY-07, P6-NOTIFY-08)
+      await widget.reminderPlatformService.setReminderConsent(false);
+
       bool cancelSuccess = false;
       try {
         cancelSuccess = await widget.reminderPlatformService.cancelDailyReminder();
@@ -279,6 +356,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
 
       final updated = _reminderSettings.copyWith(
         isEnabled: false,
+        isPendingReconciliation: false,
         updatedAt: DateTime.now(),
       );
 
@@ -706,6 +784,50 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                             child: Text(
                               l10n.notificationsDisabledWarning,
                               style: HomesetsTypography.bodySmall.copyWith(color: HomesetsColors.orange),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_reminderSettings.isPendingReconciliation) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: HomesetsColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: HomesetsColors.orange),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: HomesetsColors.orange, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  l10n.reminderStartupReconcileFailed,
+                                  style: HomesetsTypography.bodySmall.copyWith(
+                                    color: HomesetsColors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: HomesetsColors.orange,
+                                side: const BorderSide(color: HomesetsColors.orange),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              onPressed: _retryCancellation,
+                              child: Text(l10n.retryLabel),
                             ),
                           ),
                         ],

@@ -234,5 +234,7 @@
   "reminderSaveFailed": "Failed to save reminder settings. Please try again.",
   "reminderReconcileFailed": "Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.",
   "reminderCompensationFailed": "Critical Error: Database update and reminder compensation failed. Please review system reminder settings.",
-  "reminderStartupReconcileFailed": "Warning: Notification permission was revoked, but the scheduled reminder could not be cancelled on startup."
+  "reminderStartupReconcileFailed": "Notice: Notification permission revoked, but reminder cancellation could not be verified.",
+  "reminderChannelDisabledWarning": "The notification channel for reminders is disabled in device settings. Please re-enable it in Settings to receive reminders.",
+  "retryLabel": "Retry"
 }

@@ -58,7 +58,8 @@ void main() {
       locale: const Locale('en'),
       backupStagingManager: stagingManager,
     ));
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 20; i++) {
+      if (find.byType(OnboardingScreen).evaluate().isNotEmpty) break;
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -154,7 +155,8 @@ void main() {
       locale: const Locale('ar'),
       backupStagingManager: stagingManager,
     ));
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 20; i++) {
+      if (find.byType(OnboardingScreen).evaluate().isNotEmpty) break;
       await tester.runAsync(() async => await Future.delayed(const Duration(milliseconds: 50)));
       await tester.pump(const Duration(milliseconds: 50));
     }
