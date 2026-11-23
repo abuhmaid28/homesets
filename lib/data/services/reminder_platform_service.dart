@@ -128,6 +128,8 @@ class MockReminderPlatformService implements ReminderPlatformService {
 
   bool consentEnabled = false;
   int setReminderConsentCallCount = 0;
+  bool setReminderConsentResult = true;
+  Exception? setReminderConsentException;
   bool channelEnabled = true;
 
   MockReminderPlatformService({
@@ -212,6 +214,12 @@ class MockReminderPlatformService implements ReminderPlatformService {
   @override
   Future<bool> setReminderConsent(bool enabled) async {
     setReminderConsentCallCount++;
+    if (setReminderConsentException != null) {
+      throw setReminderConsentException!;
+    }
+    if (!setReminderConsentResult) {
+      return false;
+    }
     consentEnabled = enabled;
     return true;
   }

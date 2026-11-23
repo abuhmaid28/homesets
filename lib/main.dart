@@ -123,23 +123,66 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
-    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08)
+    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-12)
     try {
       final reminderSettings = await widget.repository.getReminderSettings();
       if (reminderSettings.isEnabled || reminderSettings.isPendingReconciliation) {
         final notificationsEnabled = await _reminderPlatformService.areNotificationsEnabled();
         if (notificationsEnabled && !reminderSettings.isPendingReconciliation) {
-          await _reminderPlatformService.scheduleDailyReminder(
-            hour: reminderSettings.hour,
-            minute: reminderSettings.minute,
-            title: 'HOMESETS',
-            body: 'Ready for your workout?',
-          );
-          await _reminderPlatformService.setReminderConsent(true);
+          bool scheduled = false;
+          try {
+            scheduled = await _reminderPlatformService.scheduleDailyReminder(
+              hour: reminderSettings.hour,
+              minute: reminderSettings.minute,
+              title: 'HOMESETS',
+              body: 'Ready for your workout?',
+            );
+          } catch (_) {
+            scheduled = false;
+          }
+
+          if (scheduled) {
+            bool consentGranted = false;
+            try {
+              consentGranted = await _reminderPlatformService.setReminderConsent(true);
+            } catch (_) {
+              consentGranted = false;
+            }
+
+            if (!consentGranted) {
+              // P6-NOTIFY-11: Consent write failed! Fail-closed
+              try {
+                await _reminderPlatformService.cancelDailyReminder();
+              } catch (_) {}
+              final blocked = reminderSettings.copyWith(
+                isEnabled: false,
+                isPendingReconciliation: true,
+                updatedAt: DateTime.now(),
+              );
+              await widget.repository.saveReminderSettings(blocked);
+            }
+          } else {
+            // P6-NOTIFY-12: Scheduling failed on startup!
+            // Do NOT grant consent! Fail-closed and mark pending reconciliation
+            try {
+              await _reminderPlatformService.setReminderConsent(false);
+            } catch (_) {}
+            final blocked = reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+          }
         } else {
           // Reconcile if permission was revoked while app was closed or cancellation previously failed:
-          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers (P6-NOTIFY-08)
-          await _reminderPlatformService.setReminderConsent(false);
+          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers (P6-NOTIFY-08, P6-NOTIFY-11)
+          bool consentRevoked = false;
+          try {
+            consentRevoked = await _reminderPlatformService.setReminderConsent(false);
+          } catch (_) {
+            consentRevoked = false;
+          }
 
           // 2. Explicitly cancel the existing scheduled alarm so it does not persist in AlarmManager
           bool cancelSuccess = false;
@@ -149,7 +192,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
             cancelSuccess = false;
           }
 
-          if (cancelSuccess) {
+          if (cancelSuccess && consentRevoked) {
             final reconciled = reminderSettings.copyWith(
               isEnabled: false,
               isPendingReconciliation: false,
@@ -157,7 +200,7 @@ class _HomesetsAppState extends State<HomesetsApp> {
             );
             await widget.repository.saveReminderSettings(reconciled);
           } else {
-            // P6-NOTIFY-08: Cancellation was not confirmed.
+            // P6-NOTIFY-08, P6-NOTIFY-11: Cancellation or consent revocation was not confirmed.
             // Persist durable blocked reconciliation state with fail-closed isEnabled: false!
             final blocked = reminderSettings.copyWith(
               isEnabled: false,

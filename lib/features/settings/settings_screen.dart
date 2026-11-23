@@ -75,8 +75,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       final notificationsEnabled = await widget.reminderPlatformService.areNotificationsEnabled();
       if (!notificationsEnabled && (_reminderSettings.isEnabled || _reminderSettings.isPendingReconciliation)) {
         // Notification permission was revoked in system settings while app was backgrounded.
-        // Explicitly revoke native delivery consent fail-closed immediately (P6-NOTIFY-07, P6-NOTIFY-08).
-        await widget.reminderPlatformService.setReminderConsent(false);
+        // Explicitly revoke native delivery consent fail-closed immediately (P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-10, P6-NOTIFY-11).
+        bool consentRevoked = false;
+        try {
+          consentRevoked = await widget.reminderPlatformService.setReminderConsent(false);
+        } catch (_) {
+          consentRevoked = false;
+        }
 
         bool cancelSuccess = false;
         try {
@@ -85,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           cancelSuccess = false;
         }
 
-        if (cancelSuccess) {
+        if (cancelSuccess && consentRevoked) {
           final updated = _reminderSettings.copyWith(
             isEnabled: false,
             isPendingReconciliation: false,
@@ -99,10 +104,20 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             });
           }
         } else {
-          // Native cancellation failed; do NOT falsely mark disabled in SQLite/UI (P6-NOTIFY-02, P6-NOTIFY-08)
+          // Native cancellation or consent revocation failed (P6-NOTIFY-08, P6-NOTIFY-10, P6-NOTIFY-11).
+          // Unified with startup reconciliation: persist durable blocked reconciliation state!
+          final blocked = _reminderSettings.copyWith(
+            isEnabled: false,
+            isPendingReconciliation: true,
+            updatedAt: DateTime.now(),
+          );
+          try {
+            await widget.repository.saveReminderSettings(blocked);
+          } catch (_) {}
           if (mounted) {
             final l10n = AppLocalizations.of(context)!;
             setState(() {
+              _reminderSettings = blocked;
               _notificationsEnabled = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
@@ -320,8 +335,38 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         return;
       }
 
-      // SQLite commit succeeded: grant native consent fail-closed (P6-NOTIFY-07)
-      await widget.reminderPlatformService.setReminderConsent(true);
+      // SQLite commit succeeded: grant native consent fail-closed (P6-NOTIFY-07, P6-NOTIFY-11)
+      bool consentGranted = false;
+      try {
+        consentGranted = await widget.reminderPlatformService.setReminderConsent(true);
+      } catch (_) {
+        consentGranted = false;
+      }
+
+      if (!consentGranted) {
+        // P6-NOTIFY-11: Consent write failed! Rollback SQLite and cancel scheduled alarm fail-closed!
+        try {
+          await widget.reminderPlatformService.cancelDailyReminder();
+        } catch (_) {}
+        final rollback = _reminderSettings.copyWith(
+          isEnabled: false,
+          isPendingReconciliation: true,
+          updatedAt: DateTime.now(),
+        );
+        try {
+          await widget.repository.saveReminderSettings(rollback);
+        } catch (_) {}
+        if (mounted) {
+          setState(() => _reminderSettings = rollback);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.reminderSaveFailed),
+              backgroundColor: HomesetsColors.orange,
+            ),
+          );
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -330,8 +375,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         });
       }
     } else {
-      // Toggle OFF: Immediately revoke native consent fail-closed (P6-NOTIFY-07, P6-NOTIFY-08)
-      await widget.reminderPlatformService.setReminderConsent(false);
+      // Toggle OFF: Immediately revoke native consent fail-closed (P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11)
+      bool consentRevoked = false;
+      try {
+        consentRevoked = await widget.reminderPlatformService.setReminderConsent(false);
+      } catch (_) {
+        consentRevoked = false;
+      }
 
       bool cancelSuccess = false;
       try {
@@ -340,8 +390,8 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         cancelSuccess = false;
       }
 
-      if (!cancelSuccess) {
-        // Native cancellation failed (P6-NOTIFY-02).
+      if (!cancelSuccess || !consentRevoked) {
+        // Native cancellation or consent revocation failed (P6-NOTIFY-02, P6-NOTIFY-11).
         // Do NOT update state or save to SQLite; keep toggle ON and inform user.
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -363,18 +413,42 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       try {
         await widget.repository.saveReminderSettings(updated);
       } catch (e) {
-        // DB save failed after cancellation (P6-NOTIFY-03, P6-NOTIFY-06).
-        // Compensating action: Reschedule the alarm to restore consistency with DB state.
-        bool compensated = false;
+        // DB save failed after cancellation (P6-NOTIFY-03, P6-NOTIFY-06, P6-NOTIFY-12).
+        // Compensating action: Reschedule the alarm to restore consistency with DB state
+        // AND restore native consent (P6-NOTIFY-12)!
+        bool scheduled = false;
         try {
-          compensated = await widget.reminderPlatformService.scheduleDailyReminder(
+          scheduled = await widget.reminderPlatformService.scheduleDailyReminder(
             hour: _reminderSettings.hour,
             minute: _reminderSettings.minute,
             title: l10n.reminderNotificationTitle,
             body: l10n.reminderNotificationBody,
           );
         } catch (_) {
-          compensated = false;
+          scheduled = false;
+        }
+
+        bool consentRestored = false;
+        if (scheduled) {
+          try {
+            consentRestored = await widget.reminderPlatformService.setReminderConsent(true);
+          } catch (_) {
+            consentRestored = false;
+          }
+        }
+
+        final compensated = scheduled && consentRestored;
+
+        if (!compensated) {
+          try {
+            final blocked = _reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+            if (mounted) setState(() => _reminderSettings = blocked);
+          } catch (_) {}
         }
 
         if (mounted) {
@@ -470,7 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       try {
         await widget.repository.saveReminderSettings(updated);
       } catch (e) {
-        // Compensating action: If reminder was enabled, reschedule back to original time (P6-NOTIFY-03, P6-NOTIFY-06)
+        // Compensating action: If reminder was enabled, reschedule back to original time (P6-NOTIFY-03, P6-NOTIFY-06, P6-NOTIFY-12)
         bool compensated = true;
         if (_reminderSettings.isEnabled) {
           try {
@@ -483,6 +557,26 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
           } catch (_) {
             compensated = false;
           }
+
+          if (compensated) {
+            try {
+              compensated = await widget.reminderPlatformService.setReminderConsent(true);
+            } catch (_) {
+              compensated = false;
+            }
+          }
+        }
+
+        if (!compensated) {
+          try {
+            final blocked = _reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+            if (mounted) setState(() => _reminderSettings = blocked);
+          } catch (_) {}
         }
 
         if (mounted) {

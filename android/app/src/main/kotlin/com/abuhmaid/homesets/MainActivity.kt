@@ -213,9 +213,13 @@ class MainActivity : FlutterActivity() {
                 }
                 "setReminderConsent" -> {
                     val enabled = call.argument<Boolean>("enabled") ?: false
-                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    prefs.edit().putBoolean(KEY_REMINDER_CONSENT, enabled).commit()
-                    result.success(true)
+                    val committed = try {
+                        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        prefs.edit().putBoolean(KEY_REMINDER_CONSENT, enabled).commit()
+                    } catch (e: Exception) {
+                        false
+                    }
+                    result.success(committed)
                 }
                 "getReminderConsent" -> {
                     val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -546,12 +550,16 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun cancelAlarm(): Boolean {
-        // Enforce fail-closed consent revocation even if AlarmManager cancel fails (P6-NOTIFY-07, P6-NOTIFY-08)
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_REMINDER_CONSENT, false).commit()
+        // Enforce fail-closed consent revocation even if AlarmManager cancel fails (P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11)
+        val consentRevoked = try {
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_REMINDER_CONSENT, false).commit()
+        } catch (e: Exception) {
+            false
+        }
 
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return false
-        return try {
+        val alarmCancelled = try {
             val intent = Intent(this, HomesetsReminderReceiver::class.java).apply {
                 action = HomesetsReminderReceiver.ACTION_DAILY_REMINDER
             }
@@ -570,6 +578,7 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             false
         }
+        return consentRevoked && alarmCancelled
     }
 
     override fun onDestroy() {
