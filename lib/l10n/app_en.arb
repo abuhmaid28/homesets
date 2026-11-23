@@ -220,5 +220,21 @@
   },
   "restoreDestructiveWarning": "WARNING: Restoring will completely replace all existing workout logs, settings, and progress photos with the contents of this backup file. This action cannot be undone.",
   "restoreConfirmButton": "Replace Data & Restore",
-  "restoreCancelButton": "Cancel"
+  "restoreCancelButton": "Cancel",
+  "reminderPermissionDialogTitle": "Enable Daily Reminders",
+  "reminderPermissionDialogBody": "HOMESETS will send a single gentle reminder at your chosen time. All reminders run 100% offline on your device, with no tracking, ads, or spam.",
+  "reminderPermissionDialogConfirm": "Allow & Set Reminder",
+  "reminderPermissionDialogCancel": "Not Now",
+  "reminderPermissionDenied": "Notification permission was not granted. Daily reminders remain disabled.",
+  "reminderNotificationTitle": "HOMESETS Workout",
+  "reminderNotificationBody": "Ready for your daily workout? Take it at your own pace.",
+  "reminderRebootNotice": "Note: Android may clear scheduled alarms if the phone restarts. Open HOMESETS to automatically restore your reminder.",
+  "reminderScheduleFailed": "Failed to schedule reminder. Please try again.",
+  "reminderCancelFailed": "Failed to cancel scheduled reminder. Please try again.",
+  "reminderSaveFailed": "Failed to save reminder settings. Please try again.",
+  "reminderReconcileFailed": "Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.",
+  "reminderCompensationFailed": "Critical Error: Database update and reminder compensation failed. Please review system reminder settings.",
+  "reminderStartupReconcileFailed": "Notice: Notification permission revoked, but reminder cancellation could not be verified.",
+  "reminderChannelDisabledWarning": "The notification channel for reminders is disabled in device settings. Please re-enable it in Settings to receive reminders.",
+  "retryLabel": "Retry"
 }

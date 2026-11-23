@@ -1009,6 +1009,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get restoreCancelButton;
+
+  /// No description provided for @reminderPermissionDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Daily Reminders'**
+  String get reminderPermissionDialogTitle;
+
+  /// No description provided for @reminderPermissionDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS will send a single gentle reminder at your chosen time. All reminders run 100% offline on your device, with no tracking, ads, or spam.'**
+  String get reminderPermissionDialogBody;
+
+  /// No description provided for @reminderPermissionDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow & Set Reminder'**
+  String get reminderPermissionDialogConfirm;
+
+  /// No description provided for @reminderPermissionDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Now'**
+  String get reminderPermissionDialogCancel;
+
+  /// No description provided for @reminderPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was not granted. Daily reminders remain disabled.'**
+  String get reminderPermissionDenied;
+
+  /// No description provided for @reminderNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'HOMESETS Workout'**
+  String get reminderNotificationTitle;
+
+  /// No description provided for @reminderNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready for your daily workout? Take it at your own pace.'**
+  String get reminderNotificationBody;
+
+  /// No description provided for @reminderRebootNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: Android may clear scheduled alarms if the phone restarts. Open HOMESETS to automatically restore your reminder.'**
+  String get reminderRebootNotice;
+
+  /// No description provided for @reminderScheduleFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to schedule reminder. Please try again.'**
+  String get reminderScheduleFailed;
+
+  /// No description provided for @reminderCancelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to cancel scheduled reminder. Please try again.'**
+  String get reminderCancelFailed;
+
+  /// No description provided for @reminderSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to save reminder settings. Please try again.'**
+  String get reminderSaveFailed;
+
+  /// No description provided for @reminderReconcileFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was revoked, but the scheduled reminder could not be cancelled. Please check your system settings.'**
+  String get reminderReconcileFailed;
+
+  /// No description provided for @reminderCompensationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical Error: Database update and reminder compensation failed. Please review system reminder settings.'**
+  String get reminderCompensationFailed;
+
+  /// No description provided for @reminderStartupReconcileFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notice: Notification permission revoked, but reminder cancellation could not be verified.'**
+  String get reminderStartupReconcileFailed;
+
+  /// No description provided for @reminderChannelDisabledWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The notification channel for reminders is disabled in device settings. Please re-enable it in Settings to receive reminders.'**
+  String get reminderChannelDisabledWarning;
+
+  /// No description provided for @retryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryLabel;
 }
 
 class _AppLocalizationsDelegate

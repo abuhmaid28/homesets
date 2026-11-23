@@ -123,6 +123,117 @@ class _HomesetsAppState extends State<HomesetsApp> {
       await _photoService.cleanupOrphanPhotos(validPaths);
     } catch (_) {}
 
+    // 5. Daily reminder startup reconciliation and restore (WP08, P6-NOTIFY-01, P6-NOTIFY-07, P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-12, P6-NOTIFY-13)
+    try {
+      final reminderSettings = await widget.repository.getReminderSettings();
+      if (reminderSettings.isEnabled || reminderSettings.isPendingReconciliation) {
+        final notificationsEnabled = await _reminderPlatformService.areNotificationsEnabled();
+        final nativeConsent = await _reminderPlatformService.getReminderConsent();
+
+        // P6-NOTIFY-13: Only restore schedule and grant consent if:
+        // 1. Reminders are explicitly enabled in SQLite.
+        // 2. There is NO pending reconciliation / unverified opt-out.
+        // 3. System notifications are enabled in OS.
+        // 4. Native consent is currently TRUE (not revoked by explicit opt-out).
+        if (notificationsEnabled &&
+            reminderSettings.isEnabled &&
+            !reminderSettings.isPendingReconciliation &&
+            nativeConsent) {
+          bool scheduled = false;
+          try {
+            scheduled = await _reminderPlatformService.scheduleDailyReminder(
+              hour: reminderSettings.hour,
+              minute: reminderSettings.minute,
+              title: 'HOMESETS',
+              body: 'Ready for your workout?',
+            );
+          } catch (_) {
+            scheduled = false;
+          }
+
+          if (scheduled) {
+            bool consentGranted = false;
+            try {
+              consentGranted = await _reminderPlatformService.setReminderConsent(true);
+            } catch (_) {
+              consentGranted = false;
+            }
+
+            if (!consentGranted) {
+              // P6-NOTIFY-11: Consent write failed! Fail-closed
+              try {
+                await _reminderPlatformService.cancelDailyReminder();
+              } catch (_) {}
+              final blocked = reminderSettings.copyWith(
+                isEnabled: false,
+                isPendingReconciliation: true,
+                updatedAt: DateTime.now(),
+              );
+              await widget.repository.saveReminderSettings(blocked);
+            }
+          } else {
+            // P6-NOTIFY-12: Scheduling failed on startup!
+            // Do NOT grant consent! Fail-closed and mark pending reconciliation
+            try {
+              await _reminderPlatformService.setReminderConsent(false);
+            } catch (_) {}
+            final blocked = reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+          }
+        } else {
+          // Reconcile if permission was revoked while app was closed, cancellation previously failed,
+          // or user explicitly opted out while SQLite save failed (P6-NOTIFY-08, P6-NOTIFY-11, P6-NOTIFY-13):
+          // 1. Immediately revoke native delivery consent fail-closed so receiver never delivers
+          bool consentRevoked = false;
+          try {
+            consentRevoked = await _reminderPlatformService.setReminderConsent(false);
+          } catch (_) {
+            consentRevoked = false;
+          }
+
+          // 2. Explicitly cancel the existing scheduled alarm so it does not persist in AlarmManager
+          bool cancelSuccess = false;
+          try {
+            cancelSuccess = await _reminderPlatformService.cancelDailyReminder();
+          } catch (_) {
+            cancelSuccess = false;
+          }
+
+          if (cancelSuccess && consentRevoked) {
+            final reconciled = reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: false,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(reconciled);
+          } else {
+            // P6-NOTIFY-08, P6-NOTIFY-11: Cancellation or consent revocation was not confirmed.
+            // Persist durable blocked reconciliation state with fail-closed isEnabled: false!
+            final blocked = reminderSettings.copyWith(
+              isEnabled: false,
+              isPendingReconciliation: true,
+              updatedAt: DateTime.now(),
+            );
+            await widget.repository.saveReminderSettings(blocked);
+          }
+        }
+      } else {
+        // Reminders are OFF in SQLite and no reconciliation is pending.
+        // Invariant (P6-NOTIFY-13): ensure native consent is revoked fail-closed if it was somehow true.
+        try {
+          final nativeConsent = await _reminderPlatformService.getReminderConsent();
+          if (nativeConsent) {
+            await _reminderPlatformService.setReminderConsent(false);
+            await _reminderPlatformService.cancelDailyReminder();
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+
     if (!mounted) return;
     setState(() {
       _hasProfile = profile != null;

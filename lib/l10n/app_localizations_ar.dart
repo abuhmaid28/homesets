@@ -503,4 +503,63 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get restoreCancelButton => 'إلغاء';
+
+  @override
+  String get reminderPermissionDialogTitle => 'تفعيل التذكير اليومي';
+
+  @override
+  String get reminderPermissionDialogBody =>
+      'هوم سيتس هيبعتلك تذكير يومي لطيف في الوقت اللي تختاره. كل التنبيهات شغالة أوفلاين بالكامل على جهازك، بدون تتبع ولا إعلانات ولا إزعاج.';
+
+  @override
+  String get reminderPermissionDialogConfirm => 'السماح وتفعيل التذكير';
+
+  @override
+  String get reminderPermissionDialogCancel => 'ليس الآن';
+
+  @override
+  String get reminderPermissionDenied =>
+      'لم يتم منح إذن الإشعارات. يظل التذكير اليومي معطلاً.';
+
+  @override
+  String get reminderNotificationTitle => 'تمرين هوم سيتس';
+
+  @override
+  String get reminderNotificationBody =>
+      'جاهز لتمرينك اليومي؟ تمرن براحتك وفي وقتك المناسب.';
+
+  @override
+  String get reminderRebootNotice =>
+      'ملحوظة: أندرويد ممكن يلغي التنبيهات المجدولة عند إعادة تشغيل الهاتف. افتح هوم سيتس لتجديد التذكير تلقائياً.';
+
+  @override
+  String get reminderScheduleFailed =>
+      'فشل جدولة التذكير. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderCancelFailed =>
+      'فشل إلغاء التنبيه المجدول. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderSaveFailed =>
+      'فشل حفظ إعدادات التذكير. برجاء المحاولة مرة أخرى.';
+
+  @override
+  String get reminderReconcileFailed =>
+      'تم إلغاء إذن الإشعارات، ولكن تعذر إلغاء التنبيه المجدول. برجاء مراجعة إعدادات النظام.';
+
+  @override
+  String get reminderCompensationFailed =>
+      'خطأ حرج: تعذر حفظ الإعدادات وفشلت استعادة حالة التنبيه. برجاء مراجعة إعدادات التنبيهات في النظام.';
+
+  @override
+  String get reminderStartupReconcileFailed =>
+      'ملاحظة: تم إلغاء إذن الإشعارات، ولكن تعذر التحقق من إلغاء التنبيه المجدول.';
+
+  @override
+  String get reminderChannelDisabledWarning =>
+      'قناة إشعارات التنبيهات معطلة في إعدادات الجهاز. يرجى تفعيلها من الإعدادات لتلقي التنبيهات.';
+
+  @override
+  String get retryLabel => 'إعادة المحاولة';
 }
